@@ -21,12 +21,12 @@ describe('canonical trip presentation', () => {
     expect(tripTitle({ parkName: 'Glacier National Park' }, 'New Trip Plan')).toBe('Glacier National Park');
     expect(tripTitle({}, 'New Trip Plan')).toBe('Your trip');
   });
-  it('derives a Day 3 update across the recorded prose-only follow-up without mutating recordings', () => {
-    const original = playback.scenarios.find(s => s.id === 'glacier').turns;
+  it('derives changed mornings across the recorded prose-only follow-up without mutating recordings', () => {
+    const original = playback.scenarios.find(s => s.id === 'wildlife').turns;
     const before = JSON.stringify(original);
     const turns = withTripRefinements(original);
     expect(turns[0].refinement.isRefinement).toBe(false);
-    expect(turns[2].refinement).toMatchObject({ isRefinement: true, changedDayNumbers: [3] });
+    expect(turns[2].refinement).toMatchObject({ isRefinement: true, changedDayNumbers: [1, 3, 4] });
     expect(JSON.stringify(original)).toBe(before);
   });
   it('retains exact canonical identity and coordinates for all captured map pins', () => {
@@ -47,7 +47,7 @@ describe('canonical trip presentation', () => {
     expect(assertNoInternalFields(playback)).toEqual([]);
   });
   it('keeps a recorded stop but rejects park-level placeholder coordinates', () => {
-    const plan = structuredClone(playback.scenarios.find(s => s.id === 'yellowstone').turns[0].plan);
+    const plan = structuredClone(playback.scenarios.find(s => s.id === 'wildlife').turns[0].plan);
     const stop = plan.days[0].stops.find(s => s.canonicalPlaceId);
     stop.location = { ...stop.location, lat: 0, lon: 0, sourceEntity: 'nps:park:yell' };
     expect(buildTripMapModel(plan).days[0].stops.find(s => s.id === stop.id).mapped).toBe(false);

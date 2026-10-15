@@ -87,9 +87,9 @@ for (const character of JSON.stringify(playbackData)) {
   fixtureHash = Math.imul(fixtureHash ^ character.charCodeAt(0), 16777619);
 }
 const fixtureSignature = (fixtureHash >>> 0).toString(16);
-const DEMO_PLAYBACK_CACHE_VERSION = `v${playbackData.schemaVersion}-playback-v13-${fixtureSignature}`;
+const DEMO_PLAYBACK_CACHE_VERSION = `v${playbackData.schemaVersion}-playback-v14-${fixtureSignature}`;
 
-const PHASE = { IDLE: 'idle', TYPING: 'typing', PLAYING: 'playing', COMPLETE: 'complete' };
+const PHASE = { IDLE: 'idle', TYPING: 'typing', PLAYING: 'playing', PAUSED: 'paused', COMPLETE: 'complete' };
 
 export default function TrailieInteractiveDemo({
   className = '',
@@ -134,12 +134,11 @@ export default function TrailieInteractiveDemo({
 
   const hydrateFromCache = useCallback((item) => {
     const cached = scenarioCacheRef.current.get(item.id);
-    // A visitor may have switched away before the follow-ups played.
-    // Replay incomplete captures rather than treating the first answer as done.
-    if (cached?.length !== item.turns.length) return false;
+    // Restore the visitor's reading position without advancing an unseen turn.
+    if (!cached?.length || cached.length > item.turns.length) return false;
 
     setCompletedTurns(cached);
-    setPhase(PHASE.COMPLETE);
+    setPhase(cached.length === item.turns.length ? PHASE.COMPLETE : PHASE.PAUSED);
     setTypedQuestion('');
     setActiveTurn(null);
     return true;
@@ -178,10 +177,7 @@ export default function TrailieInteractiveDemo({
         });
 
         if (turnIndex + 1 < item.turns.length) {
-          schedule(() => {
-            if (token !== playbackTokenRef.current) return;
-            playTurn(scenarioIndex, turnIndex + 1, token);
-          }, PLAYBACK_TIMING.turnGapMs);
+          setPhase(PHASE.PAUSED);
         } else {
           setPhase(PHASE.COMPLETE);
         }
@@ -324,6 +320,21 @@ export default function TrailieInteractiveDemo({
           showMessagePane={showMessagePane}
         />
       </div>
+
+      {phase === PHASE.PAUSED && (
+        <div className="public-reading mt-6 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-[var(--text-secondary)]" aria-live="polite">
+            Question {completedTurns.length} of {scenario.turns.length}
+          </p>
+          <button type="button"
+            className="min-h-11 rounded-full bg-[var(--accent-green)] px-5 py-2.5 text-sm font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--accent-green)]"
+            onClick={() => {
+              if (phase === PHASE.PAUSED) playTurn(activeIndex, completedTurns.length, playbackTokenRef.current);
+            }}>
+            Next question
+          </button>
+        </div>
+      )}
 
       {showCta && phase === PHASE.COMPLETE && !completedTurns.some(turn => (turn.canonicalPlan || turn.plan)?.days?.length) && (
         <TrailieDemoCta

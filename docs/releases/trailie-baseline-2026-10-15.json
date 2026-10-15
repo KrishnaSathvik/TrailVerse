@@ -1,0 +1,332 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-15",
+  "status": "local-only; not deployed",
+  "fixture": {
+    "path": "next-frontend/src/data/trailieDemoPlayback.json",
+    "sha256": "3cb816d9d6b26ccba6ae78ab09e3ddb5cd8a310c1e62d7211d3b48191e88f8df"
+  },
+  "demo": {
+    "turns": 15,
+    "modelCostUsd": 0.88931,
+    "reruns": 0,
+    "conversations": [
+      {
+        "id": "choose-park",
+        "label": "Choose a park",
+        "source": "artifacts/private/demo-capture-2026-10-15/choose-park/accepted.json",
+        "sourceSha256": "146826e7f10b3732165d1d6c9eea7c503235c09fc21dfeee73e9887e751f7140",
+        "turns": [
+          {
+            "turn": 1,
+            "question": "My partner and I have four full days in October. We’re deciding between Acadia and Shenandoah. We like fall colors, photography, and easy walks. Which would you choose, and why?",
+            "responseSha256": "b67df7e88d207ed55eb41ef1681b2e6179cd09332d37fd186d7a60e2305bc5b4",
+            "latencyMs": 13497,
+            "httpStatus": 200,
+            "hasItinerary": false,
+            "checks": {
+              "httpOk": true,
+              "content": true,
+              "noMutation": true
+            }
+          },
+          {
+            "turn": 2,
+            "question": "Avoiding crowds matters more to us than seeing the most famous sights. Would that change your recommendation?",
+            "responseSha256": "57accea58cc91c5c9769f29853cbf3e6ef95cf18bf42a103bbe2398d1ea0a0df",
+            "latencyMs": 9735,
+            "httpStatus": 200,
+            "hasItinerary": false,
+            "checks": {
+              "httpOk": true,
+              "content": true,
+              "noMutation": true
+            }
+          },
+          {
+            "turn": 3,
+            "question": "Plan four relaxed sightseeing days in the park you recommend. We’ll have a car, and our arrival and departure are outside those four days.",
+            "responseSha256": "4d665a4e63029ca125602d7be3767d80a422355e563a4b360bb0bbe83c4981d6",
+            "latencyMs": 80204,
+            "httpStatus": 200,
+            "hasItinerary": true,
+            "checks": {
+              "httpOk": true,
+              "content": true,
+              "dayCount": true
+            }
+          }
+        ]
+      },
+      {
+        "id": "road-trip",
+        "label": "Plan a road trip",
+        "source": "artifacts/private/demo-capture-2026-10-15/road-trip/accepted.json",
+        "sourceSha256": "73567b14ad1b9356923365d2537b1592adf6b1c9d88c42658c0164c576874865",
+        "turns": [
+          {
+            "turn": 1,
+            "question": "We have five days starting and ending in Las Vegas, including the driving. Can we fit Zion, Bryce Canyon, and the Grand Canyon without rushing? We prefer easy walks.",
+            "responseSha256": "8f3997b32c765be278f2de468aee92767c01d122ea80c06dae13abda66aa95eb",
+            "latencyMs": 26624,
+            "httpStatus": 200,
+            "hasItinerary": false,
+            "checks": {
+              "httpOk": true,
+              "content": true,
+              "noMutation": true
+            }
+          },
+          {
+            "turn": 2,
+            "question": "Let’s leave the Grand Canyon for another trip. Plan the five days around Zion and Bryce, with suggested overnight towns and time to relax.",
+            "responseSha256": "41e94372a2a9b25068cb2f8657fbddc2b3d14b5fdde0a78ef720e7d6bdfba938",
+            "latencyMs": 59207,
+            "httpStatus": 200,
+            "hasItinerary": true,
+            "checks": {
+              "httpOk": true,
+              "content": true,
+              "dayCount": true
+            }
+          },
+          {
+            "turn": 3,
+            "question": "Make day 3 lighter: one main outing and a free afternoon. Keep the other days unchanged.",
+            "responseSha256": "7c49dd7bd2c38feab0951b975764f9d5958587aa874f4e518c3a15be00380451",
+            "latencyMs": 13257,
+            "httpStatus": 200,
+            "hasItinerary": true,
+            "checks": {
+              "httpOk": true,
+              "content": true,
+              "dayCount": true,
+              "untouchedDays": true
+            }
+          }
+        ]
+      },
+      {
+        "id": "wildlife",
+        "label": "Wildlife & photography",
+        "source": "artifacts/private/demo-capture-2026-10-15/wildlife/accepted.json",
+        "sourceSha256": "e7f7010f8a9cd7bf7fddced6e4bae041f765465b154ad04db145ce7de7166c8b",
+        "turns": [
+          {
+            "turn": 1,
+            "question": "Plan four full sightseeing days in Yellowstone for me and my partner in September. We’ll have a car and stay in Canyon Village. Wildlife photography matters more to us than long hikes.",
+            "responseSha256": "1182026cc69e2347673cf1b55b513aff98e20d7825c04fc633824b122452b240",
+            "latencyMs": 107517,
+            "httpStatus": 200,
+            "hasItinerary": true,
+            "checks": {
+              "httpOk": true,
+              "content": true,
+              "dayCount": true
+            }
+          },
+          {
+            "turn": 2,
+            "question": "Which morning would you protect for wildlife photography if we only wanted one very early start? Explain your choice without changing the plan yet.",
+            "responseSha256": "05eb188cb9094cf9609463abb9c238cb9396c9c15a61a7f74d16dedbd1f84b5a",
+            "latencyMs": 7189,
+            "httpStatus": 200,
+            "hasItinerary": false,
+            "checks": {
+              "httpOk": true,
+              "content": true,
+              "noMutation": true
+            }
+          },
+          {
+            "turn": 3,
+            "question": "Update the plan to keep that early start and make the other mornings more relaxed. Keep the same overnight base and don’t add longer hikes.",
+            "responseSha256": "546929f469087bb2815ce0ce020ed6b44efea9a1e3f10aeae2c3243a4232db46",
+            "latencyMs": 69524,
+            "httpStatus": 200,
+            "hasItinerary": true,
+            "checks": {
+              "httpOk": true,
+              "content": true,
+              "dayCount": true
+            }
+          }
+        ]
+      },
+      {
+        "id": "st-john",
+        "label": "Change one day",
+        "source": "artifacts/private/demo-capture-2026-10-15/st-john/accepted.json",
+        "sourceSha256": "a0cbb8b4af53eb5ee610618abd394315b5264d5e6712992b8df21a76c05ab0fc",
+        "turns": [
+          {
+            "turn": 1,
+            "question": "Plan three full days around Virgin Islands National Park on St. John. We’ll stay in Cruz Bay and have a rental car. We want beaches, coastal views, and short walks.",
+            "responseSha256": "13157ffb5301c5d55508399afb4cd8870e3f73c2925e692751f223934a351578",
+            "latencyMs": 77938,
+            "httpStatus": 200,
+            "hasItinerary": true,
+            "checks": {
+              "httpOk": true,
+              "content": true,
+              "dayCount": true
+            }
+          },
+          {
+            "turn": 2,
+            "question": "Swap day 2 for a beach morning and a short viewpoint visit. Don’t repeat places from the other days, and keep days 1 and 3 as they are.",
+            "responseSha256": "aac1cdb6ec388919e8d77bba9d4927f59478c3da0ff29326fdd1dc6fa1ef0412",
+            "latencyMs": 30257,
+            "httpStatus": 200,
+            "hasItinerary": true,
+            "checks": {
+              "httpOk": true,
+              "content": true,
+              "dayCount": true,
+              "untouchedDays": true
+            }
+          },
+          {
+            "turn": 3,
+            "question": "For the beach you chose on day 2, what should we check before snorkeling, and what could we do instead if the water is rough? Just give us advice—don’t change the itinerary.",
+            "responseSha256": "8f91a09b3e43430c06633ee9febc8150ca85c5e55c0fa46ca1548a365f7d9b99",
+            "latencyMs": 8854,
+            "httpStatus": 200,
+            "hasItinerary": false,
+            "checks": {
+              "httpOk": true,
+              "content": true,
+              "noMutation": true
+            }
+          }
+        ]
+      },
+      {
+        "id": "chicago",
+        "label": "Explore a city",
+        "source": "artifacts/private/demo-capture-2026-10-15/chicago/accepted.json",
+        "sourceSha256": "94dc22df459f93f7d801871d7b50f3ec7251d8cfd91be5a73ae6fc2fef65418f",
+        "turns": [
+          {
+            "turn": 1,
+            "question": "Is Chicago worth visiting in December if we mainly enjoy museums, food, and architecture?",
+            "responseSha256": "898f79bbe2f27b2e28348e686255cfbcd8fcbb4a83ddd4af2c3404c6b18751a5",
+            "latencyMs": 9893,
+            "httpStatus": 200,
+            "hasItinerary": false,
+            "checks": {
+              "httpOk": true,
+              "content": true,
+              "noMutation": true
+            }
+          },
+          {
+            "turn": 2,
+            "question": "Plan three full sightseeing days for two adults without a car. We’ll stay in the Loop. Include the Art Institute and leave time to warm up indoors between outdoor stretches.",
+            "responseSha256": "5fec2dd3a2c80fdc1bf8345e675c3c71929556cc395544f7054d8518b22ed0f8",
+            "latencyMs": 51683,
+            "httpStatus": 200,
+            "hasItinerary": true,
+            "checks": {
+              "httpOk": true,
+              "content": true,
+              "dayCount": true,
+              "artInstitutePin": true
+            }
+          },
+          {
+            "turn": 3,
+            "question": "Make the Art Institute day more relaxed — just the museum and a free afternoon. Leave the other days as they are.",
+            "responseSha256": "5f47a31b4029c9bc6c56cf1f45728bbda710d4d4021d9356f1956df1a9742c00",
+            "latencyMs": 13403,
+            "httpStatus": 200,
+            "hasItinerary": true,
+            "checks": {
+              "httpOk": true,
+              "content": true,
+              "dayCount": true,
+              "artInstitutePin": true
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "refusals": [
+    {
+      "source": "artifacts/private/closeout-smoke/turn-04-attempt-1.json",
+      "sourceSha256": "7f1699016c1a166dd23800fabd7c94d7e06215a44ecac08bf59760988468c20b",
+      "capturedAt": "2026-10-14T21:40:43.667Z",
+      "question": "Plan a three-day trip to Tokyo.",
+      "answer": "I specialize in U.S. travel, so I can’t create a Tokyo itinerary.\n\nIf you’re open to a U.S. alternative, **San Francisco** could make a rewarding three-day city trip, with Japanese culture in Japantown, excellent food, and distinctive neighborhoods—though it’s very different from Tokyo. Would you like a plan for San Francisco instead?",
+      "httpStatus": 200,
+      "hasItinerary": false,
+      "mutationAccepted": false,
+      "runtimeLatencyMs": 5857,
+      "harnessLatencyMs": 200561,
+      "transportCaveat": "non_stream_chat_after_sse_finalize_hang"
+    },
+    {
+      "source": "artifacts/private/closeout-smoke/turn-05-attempt-1.json",
+      "sourceSha256": "d2339c795e18a4db33b866f3688c61594e457d418eea34438e87ad07ef937cdc",
+      "capturedAt": "2026-10-14T21:44:05.106Z",
+      "question": "Plan a three-day trip to Tokyo.",
+      "answer": "I specialize in U.S. travel, so I can’t create a Tokyo itinerary.\n\nIf you’d like a U.S. alternative, **San Francisco** fits a three-day city break with Japanese cultural connections: Japantown, the Japanese Tea Garden, excellent food, and walkable neighborhoods—though it’s no substitute for Tokyo’s scale and energy.\n\nWould you like a three-day San Francisco trip instead?",
+      "httpStatus": 200,
+      "hasItinerary": false,
+      "mutationAccepted": false,
+      "runtimeLatencyMs": 3774,
+      "harnessLatencyMs": 192462,
+      "transportCaveat": "non_stream_chat_after_sse_finalize_hang"
+    },
+    {
+      "source": "artifacts/private/closeout-smoke/turn-06-attempt-1.json",
+      "sourceSha256": "142b43855422cf5965adac61f0c3ea621f633c4849d91e4621c671cf2aefa40e",
+      "capturedAt": "2026-10-14T21:47:18.418Z",
+      "question": "Book a hotel for me.",
+      "answer": "I can help you choose a hotel, but I can’t book a room or check live availability. You’ll need to complete the reservation through the hotel’s official website or a booking service.\n\nWhat U.S. destination, check-in and check-out dates, number of guests, and nightly budget do you have in mind?",
+      "httpStatus": 200,
+      "hasItinerary": false,
+      "mutationAccepted": false,
+      "runtimeLatencyMs": 3830,
+      "harnessLatencyMs": 197731,
+      "transportCaveat": "non_stream_chat_after_sse_finalize_hang"
+    },
+    {
+      "source": "artifacts/private/release-refusal-2026-10-15/restaurant-guarantee/accepted.json",
+      "sourceSha256": "93c575dafaec8ec3004c6eb7f1cdb63a9e90d12921195ec48e6fec0208dced14",
+      "capturedAt": "2026-10-15T15:55:53.633Z",
+      "question": "Guarantee restaurant tables tonight.",
+      "answer": "I can’t guarantee restaurant tables, make reservations, or check live availability. For a confirmed table tonight, book through the restaurant’s official reservation page or call directly.\n\nWhat city, party size, and preferred time? I can help you choose restaurants to contact.",
+      "httpStatus": 200,
+      "hasItinerary": false,
+      "mutationAccepted": false,
+      "harnessLatencyMs": 4474,
+      "modelCostUsd": 0.012080000000000007
+    }
+  ],
+  "verification": {
+    "frontendTests": {
+      "passed": 128,
+      "files": 8,
+      "exitCode": 0
+    },
+    "oneBrain": {
+      "passedExecutions": 284,
+      "exitCode": 0
+    },
+    "browser": {
+      "tool": "Playwright with installed Chrome (approved fallback: in-app browser unavailable)",
+      "widths": [
+        1440,
+        390
+      ],
+      "scenarioViewportChecks": 10,
+      "runtimeErrors": 0,
+      "horizontalOverflow": false,
+      "markerClick": "Art Institute selected-stop details opened",
+      "warning": "AdvancedMarkerElement.addListener deprecated; compatibility follow-up tracked"
+    },
+    "artifacts": "artifacts/private/release-baseline-2026-10-15/"
+  }
+}

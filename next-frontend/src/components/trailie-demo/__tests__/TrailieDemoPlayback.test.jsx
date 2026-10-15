@@ -26,18 +26,21 @@ const ITINERARY_PLAN = {
   ],
 };
 
-/** Runs long enough for any scenario to finish typing and revealing. */
+/** Explicitly advance each question; time alone must never reveal follow-ups. */
 function runPlaybackToCompletion() {
-  act(() => {
-    vi.advanceTimersByTime(120000);
-  });
+  for (let turn = 0; turn < 3; turn += 1) {
+    act(() => { vi.advanceTimersByTime(120000); });
+    const next = screen.queryByRole('button', { name: 'Next question' });
+    if (!next) break;
+    act(() => next.click());
+  }
 }
 
 describe('TrailieDemoPlaybackStage', () => {
   afterEach(cleanup);
 
   it('offers one action panel for the latest trip in a multi-trip conversation', () => {
-    const scenario = SCENARIOS.find(item => item.id === 'yellowstone');
+    const scenario = SCENARIOS.find(item => item.id === 'wildlife');
     render(<TrailieDemoPlaybackStage scenario={scenario} completedTurns={scenario.turns} showMessagePane />);
     expect(screen.getAllByRole('button', { name: /plan my version/i })).toHaveLength(1);
     expect(screen.getAllByRole('button', { name: 'Explore this sample' })).toHaveLength(1);
@@ -65,7 +68,8 @@ describe('TrailieDemoPlaybackStage', () => {
     const card = screen.getByLabelText('Trip created');
     expect(within(card).getByText('Scenic drive')).toBeInTheDocument();
     expect(within(card).getByRole('button', { name: 'Explore this sample' })).toBeInTheDocument();
-    expect(screen.getByText('Riverside Walk')).toBeInTheDocument();
+    // Chat confirms day purpose; stop details live in the workspace.
+    expect(within(card).queryByText('Riverside Walk')).not.toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: 'Fall' })).toBeEnabled();
     expect(screen.getByText('Here you go.')).toBeInTheDocument();
   });
@@ -109,7 +113,8 @@ describe('TrailieDemoPlaybackStage', () => {
 
     expect(screen.getByLabelText('Assistant message')).toBeInTheDocument();
     expect(screen.getByLabelText('Trip created')).toBeInTheDocument();
-    expect(screen.getByText('Riverside Walk')).toBeInTheDocument();
+    expect(screen.getByText('Scenic drive')).toBeInTheDocument();
+    expect(screen.queryByText('Riverside Walk')).not.toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: 'Fall' })).toBeEnabled();
     expect(screen.queryByText('At a glance')).not.toBeInTheDocument();
   });
@@ -277,11 +282,11 @@ describe('TrailieInteractiveDemo', () => {
     render(<TrailieInteractiveDemo autoPlay={false} />);
     const tabs = screen.getAllByRole('tab');
     expect(tabs.map((t) => t.textContent)).toEqual([
-      'Where should I go?',
-      'Zion + Bryce',
-      'Is this trip realistic?',
-      'Yellowstone wildlife trip',
-      'Glacier relaxed trip',
+      'Choose a park',
+      'Plan a road trip',
+      'Wildlife & photography',
+      'Change one day',
+      'Explore a city',
     ]);
   });
 
@@ -315,16 +320,25 @@ describe('TrailieInteractiveDemo', () => {
     expect(screen.getByText(SCENARIOS[2].turns[0].question)).toBeInTheDocument();
   });
 
-  it('shows the captured Shenandoah itinerary and non-spatial experiences after discovery and comparison', () => {
+  it('shows the captured Shenandoah itinerary after discovery and comparison', () => {
     render(<TrailieInteractiveDemo />);
     runPlaybackToCompletion();
-    expect(screen.getByLabelText('Trip created')).toBeInTheDocument();
-    expect(screen.getAllByText(/Stony Man Trail/).length).toBeGreaterThan(0);
+    const card = screen.getByLabelText('Trip created');
+    expect(card).toBeInTheDocument();
     expect(screen.queryByText(/not mapped/)).not.toBeInTheDocument();
-    expect(screen.getByText('3 flexible activities aren’t shown on the map')).toBeInTheDocument();
+    // Stop details belong in the workspace, not the chat confirmation.
+    expect(within(card).queryByText(/Stony Man Trail/)).not.toBeInTheDocument();
+    HTMLDialogElement.prototype.showModal = function showModal() { this.setAttribute('open', ''); };
+    HTMLDialogElement.prototype.close = function close() { this.removeAttribute('open'); };
+    act(() => screen.getByRole('button', { name: 'Explore this sample' }).click());
+    const dialog = screen.getByRole('dialog', { name: 'Sample trip' });
+    act(() => within(dialog).getByRole('tab', { name: 'Day 4' }).click());
+    expect(within(dialog).getAllByText(/Stony Man Trail/).length).toBeGreaterThan(0);
+    delete HTMLDialogElement.prototype.showModal;
+    delete HTMLDialogElement.prototype.close;
   });
 
-  it('replays all follow-ups after restoring an incomplete cached conversation', () => {
+  it('restores a partial conversation paused, then advances only on request', () => {
     const first = render(<TrailieInteractiveDemo />);
     runPlaybackToCompletion();
     const key = 'trailie_demo_scenario_cache';
@@ -333,10 +347,33 @@ describe('TrailieInteractiveDemo', () => {
     localStorage.setItem(key, JSON.stringify(cache));
     first.unmount();
     render(<TrailieInteractiveDemo />);
+    act(() => { vi.advanceTimersByTime(120000); });
+    expect(screen.getByText(SCENARIOS[0].turns[0].question)).toBeInTheDocument();
+    expect(screen.queryByText(SCENARIOS[0].turns[1].question)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Next question' })).toBeInTheDocument();
     runPlaybackToCompletion();
     for (const turn of SCENARIOS[0].turns) {
       expect(screen.getByText(turn.question)).toBeInTheDocument();
     }
+  });
+
+  it('waits indefinitely between questions and a click reveals only the next turn', () => {
+    render(<TrailieInteractiveDemo />);
+    act(() => { vi.advanceTimersByTime(120000); });
+    expect(screen.getAllByLabelText('Assistant message')).toHaveLength(1);
+    expect(screen.getByText('Question 1 of 3')).toBeInTheDocument();
+    act(() => { vi.advanceTimersByTime(3600000); });
+    expect(screen.queryByText(SCENARIOS[0].turns[1].question)).not.toBeInTheDocument();
+    act(() => screen.getByRole('button', { name: 'Next question' }).click());
+    expect(screen.queryByRole('button', { name: 'Next question' })).not.toBeInTheDocument();
+    act(() => { vi.advanceTimersByTime(120000); });
+    expect(screen.getAllByLabelText('Assistant message')).toHaveLength(2);
+    expect(screen.getByText('Question 2 of 3')).toBeInTheDocument();
+    act(() => screen.getByRole('button', { name: 'Next question' }).click());
+    act(() => { vi.advanceTimersByTime(120000); });
+    expect(screen.getAllByLabelText('Assistant message')).toHaveLength(3);
+    expect(screen.queryByRole('button', { name: 'Next question' })).not.toBeInTheDocument();
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it('hands local preferences and the sample itinerary to a new trip without changing the fixture', () => {

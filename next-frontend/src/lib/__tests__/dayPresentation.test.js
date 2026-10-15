@@ -3,7 +3,7 @@ import playback from '@/data/trailieDemoPlayback.json';
 import samples from '@/data/public-itineraries/index.json';
 import { presentDay, restates, daypartLabel } from '@/lib/dayPresentation';
 
-const demoPlan = id => playback.scenarios.find(s => s.id === id).turns.at(-1).plan;
+const demoPlan = id => playback.scenarios.find(s => s.id === id).turns.findLast(t => t.plan).plan;
 const allDays = [
   ...playback.scenarios.flatMap(s => s.turns.flatMap(t => t.plan?.days || [])),
   ...samples.flatMap(s => s.plan.days),
@@ -11,12 +11,12 @@ const allDays = [
 
 describe('presentDay', () => {
   it('merges an outing block with its stop into one traveler-facing activity', () => {
-    const day = demoPlan('discovery').days[1];
+    const day = demoPlan('choose-park').days[3];
     const items = presentDay(day);
     const stony = items.filter(i => i.title === 'Stony Man Trail' || i.title === 'Stony Man walk and views');
     expect(stony).toHaveLength(1);
-    expect(stony[0]).toMatchObject({ type: 'activity', title: 'Stony Man Trail', duration: 100, daypart: 'Early morning' });
-    expect(stony[0].stops.map(s => s.id)).toEqual(['d2-stony']);
+    expect(stony[0]).toMatchObject({ type: 'activity', title: 'Stony Man Trail', duration: 120, daypart: 'Early morning' });
+    expect(stony[0].stops.map(s => s.id)).toEqual([day.stops[0].id]);
   });
 
   it('keeps every canonical stop exactly once and every non-outing block', () => {
@@ -37,7 +37,7 @@ describe('presentDay', () => {
   });
 
   it('prints a daypart only where it changes', () => {
-    const items = presentDay(demoPlan('zion-bryce').days[3]);
+    const items = presentDay(demoPlan('road-trip').days[3]);
     const shown = items.filter(i => i.showDaypart).map(i => i.daypart);
     shown.forEach((label, i) => expect(label).not.toBe(shown[i - 1]));
   });
