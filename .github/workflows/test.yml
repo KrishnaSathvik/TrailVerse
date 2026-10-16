@@ -135,6 +135,11 @@ jobs:
         cd next-frontend && npm ci
         cd ../server && npm ci
 
+    # Actions mounts /github/home with the host runner UID; Firefox rejects
+    # a root browser process using a home owned by a different container user.
+    - name: Align disposable container home ownership
+      run: chown "$(id -u):$(id -g)" /github/home
+
     - name: Verify preinstalled browser version
       run: node scripts/ci/verify-browser-image.mjs
 
@@ -243,6 +248,11 @@ jobs:
     - name: Install locked frontend packages without lifecycle scripts
       run: npm ci --ignore-scripts
       working-directory: next-frontend
+    # Actions mounts /github/home with the host runner UID; Firefox rejects
+    # a root browser process using a home owned by a different container user.
+    - name: Align disposable container home ownership
+      run: chown "$(id -u):$(id -g)" /github/home
+
     - name: Verify and launch all preinstalled browsers without external pages
       run: node scripts/ci/smoke-browser-image.mjs
 
