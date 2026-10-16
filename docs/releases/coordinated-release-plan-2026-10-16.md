@@ -1,5 +1,7 @@
 # Coordinated release plan — prepared, not authorized to execute
 
+**Bounded remediation outcome:** [isolated experiment results and unapproved security decision proposal](bounded-remediation-decision-2026-10-16.md). No patch adopted; 45 development findings remain after clean installs. Candidate and rollback references are unchanged.
+
 **Latest closeout:** [CI decision and prepared cancellation observation procedure](ci-and-cancellation-closeout-2026-10-16.md). Both unchanged audit gates were rerun and still fail (45 findings). No new executable candidate or hosted authorization was created.
 
 **Cancellation inspection:** [read-only hosted findings](hosted-cancellation-inspection-2026-10-16.md) confirm signal forwarding but no correlated provider-termination evidence. The older live helper uses request-close detection; the pinned candidate already uses response-close detection. No new live request was made.
