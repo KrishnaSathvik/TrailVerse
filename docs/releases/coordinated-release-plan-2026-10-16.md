@@ -1,5 +1,7 @@
 # Coordinated release plan — prepared, not authorized to execute
 
+**Latest closeout:** [CI decision and prepared cancellation observation procedure](ci-and-cancellation-closeout-2026-10-16.md). Both unchanged audit gates were rerun and still fail (45 findings). No new executable candidate or hosted authorization was created.
+
 **Cancellation inspection:** [read-only hosted findings](hosted-cancellation-inspection-2026-10-16.md) confirm signal forwarding but no correlated provider-termination evidence. The older live helper uses request-close detection; the pinned candidate already uses response-close detection. No new live request was made.
 
 **Access update:** the user added the Mac public key and SSH now succeeds with strict host verification. Live-instance checks confirmed backend Node v24.21.0 and MCP planning/general timeouts of 30s/30s. Both revisions still match the rollback table below. The access prerequisite below is resolved; application-process secret equality and correlated provider cancellation remain open. See the [runtime follow-up](remaining-release-gates-2026-10-16.md#ssh-access-follow-up).
