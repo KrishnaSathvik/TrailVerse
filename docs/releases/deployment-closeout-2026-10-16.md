@@ -42,7 +42,22 @@ The user confirmed “My Workspace” for read-only inspection. Render service/d
 - MCP `srv-d7kql4navr4c73e3gth0`: live revision `548f584a2ef0e7c5fcb900e1f518c8e707212976`, deployed July 9. Root `mcp-server`, Python requirements build, start `python -m server.main`, auto-deploy enabled on `master`.
 - These are older deployments, not the local release candidate. The backend's hosted `npm install` command also differs from the candidate blueprint's `npm ci`; the hosted value was not changed.
 
-**Still unverified:** matching hosted MCP bypass secrets, effective planning timeout of 180 seconds, backend active Node runtime, and hosted request/proxy deadlines. The connector has no environment-read operation. The separate local Render CLI/API credential returns HTTP 401 / unauthorized, including `render whoami`; browser discovery found no available signed-in browser. The user was asked to run `render login` locally without sharing secrets. Local matching secrets from October 15 are not evidence of hosted equality.
+### Authenticated Render follow-up after checkpoint `6d9548f6`
+
+Render authentication now succeeds: `render whoami` identifies the authorized account. Read-only API requests verified both services belong to the confirmed workspace before inspecting selected environment settings. Secret values were compared only in memory; no values or hashes were printed or saved.
+
+| Saved service configuration | Result |
+| --- | --- |
+| `MCP_BYPASS_KEY` on backend and MCP | Present on both; values match. |
+| MCP `PLAN_TRIP_TIMEOUT` | **30 seconds — blocker.** The candidate's default and Blueprint specify 180 seconds. An explicit hosted value of 30 overrides that default. |
+| MCP `BACKEND_TIMEOUT` | 30 seconds, matching the candidate's general-request timeout. This is separate from the planning budget. |
+| Backend service-level `NODE_VERSION` | Not set directly. This does not establish the running Node version; runtime selection or environment groups may supply it. |
+
+The compared secrets and MCP timeouts are direct service-level settings, which take precedence over linked environment groups. These findings establish saved control-plane configuration, not the environment of an already-running process. A read-only SSH attempt to inspect the running MCP timeout values reached host-key verification and failed; host-key checking was not bypassed. No remote command ran.
+
+**Required future configuration change:** set MCP service `srv-d7kql4navr4c73e3gth0`'s `PLAN_TRIP_TIMEOUT` from `30` to `180` during the authorized release process, retaining `BACKEND_TIMEOUT=30`. No hosted setting was changed in this read-only pass. A local Blueprint edit alone does not fix the existing hosted override.
+
+**Still unverified:** active-process secret equality and timeout values, backend active Node runtime, long-running hosted request/proxy deadlines, and provider cancellation. Authentication is no longer the blocker. The CI dependency gate and the confirmed saved MCP planning-timeout mismatch keep deployment on hold. The current hosted revisions remain older than the candidate.
 
 The Render environment-variable skill confirms `sync: false` only prompts on initial Blueprint creation, so checking in that declaration does not establish that an existing service has the value. Service environment reads also exclude linked environment groups; any eventual comparison must account for effective precedence. [Render API documentation](https://api-docs.render.com/reference/get-env-vars-for-service).
 
