@@ -11,19 +11,31 @@ on:
         required: false
         default: https://www.nationalparksexplorerusa.com
   push:
-    branches: [main]
+    branches: [master, main]
   pull_request:
-    branches: [main, develop]
+    branches: [master, main, develop]
 
 concurrency:
   group: ssr-audit-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  PUPPETEER_SKIP_DOWNLOAD: "true"
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+
+permissions:
+  contents: read
+  deployments: read
+  statuses: read
+
 jobs:
   ssr-audit:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

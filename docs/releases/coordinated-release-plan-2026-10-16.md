@@ -1,5 +1,11 @@
 # Coordinated release plan — prepared, not authorized to execute
 
+**Launch scope is frozen:** [three-gate launch decision](launch-decision-2026-10-16.md). Repository/CI controls, the explicit four-advisory security decision, and candidate-hosted acceptance are the remaining gates. Optional hardening does not independently expand release scope.
+
+**CI control follow-up:** [verification and local hardening](ci-control-verification-2026-10-16.md). GitHub reports the default branch is `master` and unprotected, with no rulesets. Local CI changes close source-level gaps but are not hosted evidence or an exception. A release incorporating these executable changes needs a new pinned candidate. HOLD remains in force.
+
+**Security decision review:** [temporary exception review record](security-exception-review-2026-10-16.md). Option B review is commissioned; exception activation, CI policy changes and deployment remain unapproved. This record captures exact scope, control gaps, expiry and enforcement acceptance criteria without rerunning dependency remediation.
+
 **Bounded remediation outcome:** [isolated experiment results and unapproved security decision proposal](bounded-remediation-decision-2026-10-16.md). No patch adopted; 45 development findings remain after clean installs. Candidate and rollback references are unchanged.
 
 **Latest closeout:** [CI decision and prepared cancellation observation procedure](ci-and-cancellation-closeout-2026-10-16.md). Both unchanged audit gates were rerun and still fail (45 findings). No new executable candidate or hosted authorization was created.
@@ -24,7 +30,7 @@ The frontend was deployed by CLI. The hosting response provides no source Git SH
 
 ## Gates before requesting release approval
 
-1. Resolve access: strict host verification succeeds, but Render SSH returns `Permission denied (publickey)`. Enable an existing Mac public key through Render Account Settings, or provide an authenticated Dashboard Shell. Supported browser discovery currently returns no sessions. Do not repeat fingerprint discovery, disable verification, create an ephemeral instance, or treat CLI API authentication as SSH access.
+1. Access resolved: strict-host-verification SSH succeeded after the user registered the existing Mac public key. Do not reopen this prerequisite without a new observed access failure. Candidate-process checks below remain distinct from access.
 2. Inspect the running processes: backend Node version and revision, MCP revision and effective planning/general timeouts, actual backend destination, and bypass-secret equality without logging values or hashes. Saved environment equality is already verified; it is distinct from running-process equality.
 3. Resolve the development audit gate: 31 backend plus 14 frontend findings remain. Keep `npm audit --audit-level moderate` unchanged. Use a reviewed compatible dependency resolution, or obtain a separate explicit policy decision; applicability notes alone are insufficient. No further speculative override is part of this plan.
 4. Finish deadline and provider-cancellation evidence per the separate paths below. Any candidate-hosted acceptance environment must be separately authorized: production remains on hold, and this plan does not create preview services or publish code.
@@ -55,4 +61,4 @@ Any incorrect revision/runtime, secret mismatch, failed health/contract check, p
 
 ## Scope and evidence
 
-This pass changed documentation only. No application architecture, dependency versions, timeout values, SSH account keys, hosted services or CI policy were changed. Runtime access remains blocked; provider cancellation remains unverified. See [focused gate report](remaining-release-gates-2026-10-16.md) for prior dependency validation and [closeout report](deployment-closeout-2026-10-16.md) for local build and short hosted streaming evidence.
+The original release-plan pass changed documentation only. Subsequent local CI/script changes are recorded in the linked control report and require a new candidate if adopted. Runtime access is resolved; candidate-hosted provider cancellation remains unverified. No hosted setting or deployed CI policy has changed. See [focused gate report](remaining-release-gates-2026-10-16.md) for prior dependency validation and [closeout report](deployment-closeout-2026-10-16.md) for local build and short hosted streaming evidence.

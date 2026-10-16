@@ -4,26 +4,34 @@ name: Trailie One-Brain
 
 on:
   push:
-    branches: [main, develop]
+    branches: [master, main, develop]
   pull_request:
-    branches: [main, develop]
+    branches: [master, main, develop]
 
 concurrency:
   group: trailie-one-brain-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
+  PUPPETEER_SKIP_DOWNLOAD: "true"
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
   NODE_ENV: test
   JWT_SECRET: test_jwt_secret_one_brain
   CLIENT_URL: http://localhost:3000
   TRAILIE_TEST_PROVIDER_MODE: deny_live
 
+permissions:
+  contents: read
+
 jobs:
   runtime-isolation:
     name: runtime-isolation
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -45,8 +53,11 @@ jobs:
   canonical-commit:
     name: canonical-commit
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -73,8 +84,11 @@ jobs:
   truth-boundary:
     name: truth-boundary
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -90,8 +104,11 @@ jobs:
   mcp-parity:
     name: mcp-parity
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -109,8 +126,11 @@ jobs:
   public-export-parity:
     name: public-export-parity
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -134,8 +154,11 @@ jobs:
   schema-version:
     name: schema-version
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -172,8 +195,11 @@ jobs:
   sample-verification:
     name: sample-verification
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -189,8 +215,11 @@ jobs:
   demo-contract:
     name: demo-contract
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -206,6 +235,7 @@ jobs:
   one-brain-gate:
     name: Trailie One-Brain — PASS
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs:
       - runtime-isolation
       - canonical-commit
