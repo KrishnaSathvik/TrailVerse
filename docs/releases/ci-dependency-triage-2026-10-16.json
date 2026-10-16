@@ -1,0 +1,1525 @@
+{
+  "date": "2026-10-16",
+  "gate": "npm audit --audit-level moderate; unchanged; currently failing",
+  "originalPackageTreeFindings": 69,
+  "resolvedPackageTreeFindings": 19,
+  "findings": [
+    {
+      "scope": "server",
+      "package": "@istanbuljs/load-nyc-config",
+      "originalSeverity": "moderate",
+      "originalNodes": [
+        "node_modules/@istanbuljs/load-nyc-config"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "sprintf-js",
+          "advisory": "https://github.com/advisories/GHSA-hp3w-g68c-fv3c",
+          "title": "sprintf-js vulnerable to denial of service through unbounded precision specifiers"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "moderate"
+    },
+    {
+      "scope": "server",
+      "package": "@jest/console",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/@jest/console"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "server",
+      "package": "@jest/core",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/@jest/core"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        },
+        {
+          "package": "sprintf-js",
+          "advisory": "https://github.com/advisories/GHSA-hp3w-g68c-fv3c",
+          "title": "sprintf-js vulnerable to denial of service through unbounded precision specifiers"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "server",
+      "package": "@jest/environment",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/@jest/environment"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "server",
+      "package": "@jest/expect",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/@jest/expect"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        },
+        {
+          "package": "sprintf-js",
+          "advisory": "https://github.com/advisories/GHSA-hp3w-g68c-fv3c",
+          "title": "sprintf-js vulnerable to denial of service through unbounded precision specifiers"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "server",
+      "package": "@jest/fake-timers",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/@jest/fake-timers"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "server",
+      "package": "@jest/globals",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/@jest/globals"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        },
+        {
+          "package": "sprintf-js",
+          "advisory": "https://github.com/advisories/GHSA-hp3w-g68c-fv3c",
+          "title": "sprintf-js vulnerable to denial of service through unbounded precision specifiers"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "server",
+      "package": "@jest/reporters",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/@jest/reporters"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        },
+        {
+          "package": "sprintf-js",
+          "advisory": "https://github.com/advisories/GHSA-hp3w-g68c-fv3c",
+          "title": "sprintf-js vulnerable to denial of service through unbounded precision specifiers"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "server",
+      "package": "@jest/test-result",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/@jest/test-result"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "server",
+      "package": "@jest/test-sequencer",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/@jest/test-sequencer"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "server",
+      "package": "@jest/transform",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/@jest/transform"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "sprintf-js",
+          "advisory": "https://github.com/advisories/GHSA-hp3w-g68c-fv3c",
+          "title": "sprintf-js vulnerable to denial of service through unbounded precision specifiers"
+        },
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "server",
+      "package": "@types/jest",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/@types/jest"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "server",
+      "package": "argparse",
+      "originalSeverity": "moderate",
+      "originalNodes": [
+        "node_modules/argparse"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "sprintf-js",
+          "advisory": "https://github.com/advisories/GHSA-hp3w-g68c-fv3c",
+          "title": "sprintf-js vulnerable to denial of service through unbounded precision specifiers"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "moderate"
+    },
+    {
+      "scope": "server",
+      "package": "babel-jest",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/babel-jest"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "sprintf-js",
+          "advisory": "https://github.com/advisories/GHSA-hp3w-g68c-fv3c",
+          "title": "sprintf-js vulnerable to denial of service through unbounded precision specifiers"
+        },
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "server",
+      "package": "babel-plugin-istanbul",
+      "originalSeverity": "moderate",
+      "originalNodes": [
+        "node_modules/babel-plugin-istanbul"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "sprintf-js",
+          "advisory": "https://github.com/advisories/GHSA-hp3w-g68c-fv3c",
+          "title": "sprintf-js vulnerable to denial of service through unbounded precision specifiers"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "moderate"
+    },
+    {
+      "scope": "server",
+      "package": "braces",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/braces"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "server",
+      "package": "chokidar",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/chokidar"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "server",
+      "package": "create-jest",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/create-jest"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        },
+        {
+          "package": "sprintf-js",
+          "advisory": "https://github.com/advisories/GHSA-hp3w-g68c-fv3c",
+          "title": "sprintf-js vulnerable to denial of service through unbounded precision specifiers"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "server",
+      "package": "expect",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/expect"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "server",
+      "package": "jest",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/jest"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        },
+        {
+          "package": "sprintf-js",
+          "advisory": "https://github.com/advisories/GHSA-hp3w-g68c-fv3c",
+          "title": "sprintf-js vulnerable to denial of service through unbounded precision specifiers"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "server",
+      "package": "jest-circus",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/jest-circus"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        },
+        {
+          "package": "sprintf-js",
+          "advisory": "https://github.com/advisories/GHSA-hp3w-g68c-fv3c",
+          "title": "sprintf-js vulnerable to denial of service through unbounded precision specifiers"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "server",
+      "package": "jest-cli",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/jest-cli"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        },
+        {
+          "package": "sprintf-js",
+          "advisory": "https://github.com/advisories/GHSA-hp3w-g68c-fv3c",
+          "title": "sprintf-js vulnerable to denial of service through unbounded precision specifiers"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "server",
+      "package": "jest-config",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/jest-config"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        },
+        {
+          "package": "sprintf-js",
+          "advisory": "https://github.com/advisories/GHSA-hp3w-g68c-fv3c",
+          "title": "sprintf-js vulnerable to denial of service through unbounded precision specifiers"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "server",
+      "package": "jest-environment-node",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/jest-environment-node"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "server",
+      "package": "jest-haste-map",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/jest-haste-map"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "server",
+      "package": "jest-message-util",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/jest-message-util"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "server",
+      "package": "jest-resolve",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/jest-resolve"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "server",
+      "package": "jest-resolve-dependencies",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/jest-resolve-dependencies"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "sprintf-js",
+          "advisory": "https://github.com/advisories/GHSA-hp3w-g68c-fv3c",
+          "title": "sprintf-js vulnerable to denial of service through unbounded precision specifiers"
+        },
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "server",
+      "package": "jest-runner",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/jest-runner"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        },
+        {
+          "package": "sprintf-js",
+          "advisory": "https://github.com/advisories/GHSA-hp3w-g68c-fv3c",
+          "title": "sprintf-js vulnerable to denial of service through unbounded precision specifiers"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "server",
+      "package": "jest-runtime",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/jest-runtime"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        },
+        {
+          "package": "sprintf-js",
+          "advisory": "https://github.com/advisories/GHSA-hp3w-g68c-fv3c",
+          "title": "sprintf-js vulnerable to denial of service through unbounded precision specifiers"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "server",
+      "package": "jest-snapshot",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/jest-snapshot"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "sprintf-js",
+          "advisory": "https://github.com/advisories/GHSA-hp3w-g68c-fv3c",
+          "title": "sprintf-js vulnerable to denial of service through unbounded precision specifiers"
+        },
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "server",
+      "package": "jest-watcher",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/jest-watcher"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "server",
+      "package": "js-yaml",
+      "originalSeverity": "moderate",
+      "originalNodes": [
+        "node_modules/js-yaml"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "sprintf-js",
+          "advisory": "https://github.com/advisories/GHSA-hp3w-g68c-fv3c",
+          "title": "sprintf-js vulnerable to denial of service through unbounded precision specifiers"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "moderate"
+    },
+    {
+      "scope": "server",
+      "package": "micromatch",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/micromatch"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "server",
+      "package": "nodemon",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/nodemon"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "server",
+      "package": "picomatch",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/picomatch"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "picomatch",
+          "advisory": "https://github.com/advisories/GHSA-3v7f-55p6-f55p",
+          "title": "Picomatch: Method Injection in POSIX Character Classes causes incorrect Glob Matching"
+        },
+        {
+          "package": "picomatch",
+          "advisory": "https://github.com/advisories/GHSA-c2c7-rcm5-vvqj",
+          "title": "Picomatch has a ReDoS vulnerability via extglob quantifiers"
+        }
+      ],
+      "status": "resolved_in_updated_lockfile",
+      "remainingSeverity": null
+    },
+    {
+      "scope": "server",
+      "package": "sprintf-js",
+      "originalSeverity": "moderate",
+      "originalNodes": [
+        "node_modules/sprintf-js"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "sprintf-js",
+          "advisory": "https://github.com/advisories/GHSA-hp3w-g68c-fv3c",
+          "title": "sprintf-js vulnerable to denial of service through unbounded precision specifiers"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "moderate"
+    },
+    {
+      "scope": "server",
+      "package": "yauzl",
+      "originalSeverity": "moderate",
+      "originalNodes": [
+        "node_modules/yauzl"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "yauzl",
+          "advisory": "https://github.com/advisories/GHSA-gmq8-994r-jv83",
+          "title": "yauzl contains an off-by-one error"
+        }
+      ],
+      "status": "resolved_in_updated_lockfile",
+      "remainingSeverity": null
+    },
+    {
+      "scope": "frontend",
+      "package": "@babel/core",
+      "originalSeverity": "low",
+      "originalNodes": [
+        "node_modules/@babel/core"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "@babel/core",
+          "advisory": "https://github.com/advisories/GHSA-4x5r-pxfx-6jf8",
+          "title": "@babel/core: Arbitrary File Read via sourceMappingURL Comment"
+        }
+      ],
+      "status": "resolved_in_updated_lockfile",
+      "remainingSeverity": null
+    },
+    {
+      "scope": "frontend",
+      "package": "@humanfs/node",
+      "originalSeverity": "moderate",
+      "originalNodes": [
+        "node_modules/@humanfs/node"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "@humanfs/node",
+          "advisory": "https://github.com/advisories/GHSA-p498-v437-472g",
+          "title": "humanfs: Recursive copy follows symlinked files and copies data from outside the source tree"
+        }
+      ],
+      "status": "resolved_in_updated_lockfile",
+      "remainingSeverity": null
+    },
+    {
+      "scope": "frontend",
+      "package": "@lhci/cli",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/@lhci/cli"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "extract-zip",
+          "advisory": "https://github.com/advisories/GHSA-jmr9-qjv8-65gv",
+          "title": "extract-zip unvalidated symlink path traversal"
+        },
+        {
+          "package": "extract-zip",
+          "advisory": "https://github.com/advisories/GHSA-7pqw-9j4j-h8q3",
+          "title": "extract-zip allows arbitrary file writes through symlink archive entries"
+        },
+        {
+          "package": "tmp",
+          "advisory": "https://github.com/advisories/GHSA-52f5-9888-hmc6",
+          "title": "tmp allows arbitrary temporary file / directory write via symbolic link `dir` parameter"
+        },
+        {
+          "package": "tmp",
+          "advisory": "https://github.com/advisories/GHSA-ph9p-34f9-6g65",
+          "title": "tmp has Path Traversal via unsanitized prefix/postfix that enables directory escape"
+        },
+        {
+          "package": "uuid",
+          "advisory": "https://github.com/advisories/GHSA-w5hq-g745-h8pq",
+          "title": "uuid: Missing buffer bounds check in v3/v5/v6 when buf is provided"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "frontend",
+      "package": "@lhci/utils",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/@lhci/utils"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "extract-zip",
+          "advisory": "https://github.com/advisories/GHSA-jmr9-qjv8-65gv",
+          "title": "extract-zip unvalidated symlink path traversal"
+        },
+        {
+          "package": "extract-zip",
+          "advisory": "https://github.com/advisories/GHSA-7pqw-9j4j-h8q3",
+          "title": "extract-zip allows arbitrary file writes through symlink archive entries"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "frontend",
+      "package": "@next/eslint-plugin-next",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/@next/eslint-plugin-next"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "frontend",
+      "package": "@puppeteer/browsers",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/@puppeteer/browsers"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "extract-zip",
+          "advisory": "https://github.com/advisories/GHSA-jmr9-qjv8-65gv",
+          "title": "extract-zip unvalidated symlink path traversal"
+        },
+        {
+          "package": "extract-zip",
+          "advisory": "https://github.com/advisories/GHSA-7pqw-9j4j-h8q3",
+          "title": "extract-zip allows arbitrary file writes through symlink archive entries"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "frontend",
+      "package": "@serwist/turbopack",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/@serwist/turbopack"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "browserslist",
+          "advisory": "https://github.com/advisories/GHSA-c83g-rgw3-j3cx",
+          "title": "Browserslist: Unbounded memory growth (no cache eviction) via distinct query results, leading to eventual OOM"
+        },
+        {
+          "package": "browserslist",
+          "advisory": "https://github.com/advisories/GHSA-73wf-gq98-2v4g",
+          "title": "Browserslist: Uncaught crash / prototype write via untrusted browserslist-stats.json custom stats (normalizeStats)"
+        }
+      ],
+      "status": "resolved_in_updated_lockfile",
+      "remainingSeverity": null
+    },
+    {
+      "scope": "frontend",
+      "package": "argparse",
+      "originalSeverity": "moderate",
+      "originalNodes": [
+        "node_modules/@lhci/utils/node_modules/argparse"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "sprintf-js",
+          "advisory": "https://github.com/advisories/GHSA-hp3w-g68c-fv3c",
+          "title": "sprintf-js vulnerable to denial of service through unbounded precision specifiers"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "moderate"
+    },
+    {
+      "scope": "frontend",
+      "package": "basic-ftp",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/basic-ftp"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "basic-ftp",
+          "advisory": "https://github.com/advisories/GHSA-6v7q-wjvx-w8wg",
+          "title": "basic-ftp: Incomplete CRLF Injection Protection Allows Arbitrary FTP Command Execution via Credentials and MKD Commands"
+        },
+        {
+          "package": "basic-ftp",
+          "advisory": "https://github.com/advisories/GHSA-chqc-8p9q-pq6q",
+          "title": "basic-ftp has FTP Command Injection via CRLF"
+        },
+        {
+          "package": "basic-ftp",
+          "advisory": "https://github.com/advisories/GHSA-rp42-5vxx-qpwr",
+          "title": "basic-ftp vulnerable to denial of service via unbounded memory consumption in Client.list()"
+        },
+        {
+          "package": "basic-ftp",
+          "advisory": "https://github.com/advisories/GHSA-rpmf-866q-6p89",
+          "title": "basic-ftp allows a malicious FTP server to cause client-side denial of service via unbounded multiline control response buffering"
+        },
+        {
+          "package": "basic-ftp",
+          "advisory": "https://github.com/advisories/GHSA-c475-qrg2-pj4r",
+          "title": "basic-ftp: Quadratic-time CPU denial of service in Client.list() Unix directory-listing parser (RE_LINE backtracking)"
+        }
+      ],
+      "status": "resolved_in_updated_lockfile",
+      "remainingSeverity": null
+    },
+    {
+      "scope": "frontend",
+      "package": "body-parser",
+      "originalSeverity": "low",
+      "originalNodes": [
+        "node_modules/body-parser"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "body-parser",
+          "advisory": "https://github.com/advisories/GHSA-v422-hmwv-36x6",
+          "title": "body-parser vulnerable to denial of service when invalid limit value silently disables size enforcement"
+        }
+      ],
+      "status": "resolved_in_updated_lockfile",
+      "remainingSeverity": null
+    },
+    {
+      "scope": "frontend",
+      "package": "brace-expansion",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/@serwist/build/node_modules/brace-expansion",
+        "node_modules/@typescript-eslint/typescript-estree/node_modules/brace-expansion",
+        "node_modules/brace-expansion"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "brace-expansion",
+          "advisory": "https://github.com/advisories/GHSA-jxxr-4gwj-5jf2",
+          "title": "brace-expansion: Large numeric range defeats documented `max` DoS protection"
+        },
+        {
+          "package": "brace-expansion",
+          "advisory": "https://github.com/advisories/GHSA-3jxr-9vmj-r5cp",
+          "title": "brace-expansion: DoS via exponential-time expansion of consecutive non-expanding {} groups"
+        },
+        {
+          "package": "brace-expansion",
+          "advisory": "https://github.com/advisories/GHSA-3jxr-9vmj-r5cp",
+          "title": "brace-expansion: DoS via exponential-time expansion of consecutive non-expanding {} groups"
+        },
+        {
+          "package": "brace-expansion",
+          "advisory": "https://github.com/advisories/GHSA-3jxr-9vmj-r5cp",
+          "title": "brace-expansion: DoS via exponential-time expansion of consecutive non-expanding {} groups"
+        },
+        {
+          "package": "brace-expansion",
+          "advisory": "https://github.com/advisories/GHSA-mh99-v99m-4gvg",
+          "title": "brace-expansion: DoS via unbounded expansion length causing an out-of-memory process crash"
+        },
+        {
+          "package": "brace-expansion",
+          "advisory": "https://github.com/advisories/GHSA-mh99-v99m-4gvg",
+          "title": "brace-expansion: DoS via unbounded expansion length causing an out-of-memory process crash"
+        },
+        {
+          "package": "brace-expansion",
+          "advisory": "https://github.com/advisories/GHSA-mh99-v99m-4gvg",
+          "title": "brace-expansion: DoS via unbounded expansion length causing an out-of-memory process crash"
+        },
+        {
+          "package": "brace-expansion",
+          "advisory": "https://github.com/advisories/GHSA-rgw5-rvv9-x895",
+          "title": "brace-expansion: DoS via unbounded intermediate arrays, bypassing the CVE-2026-14257 mitigation"
+        },
+        {
+          "package": "brace-expansion",
+          "advisory": "https://github.com/advisories/GHSA-rgw5-rvv9-x895",
+          "title": "brace-expansion: DoS via unbounded intermediate arrays, bypassing the CVE-2026-14257 mitigation"
+        },
+        {
+          "package": "brace-expansion",
+          "advisory": "https://github.com/advisories/GHSA-rgw5-rvv9-x895",
+          "title": "brace-expansion: DoS via unbounded intermediate arrays, bypassing the CVE-2026-14257 mitigation"
+        },
+        {
+          "package": "brace-expansion",
+          "advisory": "https://github.com/advisories/GHSA-q2hr-2g5m-vwhr",
+          "title": "brace-expansion: Quadratic-time expansion of the `{a},b}` rewrite causes CPU denial of service"
+        },
+        {
+          "package": "brace-expansion",
+          "advisory": "https://github.com/advisories/GHSA-q2hr-2g5m-vwhr",
+          "title": "brace-expansion: Quadratic-time expansion of the `{a},b}` rewrite causes CPU denial of service"
+        },
+        {
+          "package": "brace-expansion",
+          "advisory": "https://github.com/advisories/GHSA-q2hr-2g5m-vwhr",
+          "title": "brace-expansion: Quadratic-time expansion of the `{a},b}` rewrite causes CPU denial of service"
+        },
+        {
+          "package": "brace-expansion",
+          "advisory": "https://github.com/advisories/GHSA-qhr7-859c-m2p7",
+          "title": "brace-expansion: DoS via uncontrolled recursion on nested brace groups causing stack exhaustion"
+        },
+        {
+          "package": "brace-expansion",
+          "advisory": "https://github.com/advisories/GHSA-qhr7-859c-m2p7",
+          "title": "brace-expansion: DoS via uncontrolled recursion on nested brace groups causing stack exhaustion"
+        },
+        {
+          "package": "brace-expansion",
+          "advisory": "https://github.com/advisories/GHSA-qhr7-859c-m2p7",
+          "title": "brace-expansion: DoS via uncontrolled recursion on nested brace groups causing stack exhaustion"
+        },
+        {
+          "package": "brace-expansion",
+          "advisory": "https://github.com/advisories/GHSA-6j4f-fj2g-mc7p",
+          "title": "brace-expansion: DoS via uncontrolled recursion in parseCommaParts causing stack exhaustion"
+        },
+        {
+          "package": "brace-expansion",
+          "advisory": "https://github.com/advisories/GHSA-6j4f-fj2g-mc7p",
+          "title": "brace-expansion: DoS via uncontrolled recursion in parseCommaParts causing stack exhaustion"
+        },
+        {
+          "package": "brace-expansion",
+          "advisory": "https://github.com/advisories/GHSA-6j4f-fj2g-mc7p",
+          "title": "brace-expansion: DoS via uncontrolled recursion in parseCommaParts causing stack exhaustion"
+        }
+      ],
+      "status": "resolved_in_updated_lockfile",
+      "remainingSeverity": null
+    },
+    {
+      "scope": "frontend",
+      "package": "braces",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/braces"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "frontend",
+      "package": "browserslist",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/browserslist"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "browserslist",
+          "advisory": "https://github.com/advisories/GHSA-c83g-rgw3-j3cx",
+          "title": "Browserslist: Unbounded memory growth (no cache eviction) via distinct query results, leading to eventual OOM"
+        },
+        {
+          "package": "browserslist",
+          "advisory": "https://github.com/advisories/GHSA-73wf-gq98-2v4g",
+          "title": "Browserslist: Uncaught crash / prototype write via untrusted browserslist-stats.json custom stats (normalizeStats)"
+        }
+      ],
+      "status": "resolved_in_updated_lockfile",
+      "remainingSeverity": null
+    },
+    {
+      "scope": "frontend",
+      "package": "compression",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/compression"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "compression",
+          "advisory": "https://github.com/advisories/GHSA-vc2v-76pw-4v95",
+          "title": "compression vulnerable to Denial of Service via memory leak on premature response close"
+        }
+      ],
+      "status": "resolved_in_updated_lockfile",
+      "remainingSeverity": null
+    },
+    {
+      "scope": "frontend",
+      "package": "esbuild",
+      "originalSeverity": "low",
+      "originalNodes": [
+        "node_modules/esbuild"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "esbuild",
+          "advisory": "https://github.com/advisories/GHSA-g7r4-m6w7-qqqr",
+          "title": "esbuild allows arbitrary file read when running the development server on Windows"
+        }
+      ],
+      "status": "resolved_in_updated_lockfile",
+      "remainingSeverity": null
+    },
+    {
+      "scope": "frontend",
+      "package": "eslint-config-next",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/eslint-config-next"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "frontend",
+      "package": "external-editor",
+      "originalSeverity": "low",
+      "originalNodes": [
+        "node_modules/external-editor"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "tmp",
+          "advisory": "https://github.com/advisories/GHSA-52f5-9888-hmc6",
+          "title": "tmp allows arbitrary temporary file / directory write via symbolic link `dir` parameter"
+        },
+        {
+          "package": "tmp",
+          "advisory": "https://github.com/advisories/GHSA-ph9p-34f9-6g65",
+          "title": "tmp has Path Traversal via unsanitized prefix/postfix that enables directory escape"
+        }
+      ],
+      "status": "resolved_in_updated_lockfile",
+      "remainingSeverity": null
+    },
+    {
+      "scope": "frontend",
+      "package": "extract-zip",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/extract-zip"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "extract-zip",
+          "advisory": "https://github.com/advisories/GHSA-jmr9-qjv8-65gv",
+          "title": "extract-zip unvalidated symlink path traversal"
+        },
+        {
+          "package": "extract-zip",
+          "advisory": "https://github.com/advisories/GHSA-7pqw-9j4j-h8q3",
+          "title": "extract-zip allows arbitrary file writes through symlink archive entries"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "frontend",
+      "package": "fast-glob",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/fast-glob"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "frontend",
+      "package": "inquirer",
+      "originalSeverity": "low",
+      "originalNodes": [
+        "node_modules/inquirer"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "tmp",
+          "advisory": "https://github.com/advisories/GHSA-52f5-9888-hmc6",
+          "title": "tmp allows arbitrary temporary file / directory write via symbolic link `dir` parameter"
+        },
+        {
+          "package": "tmp",
+          "advisory": "https://github.com/advisories/GHSA-ph9p-34f9-6g65",
+          "title": "tmp has Path Traversal via unsanitized prefix/postfix that enables directory escape"
+        }
+      ],
+      "status": "resolved_in_updated_lockfile",
+      "remainingSeverity": null
+    },
+    {
+      "scope": "frontend",
+      "package": "ip-address",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/ip-address"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "ip-address",
+          "advisory": "https://github.com/advisories/GHSA-v2v4-37r5-5v8g",
+          "title": "ip-address has XSS in Address6 HTML-emitting methods"
+        },
+        {
+          "package": "ip-address",
+          "advisory": "https://github.com/advisories/GHSA-mwp4-54f8-5fhr",
+          "title": "ip-address: Address4 decodes leading-zero octets as decimal while resolvers decode them as octal, allowing SSRF and trust-boundary bypass"
+        },
+        {
+          "package": "ip-address",
+          "advisory": "https://github.com/advisories/GHSA-rpw4-54j3-4h4q",
+          "title": "ip-address: Address6.isLinkLocal() recognizes fe80::/64 rather than fe80::/10, allowing SSRF and trust-boundary bypass to on-link hosts"
+        },
+        {
+          "package": "ip-address",
+          "advisory": "https://github.com/advisories/GHSA-j6r3-76f7-8jcv",
+          "title": "ip-address: isInSubnet() and isHostInSubnet() compare addresses of different families as if they shared an address space, allowing an allowlist check to admit an address outside its range"
+        },
+        {
+          "package": "ip-address",
+          "advisory": "https://github.com/advisories/GHSA-h3mg-xc3c-68pw",
+          "title": "ip-address: Address6 builds a parse diagnostic proportional to the input with no length bound, allowing a single long string to stall or crash the process"
+        }
+      ],
+      "status": "resolved_in_updated_lockfile",
+      "remainingSeverity": null
+    },
+    {
+      "scope": "frontend",
+      "package": "js-yaml",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/@lhci/utils/node_modules/js-yaml",
+        "node_modules/js-yaml"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "js-yaml",
+          "advisory": "https://github.com/advisories/GHSA-h67p-54hq-rp68",
+          "title": "JS-YAML: Quadratic-complexity DoS in merge key handling via repeated aliases"
+        },
+        {
+          "package": "js-yaml",
+          "advisory": "https://github.com/advisories/GHSA-h67p-54hq-rp68",
+          "title": "JS-YAML: Quadratic-complexity DoS in merge key handling via repeated aliases"
+        },
+        {
+          "package": "js-yaml",
+          "advisory": "https://github.com/advisories/GHSA-52cp-r559-cp3m",
+          "title": "js-yaml: YAML merge-key chains can force quadratic CPU consumption"
+        },
+        {
+          "package": "js-yaml",
+          "advisory": "https://github.com/advisories/GHSA-52cp-r559-cp3m",
+          "title": "js-yaml: YAML merge-key chains can force quadratic CPU consumption"
+        },
+        {
+          "package": "js-yaml",
+          "advisory": "https://github.com/advisories/GHSA-5p4m-2wfm-xmqj",
+          "title": "JS-YAML: Quadratic CPU consumption in !!omap resolution (3.x and 4.x) \u2014 CVE-2026-59870 fix not backported"
+        },
+        {
+          "package": "js-yaml",
+          "advisory": "https://github.com/advisories/GHSA-5p4m-2wfm-xmqj",
+          "title": "JS-YAML: Quadratic CPU consumption in !!omap resolution (3.x and 4.x) \u2014 CVE-2026-59870 fix not backported"
+        },
+        {
+          "package": "js-yaml",
+          "advisory": "https://github.com/advisories/GHSA-2883-xcg3-v3hh",
+          "title": "js-yaml: maxTotalMergeKeys does not limit CPU use for empty merge sources"
+        },
+        {
+          "package": "js-yaml",
+          "advisory": "https://github.com/advisories/GHSA-2883-xcg3-v3hh",
+          "title": "js-yaml: maxTotalMergeKeys does not limit CPU use for empty merge sources"
+        },
+        {
+          "package": "sprintf-js",
+          "advisory": "https://github.com/advisories/GHSA-hp3w-g68c-fv3c",
+          "title": "sprintf-js vulnerable to denial of service through unbounded precision specifiers"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "moderate"
+    },
+    {
+      "scope": "frontend",
+      "package": "lighthouse",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/lighthouse"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "extract-zip",
+          "advisory": "https://github.com/advisories/GHSA-jmr9-qjv8-65gv",
+          "title": "extract-zip unvalidated symlink path traversal"
+        },
+        {
+          "package": "extract-zip",
+          "advisory": "https://github.com/advisories/GHSA-7pqw-9j4j-h8q3",
+          "title": "extract-zip allows arbitrary file writes through symlink archive entries"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "frontend",
+      "package": "lodash",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/lodash"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "lodash",
+          "advisory": "https://github.com/advisories/GHSA-r5fr-rjxr-66jc",
+          "title": "lodash vulnerable to Code Injection via `_.template` imports key names"
+        },
+        {
+          "package": "lodash",
+          "advisory": "https://github.com/advisories/GHSA-f23m-r3pf-42rh",
+          "title": "lodash vulnerable to Prototype Pollution via array path bypass in `_.unset` and `_.omit`"
+        }
+      ],
+      "status": "resolved_in_updated_lockfile",
+      "remainingSeverity": null
+    },
+    {
+      "scope": "frontend",
+      "package": "lodash-es",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/lodash-es"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "lodash-es",
+          "advisory": "https://github.com/advisories/GHSA-r5fr-rjxr-66jc",
+          "title": "lodash vulnerable to Code Injection via `_.template` imports key names"
+        },
+        {
+          "package": "lodash-es",
+          "advisory": "https://github.com/advisories/GHSA-f23m-r3pf-42rh",
+          "title": "lodash vulnerable to Prototype Pollution via array path bypass in `_.unset` and `_.omit`"
+        }
+      ],
+      "status": "resolved_in_updated_lockfile",
+      "remainingSeverity": null
+    },
+    {
+      "scope": "frontend",
+      "package": "micromatch",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/micromatch"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "braces",
+          "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "title": "braces vulnerable to stack-exhaustion denial of service through deeply nested patterns"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "frontend",
+      "package": "puppeteer-core",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/puppeteer-core"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "extract-zip",
+          "advisory": "https://github.com/advisories/GHSA-jmr9-qjv8-65gv",
+          "title": "extract-zip unvalidated symlink path traversal"
+        },
+        {
+          "package": "extract-zip",
+          "advisory": "https://github.com/advisories/GHSA-7pqw-9j4j-h8q3",
+          "title": "extract-zip allows arbitrary file writes through symlink archive entries"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "high"
+    },
+    {
+      "scope": "frontend",
+      "package": "qs",
+      "originalSeverity": "moderate",
+      "originalNodes": [
+        "node_modules/qs"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "qs",
+          "advisory": "https://github.com/advisories/GHSA-q8mj-m7cp-5q26",
+          "title": "qs has a remotely triggerable DoS: qs.stringify crashes with TypeError on null/undefined entries in comma-format arrays when encodeValuesOnly is set"
+        },
+        {
+          "package": "qs",
+          "advisory": "https://github.com/advisories/GHSA-x5fp-wj9c-mxmx",
+          "title": "qs array-limit bypass via bracket-key comma parsing"
+        },
+        {
+          "package": "qs",
+          "advisory": "https://github.com/advisories/GHSA-4mjr-xmp4-gh2g",
+          "title": "qs: Denial of Service via Attacker Controlled isBuffer"
+        }
+      ],
+      "status": "resolved_in_updated_lockfile",
+      "remainingSeverity": null
+    },
+    {
+      "scope": "frontend",
+      "package": "sprintf-js",
+      "originalSeverity": "moderate",
+      "originalNodes": [
+        "node_modules/sprintf-js"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "sprintf-js",
+          "advisory": "https://github.com/advisories/GHSA-hp3w-g68c-fv3c",
+          "title": "sprintf-js vulnerable to denial of service through unbounded precision specifiers"
+        }
+      ],
+      "status": "still_reported",
+      "remainingSeverity": "moderate"
+    },
+    {
+      "scope": "frontend",
+      "package": "tmp",
+      "originalSeverity": "high",
+      "originalNodes": [
+        "node_modules/external-editor/node_modules/tmp",
+        "node_modules/tmp"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "tmp",
+          "advisory": "https://github.com/advisories/GHSA-52f5-9888-hmc6",
+          "title": "tmp allows arbitrary temporary file / directory write via symbolic link `dir` parameter"
+        },
+        {
+          "package": "tmp",
+          "advisory": "https://github.com/advisories/GHSA-ph9p-34f9-6g65",
+          "title": "tmp has Path Traversal via unsanitized prefix/postfix that enables directory escape"
+        }
+      ],
+      "status": "resolved_in_updated_lockfile",
+      "remainingSeverity": null
+    },
+    {
+      "scope": "frontend",
+      "package": "uuid",
+      "originalSeverity": "moderate",
+      "originalNodes": [
+        "node_modules/uuid"
+      ],
+      "originalRootAdvisories": [
+        {
+          "package": "uuid",
+          "advisory": "https://github.com/advisories/GHSA-w5hq-g745-h8pq",
+          "title": "uuid: Missing buffer bounds check in v3/v5/v6 when buf is provided"
+        }
+      ],
+      "status": "resolved_in_updated_lockfile",
+      "remainingSeverity": null
+    }
+  ]
+}
