@@ -82,6 +82,9 @@
     "validator": "^13.15.15"
   },
   "overrides": {
+    "@istanbuljs/load-nyc-config": {
+      "js-yaml": "4.3.2"
+    },
     "validator": "^13.15.15",
     "express-validator": {
       "validator": "^13.15.15"

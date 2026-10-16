@@ -2,7 +2,7 @@
   "date": "2026-10-16",
   "gate": "npm audit --audit-level moderate; unchanged; currently failing",
   "originalPackageTreeFindings": 69,
-  "resolvedPackageTreeFindings": 19,
+  "resolvedPackageTreeFindings": 24,
   "findings": [
     {
       "scope": "server",
@@ -18,8 +18,7 @@
           "title": "sprintf-js vulnerable to denial of service through unbounded precision specifiers"
         }
       ],
-      "status": "still_reported",
-      "remainingSeverity": "moderate"
+      "status": "resolved"
     },
     {
       "scope": "server",
@@ -247,8 +246,7 @@
           "title": "sprintf-js vulnerable to denial of service through unbounded precision specifiers"
         }
       ],
-      "status": "still_reported",
-      "remainingSeverity": "moderate"
+      "status": "resolved"
     },
     {
       "scope": "server",
@@ -286,8 +284,7 @@
           "title": "sprintf-js vulnerable to denial of service through unbounded precision specifiers"
         }
       ],
-      "status": "still_reported",
-      "remainingSeverity": "moderate"
+      "status": "resolved"
     },
     {
       "scope": "server",
@@ -637,8 +634,7 @@
           "title": "sprintf-js vulnerable to denial of service through unbounded precision specifiers"
         }
       ],
-      "status": "still_reported",
-      "remainingSeverity": "moderate"
+      "status": "resolved"
     },
     {
       "scope": "server",
@@ -693,8 +689,7 @@
           "title": "Picomatch has a ReDoS vulnerability via extglob quantifiers"
         }
       ],
-      "status": "resolved_in_updated_lockfile",
-      "remainingSeverity": null
+      "status": "resolved"
     },
     {
       "scope": "server",
@@ -710,8 +705,7 @@
           "title": "sprintf-js vulnerable to denial of service through unbounded precision specifiers"
         }
       ],
-      "status": "still_reported",
-      "remainingSeverity": "moderate"
+      "status": "resolved"
     },
     {
       "scope": "server",
@@ -727,8 +721,7 @@
           "title": "yauzl contains an off-by-one error"
         }
       ],
-      "status": "resolved_in_updated_lockfile",
-      "remainingSeverity": null
+      "status": "resolved"
     },
     {
       "scope": "frontend",

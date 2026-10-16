@@ -1,5 +1,7 @@
 # Deployment closeout — October 16, 2026
 
+**Latest follow-up:** [Focused remaining release gates](remaining-release-gates-2026-10-16.md) reduces the remaining dependency count from 50 to 45 and resolves SSH host-key verification; SSH client-key authentication remains blocked. The counts below describe the earlier checkpoint.
+
 **Verdict: deployment remains on hold.** No deployment, push, hosted configuration change, or planning-architecture change was performed. This pass builds on local release `a3d7dfe4`.
 
 ## Dependency gate
