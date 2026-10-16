@@ -1,5 +1,9 @@
 # Coordinated release plan — prepared, not authorized to execute
 
+**Cancellation inspection:** [read-only hosted findings](hosted-cancellation-inspection-2026-10-16.md) confirm signal forwarding but no correlated provider-termination evidence. The older live helper uses request-close detection; the pinned candidate already uses response-close detection. No new live request was made.
+
+**Access update:** the user added the Mac public key and SSH now succeeds with strict host verification. Live-instance checks confirmed backend Node v24.21.0 and MCP planning/general timeouts of 30s/30s. Both revisions still match the rollback table below. The access prerequisite below is resolved; application-process secret equality and correlated provider cancellation remain open. See the [runtime follow-up](remaining-release-gates-2026-10-16.md#ssh-access-follow-up).
+
 Status: **HOLD**. This plan does not authorize a push, deployment, hosted configuration edit, or audit-policy exception. Application candidate: `db419a43d49e8a8f669b21d68802a07284094e1f`. Later documentation-only commits do not replace this pinned candidate. Any further executable or dependency change requires an updated candidate and relevant validation.
 
 ## Exact candidates and rollback references

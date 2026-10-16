@@ -1,5 +1,14 @@
 # Focused release gates — October 16, 2026
 
+## SSH access follow-up
+
+After the user registered the existing Mac public key, strict-host-verification SSH authenticated successfully. Initial connections were closed by the gateway; a diagnostic confirmed public-key acceptance and subsequent read-only commands completed on both services.
+
+- Backend instance: Node **v24.21.0**, `RENDER_GIT_COMMIT=cffedbef29a2fd6765e1ae1b61d9d5b9c8c043ed`.
+- MCP instance: Python **3.12.7**, `RENDER_GIT_COMMIT=548f584a2ef0e7c5fcb900e1f518c8e707212976`, `PLAN_TRIP_TIMEOUT=30`, `BACKEND_TIMEOUT=30`.
+- These values came from commands in the live service instances, not only the saved control-plane API. They do not inspect the already-running application's in-memory configuration or prove provider cancellation.
+- SSH authentication is resolved. The historical access-blocked statements below are superseded by this follow-up. No hosted configuration was changed, and neither service was redeployed.
+
 Deployment remains on hold. This follow-up to `4c8ad357` is limited to configuration preparation, dependency-chain review, and authenticated runtime access. No push, deployment, hosted setting change, or planning-engine change was made.
 
 ## Coordinated MCP configuration change — prepared, not applied
