@@ -7,11 +7,11 @@ function indexes() {
     { name: 'analytics_general_ttl', key: { timestamp: 1 }, expireAfterSeconds: 2592000, partialFilterExpression: { eventType: { $in: NON_API_CALL_EVENT_TYPES } } },
   ];
 }
-test('local model has seven-day TTL declarations without automatic index mutation', () => {
-  expect(ANALYTICS_RETENTION_SECONDS).toBe(604800);
+test('local model preserves production TTL definitions without automatic index mutation', () => {
+  expect(ANALYTICS_RETENTION_SECONDS).toBe(2592000);
   expect(Analytics.schema.options.autoIndex).toBe(false);
   expect(Analytics.schema.indexes().filter(([, options]) => options.expireAfterSeconds != null)
-    .map(([, options]) => options.expireAfterSeconds)).toEqual([604800, 604800]);
+    .map(([, options]) => options.expireAfterSeconds)).toEqual([604800, 2592000]);
 });
 test('preview only reads analytics and names existing indexes for collMod', async () => {
   const collection = { listIndexes: () => ({ toArray: async () => indexes() }), countDocuments: jest.fn().mockResolvedValue(10) };
@@ -46,4 +46,12 @@ test('missing TTL options, altered partial filters, or extra TTLs stop the plan'
 });
 test('rejects any other database', async () => {
   await expect(buildPlan({ databaseName: 'users' })).rejects.toThrow('Only trailverse.analytics');
+});
+
+ test('release preserves production analytics filter and blog text weights', () => {
+  const ttl = Analytics.schema.indexes().find(([, o]) => o.name === 'analytics_general_ttl')[1];
+  expect(ttl.partialFilterExpression.eventType.$in).toEqual(NON_API_CALL_EVENT_TYPES.filter(t => t !== 'crowd_calendar_view'));
+  const BlogPost = require('../src/models/BlogPost');
+  const text = BlogPost.schema.indexes().find(([key]) => key.title === 'text')[1];
+  expect(text.weights).toEqual({ title: 1, excerpt: 1, content: 1 });
 });

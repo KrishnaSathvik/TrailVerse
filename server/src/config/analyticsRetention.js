@@ -1,5 +1,5 @@
 /** Raw analytics retention. Live TTL changes require the separately approved migration. */
-const ANALYTICS_RETENTION_DAYS = 7;
+const ANALYTICS_RETENTION_DAYS = 30;
 const ANALYTICS_RETENTION_SECONDS = ANALYTICS_RETENTION_DAYS * 24 * 60 * 60;
 
 /** High-volume api_call rows expire sooner to control Atlas storage. */
@@ -16,7 +16,11 @@ const NON_API_CALL_EVENT_TYPES = [
   'crowd_calendar_view',
 ];
 
+// Preserve the existing production TTL scope; adding event types is a migration.
+const GENERAL_TTL_EVENT_TYPES = NON_API_CALL_EVENT_TYPES.filter(type => type !== 'crowd_calendar_view');
+
 module.exports = {
+  GENERAL_TTL_EVENT_TYPES,
   ANALYTICS_RETENTION_DAYS,
   ANALYTICS_RETENTION_SECONDS,
   API_CALL_RETENTION_DAYS,

@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const {
   ANALYTICS_RETENTION_SECONDS,
   API_CALL_RETENTION_SECONDS,
-  NON_API_CALL_EVENT_TYPES,
+  GENERAL_TTL_EVENT_TYPES,
 } = require('../config/analyticsRetention');
 const { humanTrafficFilter } = require('../utils/botClassifier');
 
@@ -181,7 +181,7 @@ analyticsSchema.index(
   {
     expireAfterSeconds: ANALYTICS_RETENTION_SECONDS,
     name: 'analytics_general_ttl',
-    partialFilterExpression: { eventType: { $in: NON_API_CALL_EVENT_TYPES } },
+    partialFilterExpression: { eventType: { $in: GENERAL_TTL_EVENT_TYPES } },
   }
 );
 

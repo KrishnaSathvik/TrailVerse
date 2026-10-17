@@ -20,7 +20,7 @@ const {
   ANALYTICS_RETENTION_SECONDS,
   API_CALL_RETENTION_DAYS,
   API_CALL_RETENTION_SECONDS,
-  NON_API_CALL_EVENT_TYPES,
+  GENERAL_TTL_EVENT_TYPES,
 } = require('../src/config/analyticsRetention');
 
 const APPLY = process.argv.includes('--apply');
@@ -76,7 +76,7 @@ async function ensureTtlIndex() {
     {
       name: 'analytics_general_ttl',
       expireAfterSeconds: ANALYTICS_RETENTION_SECONDS,
-      partialFilterExpression: { eventType: { $in: NON_API_CALL_EVENT_TYPES } },
+      partialFilterExpression: { eventType: { $in: GENERAL_TTL_EVENT_TYPES } },
       label: `${ANALYTICS_RETENTION_DAYS} days (non-api_call)`,
     },
   ];
