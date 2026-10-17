@@ -1,5 +1,5 @@
 const discoverCatalogService = require('../services/discoverCatalogService');
-const npsService = require('../services/npsService');
+const { getNpsService } = require('../services/npsService');
 
 exports.getCatalog = async (req, res, next) => {
   try {
@@ -63,7 +63,7 @@ exports.getNpsGuide = async (req, res, next) => {
       });
     }
 
-    const guide = await npsService.getNpsGuideForDiscover({ title, slug });
+    const guide = await getNpsService().getNpsGuideForDiscover({ title, slug });
     res.set('Cache-Control', 'public, max-age=86400, s-maxage=86400');
     res.status(200).json({
       success: true,

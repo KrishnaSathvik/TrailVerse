@@ -101,6 +101,11 @@ export function formatStateList(states) {
 
 export function buildParkPageTitle(park) {
   const name = park.fullName;
+  const slug = parkToSlug(name);
+
+  if (slug === 'glacier-national-park') {
+    return 'Glacier National Park 2026: Crowd Calendar, Going-to-the-Sun & Alerts | TrailVerse';
+  }
 
   if (hasCrowdCalendar(park)) {
     return `${name}: Alerts, Crowd Calendar, Map & Trailie | TrailVerse`;
@@ -114,6 +119,9 @@ export function buildParkMetaDescription(park, parkSlug) {
   const states = formatStateList(park.states);
   const hook = TIER_A_HOOKS[slug] || 'Check live alerts, maps, fees, and seasonal tips before you go.';
   const name = park.fullName;
+  if (slug === 'glacier-national-park') {
+    return 'Plan Glacier National Park in 2026 — Going-to-the-Sun Road timing, crowd calendar, live NPS alerts, and Trailie itineraries. Best months, permits, and how to avoid peak crowds.';
+  }
   if (isTierAPark(slug)) {
     const crowdPhrase = hasCrowdCalendar(park)
       ? 'live NPS alerts, crowd calendar, maps, and Trailie trip planning'

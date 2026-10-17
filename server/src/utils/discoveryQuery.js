@@ -115,6 +115,16 @@ function shouldRequestItineraryJson({
   if (!text) return false;
   if (metadata.dayByDayPlanIntake) return false;
 
+  const { isItineraryRefinementFollowUp } = require('../services/trailieFetchPlanner');
+  const refiningExistingPlan =
+    isItineraryRefinementFollowUp(text) &&
+    Boolean(
+      metadata.existingCanonicalPlan?.days?.length ||
+      metadata.activeTripContext?.lockedPlanDestination ||
+      metadata.activeTripContext?.primaryDestination ||
+      Number(metadata.priorResponseVersion) > 0
+    );
+
   const commitWithDestination =
     isItineraryCommitRequest(text) && hasActivePlanDestination(metadata);
   const effectiveOpenEnded = openEndedDiscovery && !commitWithDestination;
@@ -123,6 +133,7 @@ function shouldRequestItineraryJson({
 
   const wantsPlan =
     isSpecificItineraryRequest(text) ||
+    refiningExistingPlan ||
     commitWithDestination ||
     (metadata.parkCode && SINGLE_PARK_PLAN_VERB_PATTERN.test(text));
   if (!wantsPlan) return false;
@@ -135,6 +146,8 @@ function shouldRequestItineraryJson({
     conversationUserText: conversationUserText || text,
     skipUserContext,
     assumeDefaults: skipUserContext || commitWithDestination || hasActivePlanDestination(metadata),
+    askedToProduceTripArtifact: true,
+    priorPlan: metadata.existingCanonicalPlan || null,
   });
   return readiness.ready;
 }

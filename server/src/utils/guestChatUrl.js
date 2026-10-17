@@ -11,9 +11,9 @@ function getTrailVerseWebBase() {
   return raw.replace(/\/$/, '');
 }
 
-function buildGuestChatPublicUrl(anonymousId) {
+function buildGuestChatPublicUrl(anonymousId, conversationId = null) {
   if (!anonymousId) return null;
-  return `${getTrailVerseWebBase()}/plan-ai/guest/${encodeURIComponent(anonymousId)}`;
+  return `${getTrailVerseWebBase()}/plan-ai/guest/${encodeURIComponent(anonymousId)}${conversationId ? `?conversation=${encodeURIComponent(conversationId)}` : ''}`;
 }
 
 function buildAnonymousConversionMessage() {

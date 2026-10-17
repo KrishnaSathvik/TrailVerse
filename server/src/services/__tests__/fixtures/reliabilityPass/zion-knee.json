@@ -1,0 +1,35 @@
+{
+  "note": "RELIABILITY PASS pin (2026-09-01). The verbatim 2026-08-31 audit Journey 2 sentence is pinned at the composer level (operationalGenerationDirectives.test.js); this wiring fixture uses the plan-phrased variant because the verbatim sentence is known to classify as general_qa (P0-3, deliberately unfixed this pass), and the wiring test must reach an itinerary-mode prompt.",
+  "verbatimAuditPrompt": "3 days in Zion, easy walks only, I have a bad knee, love sunrise and sunset, no scary exposure.",
+  "userPrompt": "Plan 3 days in Zion, easy walks only, I have a bad knee, love sunrise and sunset, no scary exposure.",
+  "constraints": {
+    "parkCode": "zion",
+    "dates": { "numDays": 3 },
+    "planningState": { "mobility": {}, "preferences": { "pace": "relaxed" } }
+  },
+  "parkCode": "zion",
+  "npsItems": [
+    {
+      "id": "PARUS-TRAIL",
+      "title": "Pa'rus Trail",
+      "url": "https://www.nps.gov/zion/planyourvisit/parus.htm",
+      "longDescription": "A paved, gentle riverside path from the visitor center to Canyon Junction.",
+      "activityTypes": ["hiking", "hike"],
+      "exposureLevel": "low"
+    },
+    {
+      "id": "ZION-HUMAN-HISTORY-MUSEUM",
+      "title": "Zion Human History Museum",
+      "url": "https://www.nps.gov/zion/planyourvisit/museum.htm",
+      "longDescription": "Exhibits on the canyon's human story, with a broad patio view.",
+      "activityTypes": ["museum"]
+    },
+    {
+      "id": "CANYON-OVERLOOK-TRAIL",
+      "title": "Canyon Overlook Trail",
+      "url": "https://www.nps.gov/zion/planyourvisit/canyon-overlook.htm",
+      "longDescription": "A short trail to a dramatic canyon viewpoint with some drop-offs.",
+      "activityTypes": ["hiking", "hike"]
+    }
+  ]
+}

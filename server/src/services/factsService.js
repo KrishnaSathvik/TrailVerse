@@ -1,4 +1,5 @@
 const axios = require('axios');
+const { recordAuxiliaryCall } = require('./trailieTurnLedger');
 
 const { getFeeFreeInfo } = require('./feeFreeDaysService');
 const {
@@ -26,6 +27,16 @@ const {
   isCautionCategory,
   isInformationCategory,
 } = require('../utils/npsAlertUtils');
+const {
+  buildParkCanonicalFacts,
+  makeWeatherFact,
+  mergeCanonicalFactBundles,
+  resolveCanonicalFactStatus,
+  CACHE_STATUS,
+  WEATHER_MODE,
+  WEATHER_STATUS,
+  RETRIEVAL_MODE,
+} = require('../utils/canonicalFacts');
 
 const OWM_KEY = process.env.OPENWEATHER_API_KEY; // server-side key ⚠️ not REACT_APP_*
 const OWM_BASE = 'https://api.openweathermap.org/data/2.5/forecast';
@@ -138,7 +149,7 @@ function withTimeout(promise, ms, label) {
  * @param {Object} params - { lat, lon, units }
  * @returns {Promise<string|null>} Formatted weather facts or null
  */
-async function fetchWeatherFacts({ lat, lon, units = 'imperial' }) {
+async function fetchWeatherFactBundle({ lat, lon, units = 'imperial', parkCode = null }) {
   if (!lat || !lon || !OWM_KEY) {
     console.log('⚠️ Weather facts skipped: missing coordinates or API key');
     return null;
@@ -153,11 +164,20 @@ async function fetchWeatherFacts({ lat, lon, units = 'imperial' }) {
     const data = response.data;
     const location = data.city?.name || 'Current location';
     
-    // Group forecasts by day (API returns 3-hour intervals for 5 days)
+    // Group by the DESTINATION's local calendar date. Using the server timezone
+    // would push late-night intervals onto the wrong day.
+    const hasTz = Number.isFinite(data.city?.timezone);
+    const tzOffsetSeconds = hasTz ? data.city.timezone : 0;
+    const timezoneSource = hasTz ? 'provider_offset' : 'utc_fallback';
+
+    /** Destination-local calendar date (YYYY-MM-DD) for an epoch-seconds stamp. */
+    const localDateKey = (dtSeconds) =>
+      new Date((dtSeconds + tzOffsetSeconds) * 1000).toISOString().slice(0, 10);
+
     const dailyForecasts = {};
-    
+
     data.list.forEach(item => {
-      const date = new Date(item.dt * 1000).toDateString();
+      const date = localDateKey(item.dt);
       if (!dailyForecasts[date]) {
         dailyForecasts[date] = {
           temps: [],
@@ -166,7 +186,7 @@ async function fetchWeatherFacts({ lat, lon, units = 'imperial' }) {
           wind: []
         };
       }
-      
+
       dailyForecasts[date].temps.push(item.main.temp);
       dailyForecasts[date].conditions.push(item.weather[0].description);
       dailyForecasts[date].humidity.push(item.main.humidity);
@@ -174,6 +194,8 @@ async function fetchWeatherFacts({ lat, lon, units = 'imperial' }) {
     });
 
     // Generate 3-day forecast summary
+    const retrievedAt = new Date().toISOString();
+    const canonicalFacts = [];
     const forecastDays = Object.keys(dailyForecasts).slice(0, 3);
     const forecastText = forecastDays.map(date => {
       const day = dailyForecasts[date];
@@ -191,15 +213,65 @@ async function fetchWeatherFacts({ lat, lon, units = 'imperial' }) {
         conditionCounts[a] > conditionCounts[b] ? a : b
       );
       
-      const dayName = new Date(date).toLocaleDateString('en-US', { weekday: 'short' });
-      return `${dayName}: High ${maxTemp}°F, Low ${minTemp}°F, ${mostCommonCondition}, Humidity ${avgHumidity}%, Wind ${avgWind} mph`;
+      // Weekday label from the destination-local date, not the server's.
+      const dayName = new Date(`${date}T00:00:00Z`).toLocaleDateString('en-US', {
+        weekday: 'short',
+        timeZone: 'UTC',
+      });
+      const line = `${dayName}: High ${maxTemp}°F, Low ${minTemp}°F, ${mostCommonCondition}, Humidity ${avgHumidity}%, Wind ${avgWind} mph`;
+
+      // Local-day window converted back to absolute instants.
+      const localMidnightUtcMs = Date.parse(`${date}T00:00:00Z`) - tzOffsetSeconds * 1000;
+      const validFrom = new Date(localMidnightUtcMs).toISOString();
+      const validTo = new Date(localMidnightUtcMs + 24 * 60 * 60 * 1000 - 1).toISOString();
+
+      // /data/2.5/forecast is a FORECAST feed. Even the bucket covering today is
+      // predicted, not observed, so it can never back "currently" wording.
+      canonicalFacts.push(
+        makeWeatherFact({
+          source: 'openweather',
+          weatherMode: WEATHER_MODE.FORECAST,
+          status: WEATHER_STATUS.FORECAST,
+          retrievalMode: RETRIEVAL_MODE.LIVE,
+          text: `${location} — ${line}`,
+          locationName: location,
+          parkCode,
+          latitude: lat,
+          longitude: lon,
+          validAt: null,
+          validFrom,
+          validTo,
+          dayLabel: dayName,
+          localDate: date,
+          timezoneOffsetSeconds: tzOffsetSeconds,
+          timezoneSource,
+          retrievedAt,
+          cacheStatus: CACHE_STATUS.LIVE,
+        })
+      );
+
+      return line;
     }).join('\n');
 
-    return `Weather Forecast at ${location} (LIVE — next 3 days from today):\n${forecastText}\n(Source: OpenWeather 5-day forecast. Use ONLY for trips starting within the next few days — not for distant future dates.)`;
+    return {
+      text: `Weather Forecast at ${location} (LIVE — next 3 days from today):\n${forecastText}\n(Source: OpenWeather 5-day forecast. Use ONLY for trips starting within the next few days — not for distant future dates.)`,
+      canonicalFacts,
+      meta: { source: 'OpenWeather', mode: 'live', retrievedAt },
+    };
   } catch (error) {
+    // A provider failure is not evidence of clear or safe conditions.
     console.error('Weather facts error:', error.message);
     return null;
   }
+}
+
+/**
+ * Backward-compatible string API for live weather.
+ * @returns {Promise<string|null>}
+ */
+async function fetchWeatherFacts({ lat, lon, units = 'imperial' }) {
+  const bundle = await fetchWeatherFactBundle({ lat, lon, units });
+  return bundle ? bundle.text : null;
 }
 
 /**
@@ -221,7 +293,8 @@ async function fetchWeatherForTrailie({
   const window = resolveTripWeatherWindow(tripDates, userMessage);
   const mode = window ? resolveWeatherMode(window) : 'live';
 
-  if (mode === 'estimate') {
+  /** Climate estimates can only ever back historical/typical wording. */
+  const asEstimateResult = () => {
     const estimate = buildEstimatedWeatherFacts({
       lat,
       lon,
@@ -230,64 +303,77 @@ async function fetchWeatherForTrailie({
       tripDates,
       userMessage,
     });
-    if (estimate?.text) {
-      return {
-        text: estimate.text,
-        meta: { source: 'TrailVerseClimateEstimate', mode: 'estimate', ...estimate.meta },
-      };
-    }
+    if (!estimate?.text) return null;
+
+    const retrievedAt = new Date().toISOString();
+    return {
+      text: estimate.text,
+      canonicalFacts: [
+        makeWeatherFact({
+          source: 'trailverse_climate_estimate',
+          weatherMode: WEATHER_MODE.CLIMATE_ESTIMATE,
+          status: WEATHER_STATUS.ESTIMATED,
+          retrievalMode: RETRIEVAL_MODE.GENERATED,
+          text: estimate.text,
+          locationName,
+          parkCode,
+          latitude: lat,
+          longitude: lon,
+          validFrom: window?.start ? new Date(window.start).toISOString() : null,
+          validTo: window?.end ? new Date(window.end).toISOString() : null,
+          retrievedAt,
+          cacheStatus: CACHE_STATUS.UNKNOWN,
+        }),
+      ],
+      meta: { source: 'TrailVerseClimateEstimate', mode: 'estimate', ...estimate.meta },
+    };
+  };
+
+  if (mode === 'estimate') {
+    const estimateResult = asEstimateResult();
+    if (estimateResult) return estimateResult;
   }
 
-  const live = await fetchWeatherFacts({ lat, lon });
+  const live = await fetchWeatherFactBundle({ lat, lon, parkCode });
   if (live) {
     return {
-      text: live,
+      text: live.text,
+      canonicalFacts: live.canonicalFacts,
       meta: { source: 'OpenWeather', mode: 'live' },
     };
   }
 
   if (window) {
-    const estimate = buildEstimatedWeatherFacts({
-      lat,
-      lon,
-      locationName,
-      parkCode,
-      tripDates,
-      userMessage,
-    });
-    if (estimate?.text) {
-      return {
-        text: estimate.text,
-        meta: { source: 'TrailVerseClimateEstimate', mode: 'estimate', ...estimate.meta },
-      };
-    }
+    const estimateResult = asEstimateResult();
+    if (estimateResult) return estimateResult;
   }
 
-  return { text: null, meta: null };
+  // No weather evidence at all — never synthesise "conditions are clear".
+  return { text: null, canonicalFacts: [], meta: null };
 }
 
 /**
- * Fetch NPS facts for a specific park
- * Uses npsService (with its caches) instead of direct API calls.
+ * Fetch NPS facts for a specific park, returning both the prompt string and the
+ * canonical facts built from the same source objects (before flattening).
  * @param {Object} params - { parkCode }
- * @returns {Promise<string|null>} Formatted NPS facts or null
+ * @returns {Promise<{text: string, canonicalFacts: Object[], meta: Object}|null>}
  */
-async function fetchNPSFacts({ parkCode, parkName = null, userMessage = '' }) {
+async function fetchNPSFactBundle({ parkCode, parkName = null, userMessage = '' }) {
   if (!parkCode) {
     console.log('⚠️ NPS facts skipped: missing parkCode');
     return null;
   }
 
   try {
-    const npsService = require('./npsService');
+    const { getNpsService } = require('./npsService');
     const ridbService = require('./ridbService');
 
     // Fetch park details, alerts, campgrounds, visitor centers, and permits in parallel
     const [details, alerts, campgrounds, visitorCenters, permits] = await Promise.allSettled([
-      npsService.getParkByCode(parkCode),
-      npsService.getParkAlerts(parkCode),
-      npsService.getParkCampgrounds(parkCode),
-      npsService.getParkVisitorCenters(parkCode),
+      getNpsService().getParkByCode(parkCode),
+      getNpsService().getParkAlerts(parkCode),
+      getNpsService().getParkCampgrounds(parkCode),
+      getNpsService().getParkVisitorCenters(parkCode),
       ridbService.getPermitsForPark(parkCode)
     ]);
 
@@ -391,11 +477,42 @@ async function fetchNPSFacts({ parkCode, parkName = null, userMessage = '' }) {
       if (roadBlock) facts.push(roadBlock);
     }
 
-    return facts.filter(Boolean).join('\n\n');
+    const retrievedAt = new Date().toISOString();
+    const canonicalFacts = buildParkCanonicalFacts({
+      parkCode,
+      parkName: parkName || park.fullName || null,
+      park,
+      parkAlerts,
+      parkPermits,
+      parkCampgrounds,
+      parkVisitorCenters,
+      retrievedAt,
+      // npsService serves these through its own caches; we cannot tell per call
+      // whether this response was live, so claim nothing.
+      cacheStatus: CACHE_STATUS.UNKNOWN,
+      isClosureCategory,
+      isCautionCategory,
+      isInformationCategory,
+    });
+
+    return {
+      text: facts.filter(Boolean).join('\n\n'),
+      canonicalFacts,
+      meta: { parkCode, parkName: parkName || park.fullName || null, retrievedAt },
+    };
   } catch (error) {
     console.error('NPS facts error:', error.message);
     return null;
   }
+}
+
+/**
+ * Backward-compatible string API — callers interpolate this directly into prompts.
+ * @returns {Promise<string|null>} Formatted NPS facts or null
+ */
+async function fetchNPSFacts({ parkCode, parkName = null, userMessage = '' }) {
+  const bundle = await fetchNPSFactBundle({ parkCode, parkName, userMessage });
+  return bundle ? bundle.text : null;
 }
 
 /**
@@ -756,6 +873,15 @@ async function fetchWebSearchFacts({ userMessage, parkName, parkCode }) {
     ms: Date.now() - pStart,
     n: pRes.value?.results?.length || 0
   });
+  recordAuxiliaryCall({
+    phase: 'web_search',
+    provider: primaryRunner.name,
+    model: null,
+    durationMs: Date.now() - pStart,
+    usage: null,
+    status: pRes.timedOut ? 'timeout' : 'complete',
+    errorCode: pRes.timedOut ? 'provider_timeout' : null,
+  });
   if (pRes.value) {
     allResults.push(...pRes.value.results);
   }
@@ -781,6 +907,16 @@ async function fetchWebSearchFacts({ userMessage, parkName, parkCode }) {
         timedOut: result.timedOut,
         ms,
         n: result.value?.results?.length || 0
+      });
+      recordAuxiliaryCall({
+        phase: 'web_search',
+        provider,
+        model: null,
+        durationMs: ms,
+        usage: null,
+        status: result.timedOut ? 'timeout' : 'complete',
+        errorCode: result.timedOut ? 'provider_timeout' : null,
+        fallback: true,
       });
       if (result.value) {
         allResults.push(...result.value.results);
@@ -1040,6 +1176,12 @@ async function fetchRelevantFacts({
     feeFreeFacts: null,
     webSearchAttempted: false,
     webSearchUnavailable: false,
+    // Structured evidence captured alongside the prompt strings above. The
+    // prompt-facing text values never change; these travel to the reviewer.
+    npsCanonicalFacts: [],
+    weatherCanonicalFacts: [],
+    canonicalFactBundle: null,
+    canonicalFactStatus: null,
   };
 
   try {
@@ -1058,8 +1200,8 @@ async function fetchRelevantFacts({
       // in the hardcoded map — fetch coordinates from NPS API directly
       if (!lat || !lon) {
         try {
-          const npsService = require('./npsService');
-          const parkDetails = await npsService.getParkByCode(parkCode);
+          const { getNpsService } = require('./npsService');
+          const parkDetails = await getNpsService().getParkByCode(parkCode);
           if (parkDetails) {
             lat = lat || parseFloat(parkDetails.latitude);
             lon = lon || parseFloat(parkDetails.longitude);
@@ -1116,13 +1258,15 @@ async function fetchRelevantFacts({
           locationName: parkName || 'this area',
           parkCode,
         })
-          .then(({ text, meta }) => {
+          .then(({ text, canonicalFacts, meta }) => {
             results.weatherFacts = text;
+            results.weatherCanonicalFacts = canonicalFacts || [];
             results.weatherMeta = meta;
           })
           .catch((err) => {
             console.error('[Facts] Weather fetch error:', err.message);
             results.weatherFacts = null;
+            results.weatherCanonicalFacts = [];
             results.weatherMeta = null;
           })
       );
@@ -1130,10 +1274,19 @@ async function fetchRelevantFacts({
 
     if (shouldFetchNPS) {
       promises.push(
-        fetchNPSFacts({ parkCode, parkName, userMessage: fetchMessage }).then(facts => { results.npsFacts = facts; }).catch(err => {
-          console.error('[Facts] NPS fetch error:', err.message);
-          results.npsFacts = null;
-        })
+        // fetchNPSFactBundle returns the SAME prompt string fetchNPSFacts did
+        // (bundle.text), plus the canonical facts built from the same source
+        // objects — so the reviewer sees real evidence without a second call.
+        fetchNPSFactBundle({ parkCode, parkName, userMessage: fetchMessage })
+          .then((bundle) => {
+            results.npsFacts = bundle ? bundle.text : null;
+            results.npsCanonicalFacts = bundle ? bundle.canonicalFacts || [] : [];
+          })
+          .catch((err) => {
+            console.error('[Facts] NPS fetch error:', err.message);
+            results.npsFacts = null;
+            results.npsCanonicalFacts = [];
+          })
       );
     }
 
@@ -1174,6 +1327,20 @@ async function fetchRelevantFacts({
       results.webSearchUnavailable = true;
       console.warn('[Facts] Web search was needed but returned no results (timeout, empty, or API keys missing)');
     }
+
+    // Merge the canonical evidence gathered for the primary park (single-park
+    // path). The multi-park path in the route re-merges per park and does not
+    // rely on this bundle. Prompt-facing strings above are already final.
+    results.canonicalFactBundle = mergeCanonicalFactBundles([
+      { facts: results.npsCanonicalFacts },
+      { facts: results.weatherCanonicalFacts },
+    ]);
+    results.npsRequested = shouldFetchNPS;
+    results.weatherRequested = shouldFetchWeather;
+    results.canonicalFactStatus = resolveCanonicalFactStatus([
+      { requested: shouldFetchNPS, ok: results.npsCanonicalFacts.length > 0 },
+      { requested: shouldFetchWeather, ok: results.weatherCanonicalFacts.length > 0 },
+    ]);
 
     const fetchedAt = new Date().toISOString();
     results.fetchPlan = fetchPlan;
@@ -1267,9 +1434,38 @@ function haversine(lat1, lon1, lat2, lon2) {
  * Multi-word city names are checked first (longest match wins).
  * Returns { name, lat, lon } or null.
  */
+const CITY_DISPLAY_NAMES = {
+  'st louis': 'St. Louis',
+  'kansas city': 'Kansas City',
+  'new york': 'New York',
+  'los angeles': 'Los Angeles',
+  'san francisco': 'San Francisco',
+  'san diego': 'San Diego',
+  'san antonio': 'San Antonio',
+  'san jose': 'San Jose',
+  'salt lake city': 'Salt Lake City',
+  'oklahoma city': 'Oklahoma City',
+};
+
+function normalizeCityCandidate(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/\./g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function displayNameForCityKey(cityKey) {
+  if (CITY_DISPLAY_NAMES[cityKey]) return CITY_DISPLAY_NAMES[cityKey];
+  return cityKey.replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 function extractUserCity(userMessage) {
   if (!userMessage) return null;
-  const msg = userMessage.toLowerCase();
+  // Normalize common abbreviation periods so "St. Louis" is not truncated at "St."
+  const msg = userMessage
+    .toLowerCase()
+    .replace(/\b(st|mt|ft|pt)\.\s+/g, '$1 ');
 
   // Patterns that indicate a departure/home city
   const cityPatterns = [
@@ -1292,13 +1488,22 @@ function extractUserCity(userMessage) {
   const sortedCityKeys = Object.keys(CITIES).sort((a, b) => b.length - a.length);
 
   for (const candidate of candidates) {
+    const normalizedCandidate = normalizeCityCandidate(candidate);
     // Try to match against known cities — longest match first
     for (const cityKey of sortedCityKeys) {
-      if (candidate.startsWith(cityKey) || candidate === cityKey) {
+      if (
+        normalizedCandidate === cityKey
+        || normalizedCandidate.startsWith(`${cityKey} `)
+        || candidate === cityKey
+        || candidate.startsWith(cityKey)
+      ) {
         const city = CITIES[cityKey];
-        // Capitalize for display
-        const displayName = cityKey.replace(/\b\w/g, c => c.toUpperCase());
-        return { name: displayName, lat: city.lat, lon: city.lon, state: city.state };
+        return {
+          name: displayNameForCityKey(cityKey),
+          lat: city.lat,
+          lon: city.lon,
+          state: city.state,
+        };
       }
     }
   }
@@ -1312,8 +1517,8 @@ function extractUserCity(userMessage) {
  * or all candidates when no city is detected.
  */
 async function getCandidateParks(userCity) {
-  const npsService = require('./npsService');
-  const allParks = await npsService.getAllParks();
+  const { getNpsService } = require('./npsService');
+  const allParks = await getNpsService().getAllParks();
 
   const relevantDesignations = [
     'National Park', 'National Park & Preserve',
@@ -1441,8 +1646,10 @@ function formatCandidateParksBlock(candidateResult) {
 
 module.exports = {
   fetchWeatherFacts,
+  fetchWeatherFactBundle,
   fetchWeatherForTrailie,
   fetchNPSFacts,
+  fetchNPSFactBundle,
   fetchWebSearchFacts,
   fetchRelevantFacts,
   needsWeatherFacts,

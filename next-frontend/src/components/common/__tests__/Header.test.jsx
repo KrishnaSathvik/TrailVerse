@@ -24,6 +24,7 @@ vi.mock('../../../context/AuthContext', () => ({
 
 vi.mock('../ThemeSwitcher', () => ({
   default: () => <div>Theme Switcher</div>,
+  SegmentedThemeSkeleton: () => <div>Theme Skeleton</div>,
 }));
 
 vi.mock('../Button', () => ({
@@ -63,9 +64,9 @@ describe('Header mobile navigation', () => {
 
     expect(mobileNav.getByRole('link', { name: 'Explore' })).toBeInTheDocument();
     expect(mobileNav.getByRole('link', { name: 'Blog' })).toBeInTheDocument();
-    expect(mobileNav.getByRole('link', { name: 'Events' })).toBeInTheDocument();
-    expect(mobileNav.queryByRole('link', { name: 'Map' })).not.toBeInTheDocument();
-    expect(mobileNav.queryByRole('link', { name: 'Trailie' })).not.toBeInTheDocument();
+    expect(mobileNav.queryByRole('link', { name: 'Events' })).not.toBeInTheDocument();
+    expect(mobileNav.getByRole('link', { name: 'Map' })).toBeInTheDocument();
+    expect(mobileNav.getByRole('link', { name: 'Trailie' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'TrailVerse home' })).toBeInTheDocument();
   });
 
@@ -107,11 +108,11 @@ describe('Header mobile navigation', () => {
     const moreMenu = document.getElementById('more-navigation-menu-mobile');
 
     expect(moreMenu).toBeInTheDocument();
-    expect(within(moreMenu).getByRole('menuitem', { name: 'Map' })).toBeInTheDocument();
-    expect(within(moreMenu).getByRole('menuitem', { name: 'Trailie' })).toBeInTheDocument();
+    expect(within(moreMenu).queryByRole('menuitem', { name: 'Map' })).not.toBeInTheDocument();
+    expect(within(moreMenu).queryByRole('menuitem', { name: 'Trailie' })).not.toBeInTheDocument();
     expect(within(moreMenu).getByRole('menuitem', { name: 'Compare' })).toBeInTheDocument();
     expect(within(moreMenu).queryByRole('menuitem', { name: 'Blog' })).not.toBeInTheDocument();
-    expect(within(moreMenu).queryByRole('menuitem', { name: 'Events' })).not.toBeInTheDocument();
+    expect(within(moreMenu).getByRole('menuitem', { name: 'Events' })).toBeInTheDocument();
     expect(within(moreMenu).queryByRole('menuitem', { name: 'Log out' })).not.toBeInTheDocument();
   });
 
@@ -132,16 +133,16 @@ describe('Header mobile navigation', () => {
     await waitFor(() => {
       expect(mobileNav.getByRole('link', { name: 'Home' })).toBeInTheDocument();
     });
-    expect(mobileNav.getByRole('link', { name: 'Blog' })).toBeInTheDocument();
-    expect(mobileNav.getByRole('link', { name: 'Events' })).toBeInTheDocument();
-    expect(mobileNav.queryByRole('link', { name: 'Map' })).not.toBeInTheDocument();
+    expect(mobileNav.queryByRole('link', { name: 'Blog' })).not.toBeInTheDocument();
+    expect(mobileNav.queryByRole('link', { name: 'Events' })).not.toBeInTheDocument();
+    expect(mobileNav.getByRole('link', { name: 'Map' })).toBeInTheDocument();
 
     await userEvent.click(mobileNav.getByRole('button', { name: /more/i }));
 
     const moreMenu = document.getElementById('more-navigation-menu-mobile');
-    expect(within(moreMenu).getByRole('menuitem', { name: 'Map' })).toBeInTheDocument();
-    expect(within(moreMenu).queryByRole('menuitem', { name: 'Blog' })).not.toBeInTheDocument();
-    expect(within(moreMenu).queryByRole('menuitem', { name: 'Events' })).not.toBeInTheDocument();
+    expect(within(moreMenu).queryByRole('menuitem', { name: 'Map' })).not.toBeInTheDocument();
+    expect(within(moreMenu).getByRole('menuitem', { name: 'Blog' })).toBeInTheDocument();
+    expect(within(moreMenu).getByRole('menuitem', { name: 'Events' })).toBeInTheDocument();
     expect(within(moreMenu).getByRole('menuitem', { name: 'Log out' })).toBeInTheDocument();
   });
 
@@ -187,5 +188,69 @@ describe('Header mobile navigation', () => {
       const moreMenu = document.getElementById('more-navigation-menu-mobile');
       expect(within(moreMenu).getByRole('menuitem', { name: 'Log out' })).toBeInTheDocument();
     });
+  });
+});
+
+describe('Header on /plan-ai matches other product pages', () => {
+  beforeEach(() => {
+    vi.stubGlobal('scrollTo', vi.fn());
+    mockUsePathname.mockReturnValue('/plan-ai');
+    mockUseAuth.mockReturnValue({
+      isAuthenticated: false,
+      authReady: false,
+      initialAuthHint: false,
+      user: null,
+      logout: vi.fn(),
+      loading: false,
+    });
+  });
+
+  it('shows the same mobile links as Explore, Map, and Blog', () => {
+    render(<Header />);
+
+    const mobileNav = within(screen.getByTestId('mobile-inline-nav'));
+    expect(mobileNav.getByRole('link', { name: 'Explore' })).toBeInTheDocument();
+    expect(mobileNav.getByRole('link', { name: 'Map' })).toBeInTheDocument();
+    expect(mobileNav.getByRole('link', { name: 'Trailie' })).toHaveAttribute('aria-current', 'page');
+    expect(mobileNav.getByRole('link', { name: 'Blog' })).toBeInTheDocument();
+    expect(mobileNav.getByRole('button', { name: /more/i })).toBeInTheDocument();
+    expect(screen.queryByTestId('plan-ai-pinned-nav')).not.toBeInTheDocument();
+  });
+
+  it('keeps Home in the mobile row when signed in', () => {
+    mockUseAuth.mockReturnValue({
+      isAuthenticated: true,
+      authReady: true,
+      initialAuthHint: true,
+      user: { role: 'user' },
+      logout: vi.fn(),
+      loading: false,
+    });
+
+    render(<Header />);
+
+    const mobileNav = within(screen.getByTestId('mobile-inline-nav'));
+    expect(mobileNav.getByRole('link', { name: 'Home' })).toBeInTheDocument();
+    expect(mobileNav.getByRole('link', { name: 'Explore' })).toBeInTheDocument();
+    expect(mobileNav.getByRole('link', { name: 'Map' })).toBeInTheDocument();
+    expect(mobileNav.getByRole('link', { name: 'Trailie' })).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('preserves the full desktop primary row including Home and Trailie', () => {
+    mockUseAuth.mockReturnValue({
+      isAuthenticated: true,
+      authReady: true,
+      initialAuthHint: true,
+      user: { role: 'user' },
+      logout: vi.fn(),
+      loading: false,
+    });
+
+    render(<Header />);
+
+    const desktopExplore = screen.getAllByRole('link', { name: 'Explore' });
+    expect(desktopExplore.length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: 'Trailie' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: 'Home' }).length).toBeGreaterThan(0);
   });
 });

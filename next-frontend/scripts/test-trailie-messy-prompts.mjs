@@ -25,7 +25,15 @@ if (existsSync(SERVER_ENV)) {
 
 const API_BASE = process.env.API_BASE || 'http://127.0.0.1:5001/api';
 const EMAIL = process.env.PLAN_AI_TEST_EMAIL || 'travelswithkrishna@gmail.com';
-const PASSWORD = process.env.PLAN_AI_TEST_PASSWORD || 'Travel@2025*';
+// Supplied at runtime, never defaulted. This line used to carry a real account
+// password as its fallback, which put the credential in a tracked file and in git
+// history — the file edit stops it spreading further, but the credential itself
+// must be rotated to undo the exposure.
+const PASSWORD = process.env.PLAN_AI_TEST_PASSWORD;
+if (!PASSWORD) {
+  console.error('PLAN_AI_TEST_PASSWORD is required — refusing to run without a runtime credential');
+  process.exit(1);
+}
 const TIMEOUT_MS = Number(process.env.TRAILIE_MESSY_TIMEOUT_MS || 240000);
 const ONLY = process.env.TRAILIE_MESSY_ONLY?.trim();
 

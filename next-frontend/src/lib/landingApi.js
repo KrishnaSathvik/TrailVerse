@@ -4,7 +4,7 @@ export async function getLandingTestimonialsServer(limit = 3) {
   try {
     const response = await fetch(
       `${getApiBaseUrl()}/testimonials?approved=true&limit=${limit}`,
-      { cache: 'no-store' }
+      { next: { revalidate: 1800 } }
     );
     if (!response.ok) return [];
     const payload = await response.json();

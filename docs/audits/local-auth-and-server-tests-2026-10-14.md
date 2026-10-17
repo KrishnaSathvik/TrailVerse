@@ -1,0 +1,118 @@
+# Local auth and server test changes — 2026-10-14
+
+## Test totals
+
+- Full server `npm test`: 540 suites passed, 1 skipped; 7,548 tests passed, 22 skipped (7,570 total); exit 0.
+- Provider isolation: 0 live provider constructors, dispatches, or external provider HTTP requests.
+- Auth suite: 29 passed, 29 total.
+- Standalone local auth lifecycle smoke: 1 passed.
+- One-Brain gate: 282 passed test executions across all stages, exit 0 (some suites run in multiple stages).
+- Quarantine: 58 suites excluded from the default gate; all 58 discoverable with the opt-in configuration.
+
+## Changed files in this pass
+
+- `server/src/models/User.js`
+- `server/src/controllers/authController.js`
+- `server/src/routes/modelFirstTrailie.js`
+- `server/src/services/trailieTravelData.js`
+- `server/src/utils/canonicalResponse.js`
+- `server/src/utils/guestCanonicalPlanMigration.js`
+- `server/src/utils/storedRevisionValidation.js`
+- `server/jest.config.js`
+- `server/jest.quarantine.config.js`
+- `server/scripts/run-provider-disabled-tests.js`
+- `server/scripts/smoke-auth-local.js`
+- `server/tests/globalSetup.js`
+- `server/tests/globalTeardown.js`
+- `server/tests/setup.js`
+- `server/tests/integration/auth.test.js`
+- `server/src/models/__tests__/userTokenUsage.test.js`
+- `server/src/routes/__tests__/trailieArtifactAccess.test.js`
+- `server/src/services/__tests__/npsImportSafety.test.js`
+- `server/src/services/__tests__/evidenceBrokerRuntime.test.js`
+- `server/src/services/__tests__/trailieSimpleRuntime.test.js`
+- `server/src/services/__tests__/trailieNamedPlaceBridge.test.js`
+- `server/src/services/__tests__/researchRelevanceConstraintConsistency.test.js`
+- `server/src/services/__tests__/evidenceBrokerService.test.js`
+- `server/src/services/__tests__/weatherEstimateService.test.js`
+- `server/src/services/__tests__/trailieGpt6.test.js`
+- `server/src/services/__tests__/trailieReviewPipeline.test.js`
+- `server/src/middleware/__tests__/protectHeaderOnlyContract.test.js`
+- `server/src/config/__tests__/trailieEvidenceRefreshSecret.test.js`
+- `server/src/eval/trailie/__tests__/genericLiveGatePreflight.test.js`
+- `server/src/prompts/__tests__/fullDayConstructionMetadata.test.js`
+- `server/src/utils/__tests__/exactDemoQ1EvidenceScoping.test.js`
+- `server/src/utils/__tests__/experienceMapAnchorTruth.test.js`
+- `server/src/utils/__tests__/trailieDraftPreview.test.js`
+- `server/src/utils/__tests__/generationContractTier1.test.js`
+- `server/src/utils/__tests__/trailieConsolidatedRepair.test.js`
+- `server/src/utils/__tests__/canonicalResponse.test.js`
+- `server/src/utils/__tests__/stopRouteArtifact.test.js`
+- `server/src/utils/__tests__/travelEdgeGenerationContract.test.js`
+- `server/src/utils/__tests__/daysFirstOutputOrder.test.js`
+- `server/src/utils/__tests__/messageConstraintOverrides.test.js`
+- `server/src/utils/__tests__/mismatchSafeTerminal.test.js`
+- `server/quarantine/legacy-v2/README.md`
+- `server/quarantine/legacy-v2/ownership.json`
+- `docs/audits/local-auth-and-server-tests-2026-10-14.md`
+
+## Quarantined moves
+
+- `server/src/services/__tests__/trailieV2ExecutionService.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/trailieV2ExecutionService.test.js`
+- `server/src/services/__tests__/trailieV2RouteBridge.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/trailieV2RouteBridge.test.js`
+- `server/src/services/__tests__/trailieV2TelemetryAttribution.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/trailieV2TelemetryAttribution.test.js`
+- `server/src/services/__tests__/trailieV2StructurePolicy.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/trailieV2StructurePolicy.test.js`
+- `server/src/services/__tests__/trailieTurn3MobilityCoverageReplay.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/trailieTurn3MobilityCoverageReplay.test.js`
+- `server/src/services/__tests__/trailieTurn2LiveReplay.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/trailieTurn2LiveReplay.test.js`
+- `server/src/services/__tests__/activeTripPresentationField.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/activeTripPresentationField.test.js`
+- `server/src/services/__tests__/tripQualityWiring.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/tripQualityWiring.test.js`
+- `server/src/services/__tests__/compoundActionabilityWiring.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/compoundActionabilityWiring.test.js`
+- `server/src/services/__tests__/coverageContainedRepairWiring.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/coverageContainedRepairWiring.test.js`
+- `server/src/services/__tests__/downstreamRepairWiring.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/downstreamRepairWiring.test.js`
+- `server/src/services/__tests__/anchorContainedRepairWiring.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/anchorContainedRepairWiring.test.js`
+- `server/src/services/__tests__/namedExperienceWiring.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/namedExperienceWiring.test.js`
+- `server/src/services/__tests__/namedExperienceSameAsWiring.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/namedExperienceSameAsWiring.test.js`
+- `server/src/services/__tests__/trailieTier1GenerationContract.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/trailieTier1GenerationContract.test.js`
+- `server/src/services/__tests__/crossPlanTargetMutation.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/crossPlanTargetMutation.test.js`
+- `server/src/services/__tests__/e2eProductRegression.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/e2eProductRegression.test.js`
+- `server/src/services/__tests__/liveBudgetGuardWiring.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/liveBudgetGuardWiring.test.js`
+- `server/src/services/__tests__/zeroDurationMicroRepairWiring.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/zeroDurationMicroRepairWiring.test.js`
+- `server/src/services/__tests__/operationalDirectivesWiring.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/operationalDirectivesWiring.test.js`
+- `server/src/services/__tests__/travelLogisticsV2Attachment.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/travelLogisticsV2Attachment.test.js`
+- `server/src/services/__tests__/targetTripResolverWiring.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/targetTripResolverWiring.test.js`
+- `server/src/services/__tests__/targetTripHydrationWiring.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/targetTripHydrationWiring.test.js`
+- `server/src/services/__tests__/planningStateDestinationSync.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/planningStateDestinationSync.test.js`
+- `server/src/services/__tests__/multiDestinationBuildClassification.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/multiDestinationBuildClassification.test.js`
+- `server/src/services/__tests__/coordinateProductionWiring.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/coordinateProductionWiring.test.js`
+- `server/src/services/__tests__/constructorRepairMonotonicity.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/constructorRepairMonotonicity.test.js`
+- `server/src/services/__tests__/semanticTurnResolver.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/semanticTurnResolver.test.js`
+- `server/src/services/__tests__/tripScopeIntentSync.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/tripScopeIntentSync.test.js`
+- `server/src/services/__tests__/resolvedEntitiesAuthoritativeSubject.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/resolvedEntitiesAuthoritativeSubject.test.js`
+- `server/src/services/__tests__/turnUnderstandingContinuity.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/turnUnderstandingContinuity.test.js`
+- `server/src/services/__tests__/groundedScopeRepairWiring.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/groundedScopeRepairWiring.test.js`
+- `server/src/services/__tests__/trailieExecutionContractIntegrity.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/trailieExecutionContractIntegrity.test.js`
+- `server/src/routes/__tests__/canonicalRouteConvergence.test.js` → `server/quarantine/legacy-v2/src/routes/__tests__/canonicalRouteConvergence.test.js`
+- `server/src/services/__tests__/evidencePlannerProviderContract.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/evidencePlannerProviderContract.test.js`
+- `server/src/services/__tests__/trailieTravelerJobResolver.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/trailieTravelerJobResolver.test.js`
+- `server/src/services/__tests__/turnUnderstandingHardening.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/turnUnderstandingHardening.test.js`
+- `server/src/services/__tests__/planningEntryReliability.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/planningEntryReliability.test.js`
+- `server/src/services/__tests__/webWaveEntryDemand.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/webWaveEntryDemand.test.js`
+- `server/src/utils/__tests__/actionableContingencyAnswer.test.js` → `server/quarantine/legacy-v2/src/utils/__tests__/actionableContingencyAnswer.test.js`
+- `server/src/utils/__tests__/actionableContingencyIndependentEval.test.js` → `server/quarantine/legacy-v2/src/utils/__tests__/actionableContingencyIndependentEval.test.js`
+- `server/src/utils/__tests__/comparisonSelectionIndependentEval.test.js` → `server/quarantine/legacy-v2/src/utils/__tests__/comparisonSelectionIndependentEval.test.js`
+- `server/src/utils/__tests__/dominantIntentArbitrationFreshParaphrase.test.js` → `server/quarantine/legacy-v2/src/utils/__tests__/dominantIntentArbitrationFreshParaphrase.test.js`
+- `server/src/utils/__tests__/dominantIntentArbitrationMetamorphic.test.js` → `server/quarantine/legacy-v2/src/utils/__tests__/dominantIntentArbitrationMetamorphic.test.js`
+- `server/src/utils/__tests__/boundedGapClosureFreshIndependent.test.js` → `server/quarantine/legacy-v2/src/utils/__tests__/boundedGapClosureFreshIndependent.test.js`
+- `server/src/utils/__tests__/boundedGapClosureMetamorphic.test.js` → `server/quarantine/legacy-v2/src/utils/__tests__/boundedGapClosureMetamorphic.test.js`
+- `server/src/utils/__tests__/systematicGapClosureFreshIndependent.test.js` → `server/quarantine/legacy-v2/src/utils/__tests__/systematicGapClosureFreshIndependent.test.js`
+- `server/src/utils/__tests__/systematicGapClosureMetamorphic.test.js` → `server/quarantine/legacy-v2/src/utils/__tests__/systematicGapClosureMetamorphic.test.js`
+- `server/src/utils/__tests__/identityProviderDegradationFreshIndependent.test.js` → `server/quarantine/legacy-v2/src/utils/__tests__/identityProviderDegradationFreshIndependent.test.js`
+- `server/src/utils/__tests__/planningReadinessP1Closure.test.js` → `server/quarantine/legacy-v2/src/utils/__tests__/planningReadinessP1Closure.test.js`
+- `server/src/utils/__tests__/planPatchApplyForensicsCapture.test.js` → `server/quarantine/legacy-v2/src/utils/__tests__/planPatchApplyForensicsCapture.test.js`
+- `server/src/services/__tests__/trailieOutputBudgetPolicy.test.js` → `server/quarantine/legacy-v2/src/services/__tests__/trailieOutputBudgetPolicy.test.js`
+- `server/src/routes/__tests__/wp12Phase2Switch.test.js` → `server/quarantine/legacy-v2/src/routes/__tests__/wp12Phase2Switch.test.js`
+- `server/src/utils/__tests__/strictProductionReadiness.test.js` → `server/quarantine/legacy-v2/src/utils/__tests__/strictProductionReadiness.test.js`
+- `server/src/utils/__tests__/strictModeFeasibility.test.js` → `server/quarantine/legacy-v2/src/utils/__tests__/strictModeFeasibility.test.js`
+- `server/src/utils/__tests__/exactDemoQ3SeasonalSubjectSemantics.test.js` → `server/quarantine/legacy-v2/src/utils/__tests__/exactDemoQ3SeasonalSubjectSemantics.test.js`
+- `server/src/routes/__tests__/trailieDisconnectCancellation.test.js` → `server/quarantine/legacy-v2/src/routes/__tests__/trailieDisconnectCancellation.test.js`
+- `server/src/controllers/__tests__/crossPlanTargetMutationPersistence.test.js` → `server/quarantine/legacy-v2/src/controllers/__tests__/crossPlanTargetMutationPersistence.test.js`

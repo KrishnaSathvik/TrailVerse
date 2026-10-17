@@ -118,7 +118,7 @@ The TrailVerse logo combines a modern compass icon with the brand name in a clea
 
 ### Social Media
 - **Twitter**: @TrailVerse
-- **Instagram**: @trailverse
+- **Instagram**: [@trailverseapp](https://www.instagram.com/trailverseapp/)
 - **Facebook**: /trailverse
 - **LinkedIn**: /company/trailverse
 - **YouTube**: @TrailVerse

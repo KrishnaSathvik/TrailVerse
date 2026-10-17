@@ -80,7 +80,7 @@ export default async function BlogCategoryPage({ params }) {
         <Header />
         <main className="pt-16">
           <section className="py-12 px-4 sm:px-6 lg:px-10 xl:px-12">
-            <div className="max-w-[92rem] mx-auto">
+            <div className="public-shell">
               <nav className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
                 <Link href="/" style={{ color: 'var(--text-secondary)' }}>Home</Link>
                 <span className="mx-2">/</span>
@@ -91,7 +91,7 @@ export default async function BlogCategoryPage({ params }) {
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
                 {cat.name}
               </h1>
-              <p className="text-lg mb-6 max-w-3xl" style={{ color: 'var(--text-secondary)' }}>
+              <p className="text-lg mb-6 public-content" style={{ color: 'var(--text-secondary)' }}>
                 {cat.description}
               </p>
               <p className="text-sm mb-8" style={{ color: 'var(--text-tertiary)' }}>

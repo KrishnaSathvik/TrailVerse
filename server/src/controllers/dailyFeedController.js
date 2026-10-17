@@ -1,5 +1,12 @@
-const npsService = require('../services/npsService');
-const openaiService = require('../services/openaiService');
+const { getNpsService } = require('../services/npsService');
+const provider = require('../services/openaiService');
+const { AsyncLocalStorage } = require('node:async_hooks');
+const feedAiScope = new AsyncLocalStorage();
+const openaiService = {
+  chat: (messages, prompt) => provider.chat(messages, prompt, {
+    signal: feedAiScope.getStore(), timeout: 30000, maxRetries: 0,
+  }),
+};
 const enhancedParkService = require('../services/enhancedParkService');
 
 // Debug helper for development-only logging
@@ -75,11 +82,10 @@ const {
   FEED_TIMEZONE,
   getFeedDateKey,
   shiftFeedDate,
-  isPastFeedWindowStart,
   shouldGenerateFeed,
 } = require('../utils/dailyFeedDate');
 
-// Database-based caching - no in-memory cache needed
+const { createDailyFeedCoordinator } = require('../services/dailyFeedCoordinator');
 
 // Haversine distance calculation function
 function haversine(a, b) {
@@ -106,14 +112,14 @@ function haversine(a, b) {
  * Generate the full daily feed and save to MongoDB.
  * Returns the saved document. Regenerates when forced or when today's 7 AM CST window hasn't run yet.
  */
-const generateAndSaveDailyFeed = async ({ force = false, feedDate = getFeedDateKey() } = {}) => {
+const buildDailyFeed = async (feedDate) => {
   const now = new Date();
-
-  const existing = await DailyFeed.findOne({ date: feedDate, isShared: true });
-  if (!force && !shouldGenerateFeed({ feedDoc: existing, feedDate, force: false, now })) {
-    console.log(`📦 Daily feed already fresh for ${feedDate}, skipping`);
-    return existing;
-  }
+  // All required Mongo reads precede paid generation. A later read failure
+  // must not discard already-generated provider output.
+  const recentFeeds = await DailyFeed.find({
+    isShared: true,
+    date: { $gte: shiftFeedDate(feedDate, -7), $lt: feedDate }
+  }).sort({ createdAt: -1 }).limit(7);
 
   console.log(`🔄 Generating daily feed for ${feedDate} (${FEED_TIMEZONE})…`);
 
@@ -145,21 +151,33 @@ const generateAndSaveDailyFeed = async ({ force = false, feedDate = getFeedDateK
   // 3. Generate all 8 AI sections in parallel (30s timeout each)
   console.log('🤖 Generating AI content…');
   const AI_TIMEOUT = 30000;
-  const withTimeout = (promise, label) =>
-    Promise.race([
-      promise,
-      new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} timed out`)), AI_TIMEOUT))
-    ]);
+  const withTimeout = async (task, label) => {
+    const controller = new AbortController();
+    let timer;
+    try {
+      return await Promise.race([
+        feedAiScope.run(controller.signal, task),
+        new Promise((_, reject) => {
+          timer = setTimeout(() => {
+            controller.abort();
+            reject(new Error(`${label} timed out`));
+          }, AI_TIMEOUT);
+        }),
+      ]);
+    } finally {
+      clearTimeout(timer);
+    }
+  };
 
   const aiResults = await Promise.allSettled([
-    withTimeout(getDailyNatureFact(selectedPark.parkCode, selectedPark.name), 'natureFact'),
-    withTimeout(getWeatherInsights(weatherData, selectedPark.name), 'weatherInsights'),
-    withTimeout(getAIQuickStatsInsights(selectedPark, weatherData, astroData), 'quickStats'),
-    withTimeout(getAISkyDataInsights(selectedPark, astroData, weatherData), 'skyData'),
-    withTimeout(getAIParkInfoInsights(selectedPark, weatherData, astroData), 'parkInfo'),
-    withTimeout(getPersonalizedRecommendations(null, selectedPark, weatherData, astroData), 'recommendations'),
-    withTimeout(getSkyInsights(astroData, selectedPark.name), 'skyInsights'),
-    withTimeout(getStargazingGuide(astroData, selectedPark.name, weatherData), 'stargazingGuide')
+    withTimeout(() => getDailyNatureFact(selectedPark.parkCode, selectedPark.name), 'natureFact'),
+    withTimeout(() => getWeatherInsights(weatherData, selectedPark.name), 'weatherInsights'),
+    withTimeout(() => getAIQuickStatsInsights(selectedPark, weatherData, astroData), 'quickStats'),
+    withTimeout(() => getAISkyDataInsights(selectedPark, astroData, weatherData), 'skyData'),
+    withTimeout(() => getAIParkInfoInsights(selectedPark, weatherData, astroData), 'parkInfo'),
+    withTimeout(() => getPersonalizedRecommendations(null, selectedPark, weatherData, astroData), 'recommendations'),
+    withTimeout(() => getSkyInsights(astroData, selectedPark.name), 'skyInsights'),
+    withTimeout(() => getStargazingGuide(astroData, selectedPark.name, weatherData), 'stargazingGuide')
   ]);
 
   const pick = (r, label) => {
@@ -178,11 +196,6 @@ const generateAndSaveDailyFeed = async ({ force = false, feedDate = getFeedDateK
   const stargazingGuide = pick(aiResults[7], 'stargazingGuide');
 
   // 4. Recent parks (7-day memory)
-  const recentFeeds = await DailyFeed.find({
-    isShared: true,
-    date: { $gte: shiftFeedDate(feedDate, -7), $lt: feedDate }
-  }).sort({ createdAt: -1 }).limit(7);
-
   const recentParks = [{ parkCode: selectedPark.parkCode, name: selectedPark.name, date: feedDate, selectedAt: new Date() }];
   recentFeeds.forEach(feed => {
     if (feed.parkOfDay?.parkCode) {
@@ -217,29 +230,32 @@ const generateAndSaveDailyFeed = async ({ force = false, feedDate = getFeedDateK
     rawWeatherData,
     rawAstroData,
     timestamp: now.toISOString(),
-    generatedAt: now.toLocaleString('en-US', {
-      timeZone: FEED_TIMEZONE,
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-      timeZoneName: 'short',
-    })
+    generatedAt: now
   };
 
-  await DailyFeed.updateOne(
-    { date: feedDate, isShared: true },
-    {
-      $set: { ...feedData, updatedAt: new Date() },
-      $setOnInsert: { userId: null, date: feedDate, isShared: true, createdAt: new Date(), expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000) }
-    },
-    { upsert: true }
-  );
-
-  console.log(`✅ Daily feed saved for ${feedDate} — park: ${selectedPark.name}`);
-  return await DailyFeed.findOne({ date: feedDate, isShared: true });
+  return { ...feedData, date: feedDate, isShared: true,
+    userId: null, createdAt: now, updatedAt: now };
 };
+
+const coordinator = createDailyFeedCoordinator({
+  read: date => DailyFeed.findOne({ date, isShared: true }).lean(),
+  generate: buildDailyFeed,
+  isFresh: (feedDoc, feedDate) => !shouldGenerateFeed({ feedDoc, feedDate }),
+  save: async feed => {
+    const { date, createdAt, ...data } = feed;
+    await DailyFeed.updateOne(
+      { date, isShared: true },
+      {
+        $set: data,
+        $setOnInsert: { date, createdAt, expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000) }
+      },
+      { upsert: true }
+    );
+    return feed;
+  },
+});
+const generateAndSaveDailyFeed = ({ force = false, feedDate = getFeedDateKey() } = {}) =>
+  coordinator.get({ force, feedDate });
 
 exports.generateAndSaveDailyFeed = generateAndSaveDailyFeed;
 
@@ -252,26 +268,15 @@ exports.getDailyFeed = async (req, res, next) => {
   try {
     const feedDate = getFeedDateKey();
 
-    let feed = await DailyFeed.findOne({ date: feedDate, isShared: true });
-
-    if (shouldGenerateFeed({ feedDoc: feed, feedDate })) {
-      if (isPastFeedWindowStart()) {
-        console.log(`⚠️ No fresh feed for ${feedDate}, generating on-demand…`);
-        feed = await generateAndSaveDailyFeed({ feedDate });
-      } else if (!feed?.parkOfDay?.parkCode) {
-        console.log(`⚠️ No feed for ${feedDate} (before 7 AM ${FEED_TIMEZONE}), generating fallback…`);
-        feed = await generateAndSaveDailyFeed({ feedDate });
-      }
-    }
-
-    if (!feed) {
-      return res.status(503).json({ success: false, error: 'Daily feed is being generated. Please try again in a moment.' });
-    }
-
-    res.json({ success: true, data: feed, feedDate, cached: true });
+    res.set('Cache-Control', 'private, no-store');
+    const feed = await generateAndSaveDailyFeed({ feedDate });
+    const status = coordinator.status();
+    res.json({ success: true, data: feed, feedDate: feed.date, cached: true,
+      persistencePending: status.persistencePending });
   } catch (error) {
-    console.error('Error getting daily feed:', error);
-    next(error);
+    res.set('Cache-Control', 'private, no-store');
+    res.set('Retry-After', String(error.retryAfter || 60));
+    return res.status(503).json({ success: false, error: 'Daily feed temporarily unavailable. Please try again later.' });
   }
 };
 
@@ -492,7 +497,7 @@ async function getRandomParkOfDay(dateStr) {
     
     // Get all parks with timeout
     const allParks = await Promise.race([
-      npsService.getAllParks(),
+      getNpsService().getAllParks(),
       new Promise((_, reject) => setTimeout(() => reject(new Error('NPS API timeout')), 10000))
     ]);
 
@@ -627,7 +632,7 @@ async function getPersonalizedParkOfDay(user, feedDate = getFeedDateKey()) {
     
     // Get all parks with timeout
     const allParks = await Promise.race([
-      npsService.getAllParks(),
+      getNpsService().getAllParks(),
       new Promise((_, reject) => setTimeout(() => reject(new Error('NPS API timeout')), 10000))
     ]);
     
@@ -1079,7 +1084,7 @@ function getWeatherRecommendation(condition, temperature) {
 async function getMustDoActivities(parkCode) {
   try {
     // Get real park activities from NPS service
-    const parkActivities = await npsService.getParkActivities(parkCode);
+    const parkActivities = await getNpsService().getParkActivities(parkCode);
     
     if (parkActivities && parkActivities.length > 0) {
       // Return top 3 activities from the park
@@ -1098,7 +1103,7 @@ async function getMustDoActivities(parkCode) {
 async function getCrowdLevel(parkCode) {
   try {
     // Get park data first
-    const park = await npsService.getParkByCode(parkCode);
+    const park = await getNpsService().getParkByCode(parkCode);
     if (!park) {
       return 'Moderate';
     }

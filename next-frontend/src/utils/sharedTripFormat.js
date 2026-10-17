@@ -33,6 +33,7 @@ export function formatDurationMinutes(minutes) {
 
 export function formatTime12(timeStr) {
   if (!timeStr) return null;
+  if (!/^\d{1,2}:\d{2}$/.test(timeStr)) return timeStr;
   const [h, m] = timeStr.split(':').map(Number);
   const suffix = h >= 12 ? 'PM' : 'AM';
   const hour12 = h % 12 || 12;
@@ -40,7 +41,10 @@ export function formatTime12(timeStr) {
 }
 
 export function getSharedDayHeading(day, dayIndex) {
-  const dayNumber = dayIndex + 1;
+  const canonicalDayNumber = Number(day?.dayNumber);
+  const dayNumber = Number.isInteger(canonicalDayNumber) && canonicalDayNumber > 0
+    ? canonicalDayNumber
+    : dayIndex + 1;
   const badge = `Day ${dayNumber}`;
   const label = (day.label || '').trim();
 
@@ -48,7 +52,7 @@ export function getSharedDayHeading(day, dayIndex) {
     return { badge, title: null };
   }
 
-  const prefixPattern = new RegExp(`^day\\s*${dayNumber}\\s*(?:[—–\\-:|]\\s*)?`, 'i');
+  const prefixPattern = new RegExp(`^day\\s*${dayNumber}\\s*(?:[·•—–\\-:|]\\s*)?`, 'i');
   const stripped = label.replace(prefixPattern, '').trim();
   const normalized = label.toLowerCase().replace(/\s+/g, ' ');
   const redundantLabels = new Set([

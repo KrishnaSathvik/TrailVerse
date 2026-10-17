@@ -213,7 +213,7 @@ class ReactEmailRenderer {
       compareUrl: compareUrl || `${base}/compare`,
       chatgptUrl:
         chatgptUrl ||
-        'https://chatgpt.com/apps/trailverse/asdk_app_69e9c67943c08191a37c464b803ebdbe',
+        'https://chatgpt.com/plugins/plugin_asdk_app_69e9c67943c08191a37c464b803ebdbe',
       exploreUrl: exploreUrl || `${base}/explore`,
       testimonialsUrl: testimonialsUrl || `${base}/testimonials`,
       unsubscribeUrl: unsubscribeUrl || `${base}/unsubscribe`

@@ -160,8 +160,8 @@ class RIDBService {
 
   async _getParkInfo(parkCode) {
     try {
-      const npsService = require('./npsService');
-      const park = await npsService.getParkByCode(parkCode);
+      const { getNpsService } = require('./npsService');
+      const park = await getNpsService().getParkByCode(parkCode);
       if (park) {
         const states = park.states ? park.states.split(',').map(s => s.trim()) : [];
         return { fullName: park.fullName, stateCode: states[0] || null };
@@ -253,6 +253,11 @@ class RIDBService {
   }
 
   async _getFacilitiesForRecArea(recAreaId) {
+    // Without a key this service is documented (see the constructor warning) to
+    // return empty results. _searchRecAreas and _searchFacilities already honor
+    // that; this path and _getPermitsForFacility did not, and dialed
+    // ridb.recreation.gov anyway — caught by the Stage 14.7E outbound guard.
+    if (!RIDB_API_KEY) return [];
     try {
       const response = await this.api.get(`/recareas/${recAreaId}/facilities`, {
         params: { limit: 50 }
@@ -269,6 +274,7 @@ class RIDBService {
   }
 
   async _getPermitsForFacility(facilityId) {
+    if (!RIDB_API_KEY) return [];
     try {
       const response = await this.api.get(`/facilities/${facilityId}/permitentrances`, {
         params: { limit: 50 }

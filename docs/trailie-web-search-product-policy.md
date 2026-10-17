@@ -1,6 +1,10 @@
 # Trailie Web Search — Product Policy
 
-**Status:** Active (small non-NPS unblock shipped 2026-06-16)  
+**Status:** Legacy rollback policy (`factsService`); not the active model-first research policy.
+
+Active model-first research is shared by guests and authenticated users, under the existing turn limits. Optional contextual resource links use the existing research budget; see [current capabilities](TRAILIE-CAPABILITIES-ACCURACY.md) and [offline verification](audits/trailie-contextual-travel-links-2026-10-17.md). The anonymous-search restriction below applies only to the legacy path.
+
+**Historical status:** Small non-NPS unblock shipped 2026-06-16
 **Code:** `server/src/services/factsService.js` — `needsWebSearch()`, `hasExplicitNonNpsDestinationSignal()`, `fetchRelevantFacts()`
 
 ---

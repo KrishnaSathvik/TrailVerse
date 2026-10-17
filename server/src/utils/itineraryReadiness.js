@@ -1,13 +1,10 @@
 /**
- * Decide whether there is enough context to build a structured day-by-day itinerary.
+ * Decide whether there is enough context to commit a structured day-by-day
+ * itinerary. Missing optional fields must not block a useful plan when they
+ * would not materially change the committed result.
  */
 
-const KNOWN_NON_NPS_DESTINATIONS = [
-  { pattern: /\bvalley of fire\b/i, name: 'Valley of Fire' },
-  { pattern: /\bhocking hills\b/i, name: 'Hocking Hills' },
-  { pattern: /\bred river gorge\b/i, name: 'Red River Gorge' },
-  { pattern: /\bsmith rock\b/i, name: 'Smith Rock' },
-];
+const { resolveTurnSufficiencyDecision, DECISIONS } = require('./turnSufficiencyDecision');
 
 function inferDurationFromText(text) {
   if (!text) return null;
@@ -34,9 +31,7 @@ function inferGroupFromText(text) {
 
 function inferNamedDestinationFromText(text) {
   if (!text) return null;
-  for (const dest of KNOWN_NON_NPS_DESTINATIONS) {
-    if (dest.pattern.test(text)) return dest.name;
-  }
+  // Generic titled place patterns only — never a hardcoded destination list.
   if (/\bstate park\b/i.test(text)) {
     const match = text.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s+State Park)\b/);
     if (match) return match[1];
@@ -51,8 +46,11 @@ function inferNamedDestinationFromText(text) {
  *   allExtractedParks?: Array<{ parkCode?: string, parkName?: string }>,
  *   conversationUserText?: string,
  *   skipUserContext?: boolean,
+ *   assumeDefaults?: boolean,
+ *   askedToProduceTripArtifact?: boolean,
+ *   priorPlan?: object,
  * }} input
- * @returns {{ ready: boolean, missing: string[], inferred: { numDays?: number, groupSize?: number, parkCode?: string } }}
+ * @returns {{ ready: boolean, missing: string[], inferred: object, decision: string, materialMissingInformation: Array, clarificationNeeded: boolean }}
  */
 function assessItineraryReadiness({
   constraints = {},
@@ -61,9 +59,10 @@ function assessItineraryReadiness({
   conversationUserText = '',
   skipUserContext = false,
   assumeDefaults = false,
-}) {
+  askedToProduceTripArtifact = false,
+  priorPlan = null,
+} = {}) {
   const text = conversationUserText || '';
-  const missing = [];
   const useAssumptions = assumeDefaults || skipUserContext || metadata.skipUserContext === true;
 
   const activeDest =
@@ -90,7 +89,6 @@ function assessItineraryReadiness({
     allExtractedParks.length >= 1 ||
     metadata?.intakeParkName ||
     namedPlace;
-  const hasDestination = Boolean(namedDestination);
 
   let numDays = constraints?.dates?.numDays || null;
   if (!numDays && constraints?.dates?.start) {
@@ -107,31 +105,59 @@ function assessItineraryReadiness({
   if (!groupSize) {
     groupSize = inferGroupFromText(text);
   }
-  if (!numDays && useAssumptions && hasDestination) {
+  if (!numDays && useAssumptions && namedDestination) {
     numDays = inferDurationFromText(text) || 2;
   }
-  if (!groupSize && useAssumptions && hasDestination) {
+  if (!groupSize && useAssumptions && namedDestination) {
     groupSize = 2;
   }
 
-  if (!hasDestination) {
-    missing.push('which park or destination to plan');
-  }
-  if (!numDays) {
-    missing.push('trip length or travel dates');
-  }
-  if (!groupSize) {
-    missing.push('who is traveling (solo, couple, family, or group size)');
-  }
+  const sufficiency = resolveTurnSufficiencyDecision({
+    userText: text,
+    constraints: {
+      ...constraints,
+      dates: { ...(constraints.dates || {}), numDays: numDays || constraints?.dates?.numDays },
+      groupSize: groupSize || constraints.groupSize,
+      parkCode,
+    },
+    metadata: {
+      ...metadata,
+      parkCode,
+      parkName: namedPlace || metadata.parkName,
+      resolvedPlaceName: metadata.resolvedPlaceName || namedPlace,
+    },
+    allExtractedParks,
+    destinations: allExtractedParks,
+    askedToProduceTripArtifact,
+    priorPlan,
+    requestedArtifact: 'itinerary',
+  });
+
+  const materialMissing = sufficiency.materialMissingInformation || [];
+  const missing = materialMissing.map((gap) => {
+    if (gap.concept === 'destination') return 'which park or destination to plan';
+    if (gap.concept === 'trip_length') return 'trip length or travel dates';
+    return gap.concept;
+  });
+
+  // Assumptions / skipUserContext may fill material gaps for starter plans.
+  const ready = useAssumptions
+    ? Boolean(namedDestination) && (Boolean(numDays) || missing.every((m) => !/destination/i.test(m)))
+    : sufficiency.decision === DECISIONS.PLAN_NOW
+      || sufficiency.decision === DECISIONS.SKETCH_NOW
+      || (Boolean(namedDestination) && Boolean(numDays) && missing.length === 0);
 
   return {
-    ready: missing.length === 0,
+    ready,
     missing,
     inferred: {
       numDays: numDays || undefined,
       groupSize: groupSize || undefined,
       parkCode: parkCode || undefined,
     },
+    decision: sufficiency.decision,
+    materialMissingInformation: materialMissing,
+    clarificationNeeded: !ready && sufficiency.clarificationNeeded === true && !useAssumptions,
   };
 }
 
@@ -141,17 +167,16 @@ function formatItineraryGatheringBlock(missing, { assumeDefaults = false } = {})
     return `
 --- DAY-BY-DAY PLAN — REASONABLE ASSUMPTIONS OK ---
 The user wants a day-by-day itinerary. Missing: ${list}.
-Assume reasonable defaults (e.g. a standard weekend, traveling as a couple unless stated otherwise) and state your assumptions in one short line.
-You MUST still deliver a full starter plan opening with **At a glance** or **Logistics summary**, then day-by-day detail.
-Include structured itinerary data via create_itinerary or [ITINERARY_JSON] — do NOT respond with intake questions only.
+Assume reasonable defaults only where they do not invent geography, and state assumptions briefly.
+Deliver a starter plan via create_itinerary or [ITINERARY_JSON] — do NOT respond with intake questions only.
 --- END ASSUMPTIONS ---
 `;
   }
   return `
 --- DAY-BY-DAY PLAN — GATHER INFO FIRST ---
-The user wants a day-by-day itinerary but these details are still missing: ${list}.
-Ask 1–2 targeted questions to fill the gaps (not a long questionnaire). Do NOT include [ITINERARY_JSON] until you know destination, trip length/dates, and who is traveling.
-If the conversation already answered something above, confirm it briefly instead of re-asking.
+The user wants a day-by-day itinerary but these details still materially change the plan: ${list}.
+Ask one focused question (or one tightly related pair). Do NOT dump an intake form. Do NOT include [ITINERARY_JSON] until the material gap is resolved.
+If the conversation already answered something above, confirm briefly instead of re-asking.
 --- END GATHER INFO ---
 `;
 }
@@ -160,13 +185,13 @@ function formatDayByDayIntakeBlock({ parkName, missing }) {
   const focus = parkName
     ? `They are leaning toward **${parkName}** from your prior recommendations — confirm or adjust.`
     : 'Confirm which destination from your prior recommendations they want planned.';
-  const gaps = missing.length > 0 ? missing.join('; ') : 'dates, trip length, and who is traveling';
+  const gaps = missing.length > 0 ? missing.join('; ') : 'the one detail that would change the committed plan';
   return `
 --- DAY-BY-DAY PLAN INTAKE ---
 The user clicked "Want a day-by-day plan?" after a discovery/recommendation answer.
 ${focus}
-Still missing: ${gaps}.
-Welcome their request warmly, then ask only what you still need (max 2 questions). Do NOT output [ITINERARY_JSON] on this turn.
+Still material: ${gaps}.
+Ask only what still changes the plan (max one focused question, or one tightly related pair). Do NOT output [ITINERARY_JSON] on this turn.
 --- END INTAKE ---
 `;
 }

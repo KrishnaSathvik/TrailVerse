@@ -1,0 +1,53 @@
+Trailie live response verification
+Generated: 2026-06-30T19:55:15.745Z
+API: http://127.0.0.1:5001/api
+Passed: 7/8
+
+────────────────────────────────────────────────────────────────────────
+discover-july · general · guest
+Q: What are the best national parks to visit in July with cool weather, lakes or beaches?
+Flags: hasWebSearch=undefined hasLiveData=false · claude/claude-sonnet-4-6 · 1952 chars · 14.6s
+→ Great timing — July 1–5 includes **fee-free entrance days at all NPS sites**, so you won't pay an entrance fee that opening weekend. That's a solid bonus if you're heading out early in the month. For cool July weather wi…
+
+────────────────────────────────────────────────────────────────────────
+compare-zion-bryce · general · guest
+Q: Zion vs Bryce for first-time visitors in October — which should we pick?
+Flags: hasWebSearch=undefined hasLiveData=true · claude/claude-sonnet-4-6 · 1730 chars · 14.4s
+→ Go with Bryce Canyon for first-time visitors in October — it's the better park for the season, full stop. October is genuinely Bryce's sweet spot. The summer crowds thin out, the aspens turn gold around the rim, and you …
+
+────────────────────────────────────────────────────────────────────────
+angels-landing-open · alerts · guest
+Q: Is Angels Landing open right now in Zion National Park?
+Flags: hasWebSearch=undefined hasLiveData=true · claude/claude-sonnet-4-6 · 1261 chars · 10.4s
+FAIL: unexpected upsell
+→ Yes, Angels Landing is open — but you need a permit to hike it right now. No active closure alerts for the trail. What IS required: a permit through the Angels Landing Pilot Permit Program. For summer hikes (June 1–Augus…
+
+────────────────────────────────────────────────────────────────────────
+narrows-permit · general · guest
+Q: Do I need a permit to hike The Narrows top-down in Zion?
+Flags: hasWebSearch=undefined hasLiveData=true · claude/claude-sonnet-4-6 · 1275 chars · 11.6s
+→ The top-down Narrows (Chamberlain's Ranch to Temple of Sinawava) doesn't have its own dedicated permit — but there's a catch. You'll need a **Zion canyoneering permit** if your route involves any technical canyoneering s…
+
+────────────────────────────────────────────────────────────────────────
+yellowstone-itinerary · general · guest
+Q: Plan a 4-day Yellowstone itinerary in September for two adults who like wildlife and moderate hikes.
+Flags: hasWebSearch=undefined hasLiveData=true · claude/claude-sonnet-4-6 · 1052 chars · 9.0s
+→ Two adults, 4 days, September, wildlife-forward with moderate hikes — great timing for Yellowstone. One quick thing before I build this out: **Where are you planning to stay?** Camping inside the park, a lodge inside the…
+
+────────────────────────────────────────────────────────────────────────
+guest-west-yellowstone · web · guest
+Q: Where should we eat and stay in West Yellowstone before entering the park?
+Flags: hasWebSearch=undefined hasLiveData=true · claude/claude-sonnet-4-6 · 1741 chars · 11.9s
+→ West Yellowstone is a solid base — small town, walkable, and you're literally at the west entrance. Here's the honest rundown: **Staying:** The town has a range of options from budget motels to nicer lodges. **Three Bear…
+
+────────────────────────────────────────────────────────────────────────
+auth-jackson-lodging · web · guest
+Q: Best hotels and dinner spots in Jackson Hole near Grand Teton National Park for a September trip?
+Flags: hasWebSearch=undefined hasLiveData=true · claude/claude-sonnet-4-6 · 1740 chars · 12.5s
+→ Jackson Hole is a great base for Grand Teton in September — crowds thin out noticeably after Labor Day and you'll catch early fall color on the aspens. **Hotels:** I can't pull live rates or availability in guest mode, b…
+
+────────────────────────────────────────────────────────────────────────
+glacier-road · web · guest
+Q: Are there any road closures on Going-to-the-Sun Road in Glacier National Park this week?
+Flags: hasWebSearch=undefined hasLiveData=true · claude/claude-sonnet-4-6 · 915 chars · 7.8s
+→ Yes — there's an active closure right now. Going-to-the-Sun Road is closed between Avalanche and Rising Sun due to heavy rain and debris. That's a significant chunk of the road, cutting off the middle section including L…

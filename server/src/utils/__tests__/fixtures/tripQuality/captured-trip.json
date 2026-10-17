@@ -1,0 +1,363 @@
+{
+  "provenance": "Saved canonical plan from single authorized run 2026-09-24. Evidence claims and activityTypes transcribed from the exact primary request PUBLIC EVIDENCE, linked to saved evidenceRef. Not a full original EvidenceBundle; no invented alternatives, seasonal facts or entity metadata.",
+  "plan": {
+    "intro": "Day 1: Zion Canyon Visitor Center; Human History Museum. Day 2: Kolob Canyons Visitor Center; Human History Museum. Day 3: Zion-Mt. Carmel Highway; Human History Museum. Day 4: Zion Nature Center; Human History Museum.",
+    "days": [
+      {
+        "id": "zion-1",
+        "dayNumber": 1,
+        "label": "Zion Canyon orientation and the museum views",
+        "stops": [
+          {
+            "id": "z1-vc",
+            "order": 1,
+            "type": "museum",
+            "name": "Zion Canyon Visitor Center",
+            "duration": 45,
+            "latitude": 37.20007883740497,
+            "longitude": -112.98688895601737,
+            "note": "Start near the South Entrance; use the outdoor exhibits and ask a ranger which canyon outings make sense for your dates.",
+            "why": "It gives you a useful first look before committing the rest of the trip to an outing whose access may vary.",
+            "timeWindow": "Morning",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "exposureLevel": "low",
+            "evidenceRef": "ev:633f1de3b28d5175039facc0487e49a12e5e253d5f5091e0b2771442b1cac495",
+            "canonicalPlaceName": "Zion Canyon Visitor Center",
+            "resolutionStatus": "resolved",
+            "experienceKind": "facility",
+            "parkIdentityEvidenceId": "ev:633f1de3b28d5175039facc0487e49a12e5e253d5f5091e0b2771442b1cac495",
+            "coordinateSource": "resolved_metadata",
+            "displayName": "Zion Canyon Visitor Center"
+          },
+          {
+            "id": "z1-museum",
+            "order": 2,
+            "type": "museum",
+            "name": "Human History Museum",
+            "duration": 90,
+            "latitude": 37.209446,
+            "longitude": -112.980442,
+            "note": "See the exhibits and 22-minute orientation film, then step outside for views of the Towers of the Virgin and Bridge Mountain.",
+            "why": "The museum pairs an introduction to Zion\u2019s human history with a distinctly scenic stop on your first day.",
+            "timeWindow": "Afternoon",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "exposureLevel": "low",
+            "evidenceRef": "ev:586a6252657d2c42be8d0922f898c4e5fca203e3137dd86b75d0fc9a2e5faf30",
+            "canonicalPlaceName": "Human History Museum",
+            "resolutionStatus": "resolved",
+            "experienceKind": "facility",
+            "parkIdentityEvidenceId": "ev:586a6252657d2c42be8d0922f898c4e5fca203e3137dd86b75d0fc9a2e5faf30",
+            "coordinateSource": "resolved_metadata",
+            "displayName": "Human History Museum"
+          }
+        ],
+        "travelEdges": [
+          {
+            "sourceStopId": "z1-vc",
+            "targetStopId": "z1-museum",
+            "relationship": "transfer"
+          }
+        ],
+        "parkCodes": [
+          "zion"
+        ]
+      },
+      {
+        "id": "zion-2",
+        "dayNumber": 2,
+        "label": "Kolob Canyons and a slower canyon afternoon",
+        "stops": [
+          {
+            "id": "z2-kolob",
+            "order": 1,
+            "type": "museum",
+            "name": "Kolob Canyons Visitor Center",
+            "duration": 90,
+            "latitude": 37.4534968211,
+            "longitude": -113.225414419,
+            "note": "Make this your introduction to the Kolob Canyons area, with exhibits on its geology, vegetation, and wildlife. The center is listed as closed daily from noon to 1 p.m.; ask rangers about places to explore before setting out farther.",
+            "why": "Kolob gives this day a different part of Zion rather than another morning in the main canyon.",
+            "timeWindow": "Morning",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "exposureLevel": "low",
+            "evidenceRef": "ev:5be3cf2ea8d6a2fd1ecd80bbc2d1ecbcb16eeae99d8543387ee047b0a4e5fdea",
+            "canonicalPlaceName": "Kolob Canyons Visitor Center",
+            "resolutionStatus": "resolved",
+            "experienceKind": "facility",
+            "parkIdentityEvidenceId": "ev:5be3cf2ea8d6a2fd1ecd80bbc2d1ecbcb16eeae99d8543387ee047b0a4e5fdea",
+            "coordinateSource": "resolved_metadata",
+            "displayName": "Kolob Canyons Visitor Center"
+          },
+          {
+            "id": "z2-museum",
+            "order": 2,
+            "type": "museum",
+            "name": "Human History Museum",
+            "duration": 45,
+            "latitude": 37.209446,
+            "longitude": -112.980442,
+            "note": "Back in the main canyon, linger outside for the views of the Towers of the Virgin and Bridge Mountain; this visit need not repeat the exhibits.",
+            "why": "It makes the return from Kolob a relaxed scenic afternoon rather than another scheduled indoor visit.",
+            "timeWindow": "Late afternoon",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "exposureLevel": "low",
+            "evidenceRef": "ev:586a6252657d2c42be8d0922f898c4e5fca203e3137dd86b75d0fc9a2e5faf30",
+            "canonicalPlaceName": "Human History Museum",
+            "resolutionStatus": "resolved",
+            "experienceKind": "facility",
+            "parkIdentityEvidenceId": "ev:586a6252657d2c42be8d0922f898c4e5fca203e3137dd86b75d0fc9a2e5faf30",
+            "coordinateSource": "resolved_metadata",
+            "displayName": "Human History Museum"
+          }
+        ],
+        "travelEdges": [
+          {
+            "sourceStopId": "z2-kolob",
+            "targetStopId": "z2-museum",
+            "relationship": "transfer"
+          }
+        ],
+        "parkCodes": [
+          "zion"
+        ]
+      },
+      {
+        "id": "zion-3",
+        "dayNumber": 3,
+        "label": "Zion\u2013Mt. Carmel Highway and canyon history",
+        "stops": [
+          {
+            "id": "z3-highway",
+            "order": 1,
+            "type": "scenic_drive",
+            "name": "Zion-Mt. Carmel Highway",
+            "duration": 120,
+            "note": "Set aside an unhurried daytime drive on the highway between Canyon Junction and the East Entrance. Check road and tunnel status before you go; don't rely on a nighttime crossing.",
+            "why": "A day centered on the east-side road feels different from the visitor facilities and Kolob day.",
+            "timeWindow": "Morning",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "evidenceRef": "ev:a85efca5f3948a821cb5880a3291c14f91ed78b543e0c6e5f2438b329f571db3",
+            "canonicalPlaceName": "Large vehicle restrictions on Zion-Mt. Carmel Highway",
+            "resolutionStatus": "resolved",
+            "experienceKind": "scenic_drive",
+            "parkIdentityEvidenceId": "ev:a85efca5f3948a821cb5880a3291c14f91ed78b543e0c6e5f2438b329f571db3",
+            "walkingDistanceMiles": null,
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown",
+            "displayName": "Large vehicle restrictions on Zion-Mt. Carmel Highway"
+          },
+          {
+            "id": "z3-museum",
+            "order": 2,
+            "type": "museum",
+            "name": "Human History Museum",
+            "duration": 75,
+            "latitude": 37.209446,
+            "longitude": -112.980442,
+            "note": "If you skipped the exhibits or film on day one, see them now; otherwise spend the time with the changing exhibits and the views outside.",
+            "why": "This is a flexible indoor-and-outdoor afternoon after time on the road.",
+            "timeWindow": "Afternoon",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "exposureLevel": "low",
+            "evidenceRef": "ev:586a6252657d2c42be8d0922f898c4e5fca203e3137dd86b75d0fc9a2e5faf30",
+            "canonicalPlaceName": "Human History Museum",
+            "resolutionStatus": "resolved",
+            "experienceKind": "facility",
+            "parkIdentityEvidenceId": "ev:586a6252657d2c42be8d0922f898c4e5fca203e3137dd86b75d0fc9a2e5faf30",
+            "coordinateSource": "resolved_metadata",
+            "displayName": "Human History Museum"
+          }
+        ],
+        "travelEdges": [
+          {
+            "sourceStopId": "z3-highway",
+            "targetStopId": "z3-museum",
+            "relationship": "transfer"
+          }
+        ],
+        "parkCodes": [
+          "zion"
+        ]
+      },
+      {
+        "id": "zion-4",
+        "dayNumber": 4,
+        "label": "Nature Center exhibits and a last canyon view",
+        "stops": [
+          {
+            "id": "z4-nature",
+            "order": 1,
+            "type": "museum",
+            "name": "Zion Nature Center",
+            "duration": 90,
+            "latitude": 37.20535480630132,
+            "longitude": -112.98241138458252,
+            "note": "If your dates fall during its summer season and it is open, explore the interactive exhibits on Zion\u2019s habitats and wildlife; check its hours before making the trip over.",
+            "why": "The hands-on exhibits offer a quieter, different perspective on the park for your last day.",
+            "timeWindow": "Morning",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "exposureLevel": "low",
+            "evidenceRef": "ev:a2e9463b9ccc71d6432320c58bebf0e75bca2f4d45af92ef3071232cbaca47b8",
+            "canonicalPlaceName": "Zion Nature Center",
+            "resolutionStatus": "resolved",
+            "experienceKind": "facility",
+            "parkIdentityEvidenceId": "ev:a2e9463b9ccc71d6432320c58bebf0e75bca2f4d45af92ef3071232cbaca47b8",
+            "coordinateSource": "resolved_metadata",
+            "displayName": "Zion Nature Center"
+          },
+          {
+            "id": "z4-museum",
+            "order": 2,
+            "type": "museum",
+            "name": "Human History Museum",
+            "duration": 60,
+            "latitude": 37.209446,
+            "longitude": -112.980442,
+            "note": "Spend a final unhurried session outside framing the Towers of the Virgin and Bridge Mountain. If the Nature Center is unavailable, allow more time here for the museum\u2019s exhibits too.",
+            "why": "You can revisit the canyon view without adding an unverified hike to the schedule.",
+            "timeWindow": "Afternoon",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "exposureLevel": "low",
+            "evidenceRef": "ev:586a6252657d2c42be8d0922f898c4e5fca203e3137dd86b75d0fc9a2e5faf30",
+            "canonicalPlaceName": "Human History Museum",
+            "resolutionStatus": "resolved",
+            "experienceKind": "facility",
+            "parkIdentityEvidenceId": "ev:586a6252657d2c42be8d0922f898c4e5fca203e3137dd86b75d0fc9a2e5faf30",
+            "coordinateSource": "resolved_metadata",
+            "displayName": "Human History Museum"
+          }
+        ],
+        "travelEdges": [
+          {
+            "sourceStopId": "z4-nature",
+            "targetStopId": "z4-museum",
+            "relationship": "transfer"
+          }
+        ],
+        "parkCodes": [
+          "zion"
+        ]
+      }
+    ],
+    "narrativeSections": [],
+    "alternatives": [],
+    "itineraryHash": "bc5c0f0bc0c7e724a112f8b396e1e83d472f32ef3a6e43f0419e2510de7c55db",
+    "feasibilityIssues": []
+  },
+  "bundle": {
+    "evidence": [
+      {
+        "evidenceId": "ev:586a6252657d2c42be8d0922f898c4e5fca203e3137dd86b75d0fc9a2e5faf30",
+        "topic": "visitor_services",
+        "evidenceType": "fact",
+        "claim": {
+          "text": "Human History Museum: Immerse yourself in the human history of Zion National Park! Rangers staff an information desk during operating hours. Indoor exhibits explore the people, places, and stories of Zion. Rotating exhibits feature regional artists, local discoveries, and more. A 22-minute orientation film examines the history of the canyon and highlights the dramatic landscapes of the park. Visit the bookstore for books, gifts, and souvenirs. There are also dramatic views of the Towers of the Virgin and Bridge Mountain outside.",
+          "normalizedValue": {
+            "name": "Human History Museum",
+            "activityTypes": [
+              "visitor_center",
+              "exhibits",
+              "orientation"
+            ],
+            "category": "visitor_center"
+          }
+        }
+      },
+      {
+        "evidenceId": "ev:5be3cf2ea8d6a2fd1ecd80bbc2d1ecbcb16eeae99d8543387ee047b0a4e5fdea",
+        "topic": "visitor_services",
+        "evidenceType": "fact",
+        "claim": {
+          "text": "Kolob Canyons Visitor Center: Closed daily from 12pm-1pm This is the entry point to the Kolob Canyons area of the park. It is located 45 miles north of Springdale and 17 miles south of Cedar City at Exit 40 on Interstate 15. Park rangers are available to answer questions. Exhibits explore the geology, vegetation, and wildlife of this unique landscape.",
+          "normalizedValue": {
+            "name": "Kolob Canyons Visitor Center",
+            "activityTypes": [
+              "visitor_center",
+              "exhibits",
+              "orientation"
+            ],
+            "category": "visitor_center"
+          }
+        }
+      },
+      {
+        "evidenceId": "ev:633f1de3b28d5175039facc0487e49a12e5e253d5f5091e0b2771442b1cac495",
+        "topic": "visitor_services",
+        "evidenceType": "fact",
+        "claim": {
+          "text": "Zion Canyon Visitor Center: Located near the South Entrance of the park, the Zion Canyon Visitor Center is an excellent place to begin your exploration of Zion Canyon. Park rangers and outdoor exhibits will help you plan your visit and make the most of your time. Inquire at the Zion Canyon Wilderness Desk about permits for backpacking, canyoneering, and other trips into the wilderness. Visit the bookstore for maps, books, and gifts.",
+          "normalizedValue": {
+            "name": "Zion Canyon Visitor Center",
+            "activityTypes": [
+              "visitor_center",
+              "exhibits",
+              "orientation"
+            ],
+            "category": "visitor_center"
+          }
+        }
+      },
+      {
+        "evidenceId": "ev:a2e9463b9ccc71d6432320c58bebf0e75bca2f4d45af92ef3071232cbaca47b8",
+        "topic": "visitor_services",
+        "evidenceType": "fact",
+        "claim": {
+          "text": "Zion Nature Center: During the summer, come visit the Zion Nature Center! This is a perfect place to learn about geology, animals, and the history of Zion. Take a break from the sun to explore different habitats, enjoy bird songs, listen to canyon tree frog calls, and participate in Junior Ranger programs. The inside of the Nature Center has a variety of interactive exhibits, animal models, changing activities, and crafts. Park rangers host educational programs throughout the day.",
+          "normalizedValue": {
+            "name": "Zion Nature Center",
+            "activityTypes": [
+              "visitor_center",
+              "exhibits",
+              "orientation"
+            ],
+            "category": "visitor_center"
+          }
+        }
+      },
+      {
+        "evidenceId": "ev:a85efca5f3948a821cb5880a3291c14f91ed78b543e0c6e5f2438b329f571db3",
+        "topic": "alerts_closures",
+        "evidenceType": "fact",
+        "claim": {
+          "text": "Large vehicle restrictions on Zion-Mt. Carmel Highway: Vehicles that exceed length, width, height, or weight limits cannot travel between Canyon Junction and the park's East Entrance. See the current limits on the page linked below.",
+          "normalizedValue": {
+            "name": "Large vehicle restrictions on Zion-Mt. Carmel Highway"
+          }
+        }
+      }
+    ]
+  }
+}

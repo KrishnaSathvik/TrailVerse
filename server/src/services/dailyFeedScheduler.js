@@ -1,12 +1,10 @@
 const { generateAndSaveDailyFeed } = require('../controllers/dailyFeedController');
-const DailyFeed = require('../models/DailyFeed');
 const {
   FEED_TIMEZONE,
   FEED_GENERATION_HOUR,
   getFeedDateKey,
   isPastFeedWindowStart,
   isScheduledGenerationMinute,
-  shouldGenerateFeed,
 } = require('../utils/dailyFeedDate');
 
 let generating = false;
@@ -23,16 +21,10 @@ const ensureTodaysFeed = async ({ force = false, reason = 'scheduler' } = {}) =>
   }
 
   const feedDate = getFeedDateKey();
-  const existing = await DailyFeed.findOne({ date: feedDate, isShared: true });
-
-  if (!shouldGenerateFeed({ feedDoc: existing, feedDate, force })) {
-    return;
-  }
-
   generating = true;
   try {
     console.log(`🌅 Generating daily feed (${reason}) for ${feedDate} @ ${FEED_GENERATION_HOUR}:00 ${FEED_TIMEZONE}…`);
-    const feed = await generateAndSaveDailyFeed({ force: true, feedDate });
+    const feed = await generateAndSaveDailyFeed({ force, feedDate });
     console.log(`🌅 Daily feed ready — ${feed?.parkOfDay?.name || 'unknown park'} (${feedDate})`);
     _lastScheduledFeedDate = feedDate;
   } catch (error) {
@@ -60,7 +52,22 @@ const tick = async () => {
  * - Runs at 7:00 AM America/Chicago every day (not UTC midnight).
  * - On startup, backfills if today's 7 AM generation was missed.
  */
+/**
+ * Dev credit hygiene (2026-09-01): the startup catch-up fires paid OpenAI
+ * calls within seconds of every boot. Production runs the scheduler as
+ * always; development and test require the explicit opt-in
+ * DAILY_FEED_SCHEDULER_ENABLED=true.
+ */
+const isDailyFeedSchedulerEnabled = (env = process.env) => {
+  if (env.NODE_ENV === 'production') return true;
+  return String(env.DAILY_FEED_SCHEDULER_ENABLED || '').trim() === 'true';
+};
+
 const startDailyFeedScheduler = () => {
+  if (!isDailyFeedSchedulerEnabled()) {
+    console.log('🌅 Daily feed scheduler disabled outside production (set DAILY_FEED_SCHEDULER_ENABLED=true to opt in) — no model calls will be made.');
+    return;
+  }
   console.log(`🌅 Starting daily feed scheduler (${FEED_GENERATION_HOUR}:00 AM ${FEED_TIMEZONE} daily)…`);
 
   setTimeout(async () => {
@@ -88,4 +95,4 @@ const stopDailyFeedScheduler = () => {
   }
 };
 
-module.exports = { startDailyFeedScheduler, stopDailyFeedScheduler, ensureTodaysFeed };
+module.exports = { startDailyFeedScheduler, stopDailyFeedScheduler, ensureTodaysFeed, isDailyFeedSchedulerEnabled };

@@ -2,7 +2,7 @@
  * Load parks into the unified catalog (Phase 1.5).
  * Additional sources plug in here in Phase 3.
  */
-const npsService = require('../services/npsService');
+const { getNpsService } = require('../services/npsService');
 const { npsRecordsToCanonical } = require('../adapters/npsParkAdapter');
 const { canonicalParkInState } = require('./canonicalPark');
 
@@ -16,9 +16,9 @@ async function loadCanonicalParks(options = {}) {
 
   if (state) {
     try {
-      npsParks = await npsService.getParksByState(state);
+      npsParks = await getNpsService().getParksByState(state);
     } catch {
-      const all = await npsService.getAllParks();
+      const all = await getNpsService().getAllParks();
       npsParks = all.filter(
         (p) => p.states && canonicalParkInState(
           { states: p.states },
@@ -27,7 +27,7 @@ async function loadCanonicalParks(options = {}) {
       );
     }
   } else {
-    npsParks = await npsService.getAllParks();
+    npsParks = await getNpsService().getAllParks();
   }
 
   return npsRecordsToCanonical(npsParks);

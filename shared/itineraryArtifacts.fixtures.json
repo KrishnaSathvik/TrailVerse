@@ -1,0 +1,95 @@
+{
+  "_comment": "SOURCE OF TRUTH for itinerary-artifact stripping. Both the CommonJS server (server/src/utils/itineraryArtifacts.js) and the ESM frontend (next-frontend/src/utils/itineraryArtifacts.js) implement stripItineraryArtifacts() and MUST produce identical `content` and `artifactTypes` for every case below. Divergence fails CI in one suite. Do not edit one stripper without updating these fixtures and re-running BOTH suites.",
+  "cases": [
+    {
+      "name": "plain content with no artifacts is unchanged",
+      "input": "Here is your plan for Zion. Start early at the Narrows.",
+      "expected": {
+        "content": "Here is your plan for Zion. Start early at the Narrows.",
+        "changed": false,
+        "artifactTypes": []
+      }
+    },
+    {
+      "name": "complete bracketed block is removed",
+      "input": "Your Zion weekend:\n\n[ITINERARY_JSON]{\"days\":[{\"id\":\"day-1\"}]}[/ITINERARY_JSON]",
+      "expected": {
+        "content": "Your Zion weekend:",
+        "changed": true,
+        "artifactTypes": ["complete_block"]
+      }
+    },
+    {
+      "name": "unterminated opening marker (token-limit truncation) is removed to end",
+      "input": "Great plan below.\n\n[ITINERARY_JSON]{\"days\":[{\"id\":\"day-1\",\"stops\":[{\"name\":\"Angels",
+      "expected": {
+        "content": "Great plan below.",
+        "changed": true,
+        "artifactTypes": ["unterminated_open"]
+      }
+    },
+    {
+      "name": "orphan closing marker is removed",
+      "input": "Some prose that got mangled.[/ITINERARY_JSON]\n\nMore prose.",
+      "expected": {
+        "content": "Some prose that got mangled.\n\nMore prose.",
+        "changed": true,
+        "artifactTypes": ["orphan_close"]
+      }
+    },
+    {
+      "name": "fenced json labeled itinerary block is removed",
+      "input": "Plan:\n\n```json ITINERARY_JSON\n{\"days\":[]}\n```\n\nEnjoy!",
+      "expected": {
+        "content": "Plan:\n\nEnjoy!",
+        "changed": true,
+        "artifactTypes": ["fenced_json"]
+      }
+    },
+    {
+      "name": "bare ITINERARY_JSON label line is removed",
+      "input": "Here is the plan.\nITINERARY_JSON:\nrest of text",
+      "expected": {
+        "content": "Here is the plan.\nrest of text",
+        "changed": true,
+        "artifactTypes": ["bare_label"]
+      }
+    },
+    {
+      "name": "excess blank lines collapse without counting as an artifact",
+      "input": "Line one.\n\n\n\nLine two.",
+      "expected": {
+        "content": "Line one.\n\nLine two.",
+        "changed": false,
+        "artifactTypes": []
+      }
+    },
+    {
+      "name": "leading and trailing whitespace is trimmed on both ends",
+      "input": "   \n  Trimmed body.  \n  ",
+      "expected": {
+        "content": "Trimmed body.",
+        "changed": false,
+        "artifactTypes": []
+      }
+    },
+    {
+      "name": "complete block plus a trailing orphan close both removed",
+      "input": "Intro.\n\n[ITINERARY_JSON]{\"days\":[]}[/ITINERARY_JSON]\n\nOutro.[/ITINERARY_JSON]",
+      "expected": {
+        "content": "Intro.\n\nOutro.",
+        "changed": true,
+        "artifactTypes": ["complete_block", "orphan_close"]
+      }
+    },
+    {
+      "name": "non-string input returns empty string",
+      "input": null,
+      "expected": {
+        "content": "",
+        "changed": false,
+        "artifactTypes": []
+      }
+    }
+  ]
+}

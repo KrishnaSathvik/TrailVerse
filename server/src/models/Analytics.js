@@ -2,8 +2,9 @@ const mongoose = require('mongoose');
 const {
   ANALYTICS_RETENTION_SECONDS,
   API_CALL_RETENTION_SECONDS,
-  NON_API_CALL_EVENT_TYPES,
+  GENERAL_TTL_EVENT_TYPES,
 } = require('../config/analyticsRetention');
+const { humanTrafficFilter } = require('../utils/botClassifier');
 
 const analyticsSchema = new mongoose.Schema({
   eventType: {
@@ -14,7 +15,8 @@ const analyticsSchema = new mongoose.Schema({
       'park_view', 'park_save', 'park_visit', 'review_create', 'review_helpful',
       'blog_view', 'blog_share', 'event_register', 'event_view',
       'ai_chat', 'conversation_create', 'image_upload', 'user_signup',
-      'user_login', 'user_logout', 'error', 'performance', 'mcp_tool_call'
+      'user_login', 'user_logout', 'error', 'performance', 'mcp_tool_call',
+      'crowd_calendar_view',
     ]
   },
   eventCategory: {
@@ -30,6 +32,27 @@ const analyticsSchema = new mongoose.Schema({
   sessionId: {
     type: String,
     required: true
+  },
+  browserId: {
+    type: String,
+    default: null
+  },
+  userType: {
+    type: String,
+    enum: ['anonymous', 'authenticated'],
+    default: 'anonymous'
+  },
+  isBot: {
+    type: Boolean,
+    default: false
+  },
+  source: {
+    type: String,
+    default: null
+  },
+  ctaId: {
+    type: String,
+    default: null
   },
   userAgent: {
     type: String,
@@ -134,22 +157,17 @@ const analyticsSchema = new mongoose.Schema({
     default: Date.now,
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  // Index changes are an explicit migration, never an application-start side effect.
+  autoIndex: false
 });
 
-// Add indexes for efficient querying
+// Keep a small index set — admin/dashboard queries almost always filter by
+// eventType + timestamp (or timestamp alone). Extra single-field indexes were
+// bloating Atlas Free storage (~160MB) without being used in $match stages.
 analyticsSchema.index({ eventType: 1, timestamp: -1 });
-analyticsSchema.index({ eventCategory: 1, timestamp: -1 });
-analyticsSchema.index({ userId: 1, timestamp: -1 });
-analyticsSchema.index({ sessionId: 1, timestamp: -1 });
-analyticsSchema.index({ parkCode: 1, timestamp: -1 });
-analyticsSchema.index({ blogId: 1, timestamp: -1 });
-analyticsSchema.index({ eventId: 1, timestamp: -1 });
-analyticsSchema.index({ 'metadata.searchTerm': 1, timestamp: -1 });
-analyticsSchema.index({ 'location.country': 1, timestamp: -1 });
-analyticsSchema.index({ 'device.type': 1, timestamp: -1 });
-analyticsSchema.index({ 'metadata.source': 1, timestamp: -1 });
-// api_call rows expire after 7 days; other event types keep the 90-day window.
+analyticsSchema.index({ timestamp: -1 });
+// api_call rows expire after 7 days; other event types use ANALYTICS_RETENTION_DAYS.
 analyticsSchema.index(
   { timestamp: 1 },
   {
@@ -163,20 +181,9 @@ analyticsSchema.index(
   {
     expireAfterSeconds: ANALYTICS_RETENTION_SECONDS,
     name: 'analytics_general_ttl',
-    partialFilterExpression: { eventType: { $in: NON_API_CALL_EVENT_TYPES } },
+    partialFilterExpression: { eventType: { $in: GENERAL_TTL_EVENT_TYPES } },
   }
 );
-
-// Compound indexes for common queries
-analyticsSchema.index({ eventType: 1, eventCategory: 1, timestamp: -1 });
-analyticsSchema.index({ userId: 1, eventType: 1, timestamp: -1 });
-
-// Text index for searching metadata
-analyticsSchema.index({
-  'metadata.searchTerm': 'text',
-  'metadata.query': 'text',
-  'errorMessage': 'text'
-});
 
 // Static methods for analytics queries
 analyticsSchema.statics.getEventCounts = function(startDate, endDate, filters = {}) {
@@ -210,7 +217,8 @@ analyticsSchema.statics.getEventCounts = function(startDate, endDate, filters = 
 
 analyticsSchema.statics.getUserEngagement = function(startDate, endDate, userId = null) {
   const matchStage = {
-    timestamp: { $gte: startDate, $lte: endDate }
+    timestamp: { $gte: startDate, $lte: endDate },
+    ...humanTrafficFilter(),
   };
 
   if (userId) {
@@ -252,7 +260,8 @@ analyticsSchema.statics.getUserEngagement = function(startDate, endDate, userId 
 analyticsSchema.statics.getPopularContent = function(startDate, endDate, contentType) {
   const matchStage = {
     timestamp: { $gte: startDate, $lte: endDate },
-    eventType: { $in: ['page_view', 'park_view', 'blog_view', 'event_view'] }
+    eventType: { $in: ['page_view', 'park_view', 'blog_view', 'event_view'] },
+    ...humanTrafficFilter(),
   };
 
   if (contentType === 'parks') {
@@ -303,7 +312,8 @@ analyticsSchema.statics.getSearchAnalytics = function(startDate, endDate) {
       $match: {
         timestamp: { $gte: startDate, $lte: endDate },
         eventType: 'search',
-        'metadata.searchTerm': { $exists: true, $ne: null }
+        'metadata.searchTerm': { $exists: true, $ne: null },
+        ...humanTrafficFilter(),
       }
     },
     {

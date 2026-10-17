@@ -2,21 +2,58 @@ const axios = require('axios');
 const NodeCache = require('node-cache');
 const ParkSnapshot = require('../models/ParkSnapshot');
 const NpsSnapshot = require('../models/NpsSnapshot');
+const {
+  NPS_SNAPSHOT_SCHEMA_VERSION,
+  isSnapshotIngestionComplete,
+  selectNamedActivitiesSources,
+  snapshotCompletenessFields,
+  finiteNumber,
+} = require('../utils/npsSnapshotCompleteness');
 
 const NPS_API_BASE = 'https://developer.nps.gov/api/v1';
-const API_KEY = process.env.NPS_API_KEY;
 const PARKS_SNAPSHOT_KEY = 'all-parks';
+const NPS_SNAPSHOT_META_SELECT = [
+  'data',
+  'fetchedAt',
+  'itemCount',
+  'schemaVersion',
+  'reportedTotal',
+  'recordsFetched',
+  'pageCountFetched',
+  'paginationComplete',
+  'generationComplete',
+].join(' ');
+
+/**
+ * Bounded failure code for every "NPS is not usable" path. It never carries the
+ * key, the env var name, or an upstream constructor message.
+ */
+const NPS_NOT_CONFIGURED = 'nps_not_configured';
+
+function notConfigured() {
+  const error = new Error(NPS_NOT_CONFIGURED);
+  error.code = NPS_NOT_CONFIGURED;
+  return error;
+}
+
+/** The single place that decides whether a key counts as usable. */
+function readApiKey() {
+  const key = process.env.NPS_API_KEY;
+  if (!key || key === 'your_nps_api_key_here') return null;
+  return key;
+}
 
 class NPSService {
-  constructor() {
-    if (!API_KEY || API_KEY === 'your_nps_api_key_here') {
-      throw new Error('NPS API key is required. Please set NPS_API_KEY in your environment variables.');
+  constructor(options = {}) {
+    const apiKey = options.apiKey || readApiKey();
+    if (!apiKey) {
+      throw notConfigured();
     }
 
     this.api = axios.create({
       baseURL: NPS_API_BASE,
       params: {
-        api_key: API_KEY
+        api_key: apiKey
       }
     });
 
@@ -200,13 +237,20 @@ class NPSService {
     return null;
   }
 
-  setActivitiesCache(data) {
+  setActivitiesCache(data, completeness = null) {
     this.activitiesCache = {
       ...this.activitiesCache,
       data,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      completeness: completeness ? snapshotCompletenessFields(completeness) : this.activitiesCache.completeness || null,
     };
     console.log(`💾 Activities cached (${data.length} items) for 24 hours`);
+  }
+
+  _rememberBulkCompleteness(snapshotKey, completeness) {
+    const memoryCache = this._bulkSnapshotMemoryCache(snapshotKey);
+    if (!memoryCache) return;
+    memoryCache.completeness = snapshotCompletenessFields(completeness || {});
   }
 
   // --- Per-endpoint cache helpers ---
@@ -395,12 +439,13 @@ class NPSService {
     return {};
   }
 
-  async _finalizeBulkGroupedFetch(key, memoryCache, byPark, totalCount, label) {
+  async _finalizeBulkGroupedFetch(key, memoryCache, byPark, totalCount, label, completenessMeta = {}) {
     this._hydrateBulkMemoryCacheRef(memoryCache, byPark);
     console.log(
       `✅ Total ${label} fetched (bulk): ${totalCount} across ${Object.keys(byPark).length} parks`
     );
-    await this._saveSnapshot(key, byPark);
+    await this._saveSnapshot(key, byPark, completenessMeta);
+    this._rememberBulkCompleteness(key, completenessMeta);
     return byPark;
   }
 
@@ -420,6 +465,9 @@ class NPSService {
     const byPark = {};
     let totalCount = 0;
     let start = 0;
+    let reportedTotal = null;
+    let pageCountFetched = 0;
+    let stoppedAtMaxPages = false;
 
     try {
       for (let page = 0; page < maxPages; page++) {
@@ -430,6 +478,9 @@ class NPSService {
         const items = response.data.data;
         if (!items || items.length === 0) break;
 
+        const total = finiteNumber(response.data?.total);
+        if (total != null) reportedTotal = total;
+
         for (const item of items) {
           const code = extractParkCode(item);
           if (!code) continue;
@@ -439,13 +490,29 @@ class NPSService {
         }
 
         start += pageSize;
+        pageCountFetched += 1;
         console.log(`${emoji} Fetched page at offset ${start}, ${totalCount} ${label} so far`);
 
         if (items.length < pageSize) break;
+        if (reportedTotal != null && totalCount >= reportedTotal) break;
+        if (page + 1 >= maxPages) {
+          stoppedAtMaxPages = true;
+          break;
+        }
         await new Promise((resolve) => setTimeout(resolve, 200));
       }
 
-      return this._finalizeBulkGroupedFetch(key, memoryCache, byPark, totalCount, label);
+      const paginationComplete = reportedTotal != null
+        ? totalCount >= reportedTotal
+        : !stoppedAtMaxPages;
+      return this._finalizeBulkGroupedFetch(key, memoryCache, byPark, totalCount, label, {
+        schemaVersion: NPS_SNAPSHOT_SCHEMA_VERSION,
+        reportedTotal,
+        recordsFetched: totalCount,
+        pageCountFetched,
+        paginationComplete,
+        generationComplete: paginationComplete,
+      });
     } catch (error) {
       if (error.response?.status === 429) {
         return this._resolveBulk429Fallback(key, memoryCache, staleSnapshot, label);
@@ -506,15 +573,24 @@ class NPSService {
     });
   }
 
-  async _saveGroupedSnapshotChunked(key, byPark) {
+  async _saveGroupedSnapshotChunked(key, byPark, completenessMeta = {}) {
     const entries = Object.entries(byPark);
     const itemCount = this._countGroupedItems(byPark);
     const CHUNK_SIZE = 40;
     const fetchedAt = new Date();
+    const completeness = {
+      schemaVersion: completenessMeta.schemaVersion || NPS_SNAPSHOT_SCHEMA_VERSION,
+      reportedTotal: finiteNumber(completenessMeta.reportedTotal),
+      recordsFetched: finiteNumber(completenessMeta.recordsFetched) ?? itemCount,
+      pageCountFetched: finiteNumber(completenessMeta.pageCountFetched),
+      paginationComplete: completenessMeta.paginationComplete === true,
+      generationComplete: completenessMeta.generationComplete === true
+        || completenessMeta.paginationComplete === true,
+    };
 
     await NpsSnapshot.updateOne(
       { key },
-      { $set: { data: {}, itemCount: 0, fetchedAt } },
+      { $set: { data: {}, itemCount: 0, fetchedAt, ...completeness } },
       { upsert: true }
     );
 
@@ -530,11 +606,11 @@ class NPSService {
 
     await NpsSnapshot.updateOne(
       { key },
-      { $set: { itemCount, fetchedAt } }
+      { $set: { itemCount, fetchedAt, ...completeness } }
     );
 
     console.log(
-      `🗄️ Saved snapshot "${key}" (${itemCount} items, ${entries.length} parks, chunked)`
+      `🗄️ Saved snapshot "${key}" (${itemCount} items, ${entries.length} parks, chunked, paginationComplete=${completeness.paginationComplete})`
     );
   }
 
@@ -545,17 +621,18 @@ class NPSService {
     const applySnapshot = (snapshot) => {
       if (!snapshot?.data) return null;
       const age = Date.now() - new Date(snapshot.fetchedAt).getTime();
+      const completeness = snapshotCompletenessFields(snapshot);
       if (age > ttl) {
         console.log(`🗄️ Snapshot "${key}" is stale (${Math.round(age / 60000)}min old), will refresh`);
-        return { data: snapshot.data, stale: true };
+        return { data: snapshot.data, stale: true, itemCount: snapshot.itemCount, fetchedAt: snapshot.fetchedAt, ...completeness };
       }
       console.log(`🗄️ Loaded fresh snapshot "${key}" (${Math.round(age / 60000)}min old)`);
-      return { data: snapshot.data, stale: false };
+      return { data: snapshot.data, stale: false, itemCount: snapshot.itemCount, fetchedAt: snapshot.fetchedAt, ...completeness };
     };
 
     try {
       const snapshot = await Promise.race([
-        NpsSnapshot.findOne({ key }).select('data fetchedAt').lean(),
+        NpsSnapshot.findOne({ key }).select(NPS_SNAPSHOT_META_SELECT).lean(),
         new Promise((_, reject) => {
           setTimeout(() => reject(new Error('snapshot load timeout')), FAST_MS);
         }),
@@ -570,7 +647,7 @@ class NPSService {
       console.warn(`⚠️ Snapshot "${key}" slow — retrying with extended read`);
       try {
         const snapshot = await NpsSnapshot.findOne({ key })
-          .select('data fetchedAt')
+          .select(NPS_SNAPSHOT_META_SELECT)
           .lean()
           .maxTimeMS(EXTENDED_MS);
         const result = applySnapshot(snapshot);
@@ -585,7 +662,7 @@ class NPSService {
     }
   }
 
-  async _saveSnapshot(key, data) {
+  async _saveSnapshot(key, data, completenessMeta = {}) {
     try {
       const isEmptyArray = Array.isArray(data) && data.length === 0;
       const isZeroSummary = typeof data === 'number' && data === 0 && String(key).startsWith('events-');
@@ -595,18 +672,31 @@ class NPSService {
       }
 
       const itemCount = this._countGroupedItems(data);
+      const completeness = {
+        schemaVersion: completenessMeta.schemaVersion || NPS_SNAPSHOT_SCHEMA_VERSION,
+        reportedTotal: finiteNumber(completenessMeta.reportedTotal),
+        recordsFetched: finiteNumber(completenessMeta.recordsFetched) ?? itemCount,
+        pageCountFetched: finiteNumber(completenessMeta.pageCountFetched),
+        paginationComplete: completenessMeta.paginationComplete === true,
+        generationComplete: completenessMeta.generationComplete === true
+          || completenessMeta.paginationComplete === true,
+      };
 
       if (this._isGroupedBulkSnapshot(key, data) && Object.keys(data).length > 10) {
-        await this._saveGroupedSnapshotChunked(key, data);
+        await this._saveGroupedSnapshotChunked(key, data, completeness);
+        this._rememberBulkCompleteness(key, completeness);
         return;
       }
 
       await NpsSnapshot.updateOne(
         { key },
-        { $set: { data, itemCount, fetchedAt: new Date() } },
+        { $set: { data, itemCount, fetchedAt: new Date(), ...completeness } },
         { upsert: true }
       );
-      console.log(`🗄️ Saved snapshot "${key}" (${itemCount} items)`);
+      this._rememberBulkCompleteness(key, completeness);
+      console.log(
+        `🗄️ Saved snapshot "${key}" (${itemCount} items, paginationComplete=${completeness.paginationComplete})`
+      );
     } catch (error) {
       console.warn(`⚠️ Failed to save snapshot "${key}":`, error.message);
     }
@@ -673,11 +763,14 @@ class NPSService {
     return false;
   }
 
-  _hydrateBulkMemoryCache(snapshotKey, data) {
+  _hydrateBulkMemoryCache(snapshotKey, data, completeness = null) {
     const memoryCache = this._bulkSnapshotMemoryCache(snapshotKey);
     if (!memoryCache || !data) return;
     memoryCache.data = data;
     memoryCache.timestamp = Date.now();
+    if (completeness) {
+      memoryCache.completeness = snapshotCompletenessFields(completeness);
+    }
   }
 
   /** Load bulk tab data from memory or Mongo (stale OK) before per-park NPS calls. */
@@ -689,7 +782,7 @@ class NPSService {
 
     const snapshot = await this._loadSnapshot(snapshotKey, Infinity);
     if (snapshot?.data && this._hasBulkData(snapshot.data)) {
-      this._hydrateBulkMemoryCache(snapshotKey, snapshot.data);
+      this._hydrateBulkMemoryCache(snapshotKey, snapshot.data, snapshot);
       return snapshot.data;
     }
 
@@ -700,6 +793,27 @@ class NPSService {
       }
     }
 
+    return null;
+  }
+
+  /**
+   * Load bulk snapshot data + ingestion completeness metadata.
+   * Legacy snapshots without completeness fields are treated as incomplete.
+   */
+  async _loadBulkSnapshotWithCompleteness(snapshotKey) {
+    const memoryCache = this._bulkSnapshotMemoryCache(snapshotKey);
+    if (memoryCache?.data && this._hasBulkData(memoryCache.data) && memoryCache.completeness) {
+      return {
+        data: memoryCache.data,
+        ...snapshotCompletenessFields(memoryCache.completeness),
+      };
+    }
+
+    const snapshot = await this._loadSnapshot(snapshotKey, Infinity);
+    if (snapshot?.data && this._hasBulkData(snapshot.data)) {
+      this._hydrateBulkMemoryCache(snapshotKey, snapshot.data, snapshot);
+      return snapshot;
+    }
     return null;
   }
 
@@ -1040,6 +1154,198 @@ class NPSService {
 
       throw new Error(`Failed to fetch park ${parkCode}: ${error.message}`);
     }
+  }
+
+  // WP5A shadow-only evidence seam. These calls deliberately bypass legacy
+  // response caches so the broker receives a truthful observation timestamp
+  // and endpoint completeness without changing legacy fetch behavior.
+  async _getParkEvidenceEndpoint(endpoint, parkCode, { signal, limit = 50 } = {}) {
+    const code = this._normalizeParkCode(parkCode);
+    const response = await this.api.get(endpoint, {
+      params: { parkCode: code, limit },
+      ...(signal ? { signal } : {}),
+    });
+    const data = Array.isArray(response.data?.data) ? response.data.data : [];
+    const total = Number(response.data?.total);
+    return {
+      data,
+      isComplete: Number.isFinite(total) ? data.length >= total : false,
+      observedAt: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Paginated per-park NPS list for evidence (thingstodo / places).
+   * Completeness derives from reported total or short final page — not popularity.
+   */
+  async _getParkEvidenceListPaginated(endpoint, parkCode, {
+    signal,
+    pageSize = 50,
+    maxPages = 40,
+  } = {}) {
+    const code = this._normalizeParkCode(parkCode);
+    const all = [];
+    let start = 0;
+    let reportedTotal = null;
+    let pageCountFetched = 0;
+    let stoppedAtMaxPages = false;
+
+    for (let page = 0; page < maxPages; page += 1) {
+      const response = await this.api.get(endpoint, {
+        params: { parkCode: code, limit: pageSize, start },
+        ...(signal ? { signal } : {}),
+      });
+      const data = Array.isArray(response.data?.data) ? response.data.data : [];
+      const total = finiteNumber(response.data?.total);
+      if (total != null) reportedTotal = total;
+      all.push(...data);
+      pageCountFetched += 1;
+      start += pageSize;
+
+      if (data.length === 0 || data.length < pageSize) break;
+      if (reportedTotal != null && all.length >= reportedTotal) break;
+      if (page + 1 >= maxPages) {
+        stoppedAtMaxPages = true;
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+
+    const isComplete = reportedTotal != null
+      ? all.length >= reportedTotal
+      : !stoppedAtMaxPages;
+
+    return {
+      data: all,
+      isComplete,
+      reportedTotal,
+      recordsFetched: all.length,
+      pageCountFetched,
+      observedAt: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Fix Pass #3E — named activities evidence source selection.
+   * Prefer bulk only when ingestion completeness is proven; otherwise direct NPS.
+   */
+  // Identity resolution needs owned places, not activity articles. Fetch the
+  // relevant corpus directly so unrelated activity pagination cannot consume
+  // the place provider's deadline. Preserve completeness and cancellation.
+  async getParkPlacesEvidence(parkCode, { signal } = {}) {
+    const code = this._normalizeParkCode(parkCode);
+    if (!code) return { data: { places: [] }, isComplete: false, source: 'invalid_park', observedAt: new Date().toISOString() };
+    const snapshot = await this._loadBulkSnapshotWithCompleteness('bulk-places');
+    if (isSnapshotIngestionComplete(snapshot)) {
+      return { data: { places: this._getGroupedBulkSlice(snapshot.data, code) || [] }, isComplete: true,
+        source: 'snapshot_hit_complete', observedAt: snapshot.fetchedAt || new Date().toISOString() };
+    }
+    const direct = await this._getParkEvidenceListPaginated('/places', code, { signal, pageSize: 500 });
+    return { data: { places: direct.data }, isComplete: direct.isComplete,
+      source: direct.isComplete ? 'direct_fallback' : 'direct_refresh_failed', observedAt: direct.observedAt };
+  }
+
+  async getParkNamedActivitiesEvidence(parkCode, { signal } = {}) {
+    const code = this._normalizeParkCode(parkCode);
+    if (!code) {
+      return {
+        data: { thingstodo: [], places: [] },
+        isComplete: false,
+        observedAt: new Date().toISOString(),
+        source: 'invalid_park',
+        selection: null,
+      };
+    }
+
+    const [activitiesSnap, placesSnap] = await Promise.all([
+      this._loadBulkSnapshotWithCompleteness('bulk-activities'),
+      this._loadBulkSnapshotWithCompleteness('bulk-places'),
+    ]);
+
+    const selection = selectNamedActivitiesSources({
+      activitiesMeta: activitiesSnap,
+      placesMeta: placesSnap,
+    });
+
+    let thingstodo = [];
+    let places = [];
+    let thingstodoComplete = false;
+    let placesComplete = false;
+    let thingstodoSource = selection.activitiesReason;
+    let placesSource = selection.placesReason;
+
+    if (selection.useBulkActivities) {
+      thingstodo = this._getGroupedBulkSlice(activitiesSnap.data, code) || [];
+      thingstodoComplete = true;
+      thingstodoSource = 'snapshot_hit_complete';
+    } else {
+      const direct = await this._getParkEvidenceListPaginated('/thingstodo', code, { signal });
+      thingstodo = direct.data;
+      thingstodoComplete = direct.isComplete === true;
+      thingstodoSource = thingstodoComplete ? 'direct_fallback' : 'direct_refresh_failed';
+    }
+
+    if (selection.useBulkPlaces) {
+      places = this._getGroupedBulkSlice(placesSnap.data, code) || [];
+      placesComplete = true;
+      placesSource = 'snapshot_hit_complete';
+    } else {
+      const direct = await this._getParkEvidenceListPaginated('/places', code, { signal });
+      places = direct.data;
+      placesComplete = direct.isComplete === true;
+      placesSource = placesComplete ? 'direct_fallback' : 'direct_refresh_failed';
+    }
+
+    // Stable identity dedupe if a future merge path ever combines sources.
+    const dedupeById = (rows) => {
+      const seen = new Set();
+      const out = [];
+      for (const row of rows) {
+        const id = row?.id || row?.url || `${row?.title || row?.name || ''}`;
+        if (seen.has(id)) continue;
+        seen.add(id);
+        out.push(row);
+      }
+      return out;
+    };
+    thingstodo = dedupeById(thingstodo);
+    places = dedupeById(places);
+
+    const isComplete = thingstodoComplete && placesComplete;
+    return {
+      data: { thingstodo, places },
+      isComplete,
+      observedAt: new Date().toISOString(),
+      source: isComplete
+        ? (selection.useBulkActivities && selection.useBulkPlaces ? 'snapshot_hit_complete' : 'direct_fallback')
+        : 'direct_refresh_failed',
+      selection: {
+        ...selection,
+        thingstodoSource,
+        placesSource,
+        thingstodoCount: thingstodo.length,
+        placesCount: places.length,
+        activitiesIngestionComplete: isSnapshotIngestionComplete(activitiesSnap),
+        placesIngestionComplete: isSnapshotIngestionComplete(placesSnap),
+      },
+    };
+  }
+
+  async getParkProfileEvidence(parkCode, options = {}) {
+    const result = await this._getParkEvidenceEndpoint('/parks', parkCode, { ...options, limit: 1 });
+    return { ...result, data: result.data[0] || null };
+  }
+
+  async getParkAlertsEvidence(parkCode, options = {}) {
+    return this._getParkEvidenceEndpoint('/alerts', parkCode, options);
+  }
+
+  async getParkCampgroundsEvidence(parkCode, options = {}) {
+    return this._getParkEvidenceEndpoint('/campgrounds', parkCode, options);
+  }
+
+  async getParkVisitorCentersEvidence(parkCode, options = {}) {
+    return this._getParkEvidenceEndpoint('/visitorcenters', parkCode, options);
   }
 
   // Get parks by state (cached)
@@ -1846,13 +2152,13 @@ class NPSService {
 
       const snapshot = await this._loadSnapshot('bulk-activities', this.activitiesCache.ttl);
       if (snapshot && !snapshot.stale) {
-        this.setActivitiesCache(snapshot.data);
+        this.setActivitiesCache(snapshot.data, snapshot);
         return snapshot.data.slice(0, limit);
       }
 
       if (this._isRateLimited()) {
         if (snapshot?.data) {
-          this.setActivitiesCache(snapshot.data);
+          this.setActivitiesCache(snapshot.data, snapshot);
           return snapshot.data.slice(0, limit);
         }
         return [];
@@ -1870,6 +2176,9 @@ class NPSService {
           const pageSize = 50;
           const maxPages = 40;
           let start = 0;
+          let reportedTotal = null;
+          let pageCountFetched = 0;
+          let stoppedAtMaxPages = false;
 
           for (let page = 0; page < maxPages; page++) {
             const response = await this.api.get('/thingstodo', {
@@ -1879,23 +2188,46 @@ class NPSService {
             const activities = response.data.data;
             if (!activities || activities.length === 0) break;
 
+            const total = finiteNumber(response.data?.total);
+            if (total != null) reportedTotal = total;
+
             for (const activity of activities) {
               allActivities.push(activity);
             }
             start += pageSize;
+            pageCountFetched += 1;
 
             console.log(`🎯 Fetched page at offset ${start}, ${allActivities.length} activities so far`);
 
             if (activities.length < pageSize) break;
-            if (allActivities.length >= limit) break;
+            if (reportedTotal != null && allActivities.length >= reportedTotal) break;
+            if (page + 1 >= maxPages) {
+              stoppedAtMaxPages = true;
+              break;
+            }
 
             await new Promise((resolve) => setTimeout(resolve, 200));
           }
 
-          this.setActivitiesCache(allActivities);
+          const paginationComplete = reportedTotal != null
+            ? allActivities.length >= reportedTotal
+            : !stoppedAtMaxPages;
+          const completeness = {
+            schemaVersion: NPS_SNAPSHOT_SCHEMA_VERSION,
+            reportedTotal,
+            recordsFetched: allActivities.length,
+            pageCountFetched,
+            paginationComplete,
+            generationComplete: paginationComplete,
+          };
 
-          console.log(`✅ Total activities fetched (bulk): ${allActivities.length}`);
-          await this._saveSnapshot('bulk-activities', allActivities);
+          this.setActivitiesCache(allActivities, completeness);
+
+          console.log(
+            `✅ Total activities fetched (bulk): ${allActivities.length}`
+            + ` (paginationComplete=${paginationComplete}, reportedTotal=${reportedTotal})`
+          );
+          await this._saveSnapshot('bulk-activities', allActivities, completeness);
           return allActivities.slice(0, limit);
         } catch (error) {
           if (error.response?.status === 429) {
@@ -1905,13 +2237,13 @@ class NPSService {
             }
             if (snapshot?.data) {
               console.warn('⚠️ NPS 429 on bulk activities — returning stale snapshot');
-              this.setActivitiesCache(snapshot.data);
+              this.setActivitiesCache(snapshot.data, snapshot);
               return snapshot.data.slice(0, limit);
             }
             const dbSnapshot = await this._loadSnapshot('bulk-activities', Infinity);
             if (dbSnapshot?.data) {
               console.warn('⚠️ NPS 429 on bulk activities — returning DB snapshot');
-              this.setActivitiesCache(dbSnapshot.data);
+              this.setActivitiesCache(dbSnapshot.data, dbSnapshot);
               return dbSnapshot.data.slice(0, limit);
             }
             console.warn('⚠️ NPS 429 rate limit on activities — no cache available, returning empty');
@@ -2371,4 +2703,94 @@ class NPSService {
 
 }
 
-module.exports = new NPSService();
+// ── Lazy service accessor ────────────────────────────────────────────
+// The service is built on first use, never at import. Importing this module
+// has no side effects and never requires NPS_API_KEY.
+
+let cachedService = null;
+let cachedKey = null;
+let testAdapter = null;
+
+/**
+ * Returns the NPS service, constructing it lazily on first use.
+ *
+ * - No key and no injected adapter → bounded `nps_not_configured`.
+ * - Valid key → creates once, then memoizes for that key.
+ * - Key changed → rebuilds for the new key (the stale instance is dropped).
+ * - Key removed → throws; the previously cached instance is never reused.
+ * - Constructor failure → cache stays empty so a later call can retry.
+ * - Injected test adapter → returned as-is, with no configuration check and
+ *   no fall-through to the live service.
+ */
+function getNpsService() {
+  if (testAdapter) return testAdapter;
+
+  const key = readApiKey();
+  if (!key) {
+    // Configuration is gone: drop any instance built under a previous key.
+    cachedService = null;
+    cachedKey = null;
+    throw notConfigured();
+  }
+
+  if (cachedService && cachedKey === key) return cachedService;
+
+  let created;
+  try {
+    created = new NPSService({ apiKey: key });
+  } catch (error) {
+    // Never let an upstream constructor message (which may quote the key)
+    // escape, and never poison the cache with a failed construction.
+    cachedService = null;
+    cachedKey = null;
+    throw notConfigured();
+  }
+
+  cachedService = created;
+  cachedKey = key;
+  return cachedService;
+}
+
+/**
+ * Production bootstrap check. Deliberately separate from import: call this only
+ * from the real startup path, never from module scope, the app factory, route
+ * registration, or test/eval imports.
+ */
+function assertNpsConfigured() {
+  if (!readApiKey()) throw notConfigured();
+  return true;
+}
+
+/**
+ * Installs a deterministic stand-in for the NPS service. Tests only — refused
+ * under NODE_ENV=production so a live deployment can never serve fake data.
+ *
+ * The adapter may be partial; invoking a method it does not define fails as a
+ * plain TypeError naming that method, rather than silently reaching the network.
+ */
+function setNpsAdapterForTests(adapter) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('nps_test_adapter_forbidden_in_production');
+  }
+  if (!adapter || typeof adapter !== 'object') {
+    throw new Error('nps_test_adapter_must_be_an_object');
+  }
+  testAdapter = adapter;
+  return adapter;
+}
+
+/** Clears the injected adapter and any memoized instance. */
+function resetNpsServiceForTests() {
+  testAdapter = null;
+  cachedService = null;
+  cachedKey = null;
+}
+
+module.exports = {
+  NPSService,
+  getNpsService,
+  assertNpsConfigured,
+  setNpsAdapterForTests,
+  resetNpsServiceForTests,
+  NPS_NOT_CONFIGURED
+};

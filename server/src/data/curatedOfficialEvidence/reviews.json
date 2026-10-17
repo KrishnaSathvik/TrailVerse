@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "reviews": [
+    {
+      "candidateHash": "sha256:46ccf445440ee08bfa5d6c6aeb0112adb11c1870084fc09030ec62931f36c745",
+      "decision": "approved",
+      "reviewMethod": "human",
+      "reviewerId": "maintainer:primary",
+      "reviewedAt": "2026-09-15T15:55:04.251Z",
+      "reviewAfter": "2027-09-15T15:55:04.251Z",
+      "subject": "A — experience: Mist Trail (nps:park:yose:experience:mist-trail)",
+      "rationale": "The official NPS excerpt directly establishes Mist Trail as a named trail/experience."
+    },
+    {
+      "candidateHash": "sha256:889e720fe516228f474519fddaaf222958140eec703d0f215997ed609aa9b37c",
+      "decision": "approved",
+      "reviewMethod": "human",
+      "reviewerId": "maintainer:primary",
+      "reviewedAt": "2026-09-15T15:55:04.251Z",
+      "reviewAfter": "2027-09-15T15:55:04.251Z",
+      "subject": "B — experience: Vernal Fall Footbridge (nps:park:yose:experience:vernal-fall-footbridge)",
+      "rationale": "The official NPS excerpt directly establishes Vernal Fall Footbridge as a named place/destination."
+    },
+    {
+      "candidateHash": "sha256:334f2c28012f02faca3faabe76bc5fc1bbeb794d2d4ebda2cdc5af098f763d48",
+      "decision": "approved",
+      "reviewMethod": "human",
+      "reviewerId": "maintainer:primary",
+      "reviewedAt": "2026-09-15T15:55:04.251Z",
+      "reviewAfter": "2027-09-15T15:55:04.251Z",
+      "subject": "C — experience: Vernal Fall (nps:park:yose:experience:vernal-fall)",
+      "rationale": "The official NPS excerpt directly establishes Vernal Fall as a named waterfall/visitor experience."
+    },
+    {
+      "candidateHash": "sha256:b0245572180b194c3eb805c58b5ba0bf71b852c6a93236147daa2f75c5e354e8",
+      "decision": "approved",
+      "reviewMethod": "human",
+      "reviewerId": "maintainer:primary",
+      "reviewedAt": "2026-09-15T15:55:04.251Z",
+      "reviewAfter": "2027-09-15T15:55:04.251Z",
+      "subject": "D — relationship: Mist and John Muir Trailhead access_point_for Mist Trail",
+      "rationale": "Approved specifically as access_point_for Mist Trail. The wording supports the trailhead as access context and does not support same_as."
+    }
+  ]
+}

@@ -2,21 +2,32 @@ name: Test Suite
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ master, main, develop, ci/security-controls-2026-10-16 ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ master, main, develop ]
+
+env:
+  PUPPETEER_SKIP_DOWNLOAD: "true"
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+
+permissions:
+  contents: read
 
 jobs:
   test-frontend:
+    if: github.ref != 'refs/heads/ci/security-controls-2026-10-16'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '24'
         cache: 'npm'
         cache-dependency-path: next-frontend/package-lock.json
 
@@ -38,11 +49,13 @@ jobs:
         name: frontend-coverage
 
   test-server:
+    if: github.ref != 'refs/heads/ci/security-controls-2026-10-16'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     
     services:
       mongodb:
-        image: mongo:4.4
+        image: mongo:7.0
         ports:
           - 27017:27017
         options: >-
@@ -53,11 +66,13 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '24'
         cache: 'npm'
         cache-dependency-path: server/package-lock.json
     
@@ -66,6 +81,11 @@ jobs:
         cd server
         npm ci
     
+    # Backend subprocess qualification tests execute the frontend vite-node runner.
+    - name: Install subprocess test dependencies
+      working-directory: next-frontend
+      run: npm ci
+
     - name: Run server tests
       run: |
         cd server
@@ -84,11 +104,17 @@ jobs:
         name: server-coverage
 
   test-e2e:
+    if: github.ref != 'refs/heads/ci/security-controls-2026-10-16'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Official Playwright 1.58.2 noble, linux/amd64; browsers are preinstalled.
+    container:
+      image: mcr.microsoft.com/playwright@sha256:65cefd09a5e943921ecd3a6e5414c603db2eb161e9eb48f2e2ccc63486dc7dc0
+      options: --ipc=host
     
     services:
       mongodb:
-        image: mongo:4.4
+        image: mongo:7.0
         ports:
           - 27017:27017
         options: >-
@@ -99,11 +125,13 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '24'
         cache: 'npm'
     
     - name: Install dependencies
@@ -112,25 +140,33 @@ jobs:
         cd next-frontend && npm ci
         cd ../server && npm ci
 
-    - name: Install Playwright browsers
-      run: |
-        cd next-frontend
-        npx playwright install --with-deps
+    # Actions mounts /github/home with the host runner UID; Firefox rejects
+    # a root browser process using a home owned by a different container user.
+    - name: Align disposable container home ownership
+      run: chown "$(id -u):$(id -g)" /github/home
+
+    - name: Verify preinstalled browser version
+      run: node scripts/ci/verify-browser-image.mjs
 
     - name: Run E2E tests
       run: |
+        # Provision only the empty disposable Actions database before app startup.
+        node server/scripts/provision-application-indexes.js --apply
+        node server/scripts/provision-application-indexes.js --check
         cd next-frontend
         npm run test:e2e
       env:
         CI: true
         NODE_ENV: test
-        MONGODB_URI: mongodb://localhost:27017/test-npe-usa
+        MONGODB_URI: mongodb://mongodb:27017/test-npe-usa
+        # Disposable Actions service hostname inside the Playwright container only.
+        MONGODB_DANGEROUSLY_ALLOW_REMOTE_HOSTS: mongodb
         JWT_SECRET: test_jwt_secret
         CLIENT_URL: http://localhost:3000
         PORT: 5001
 
     - name: Upload E2E test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: playwright-report
@@ -138,11 +174,13 @@ jobs:
         retention-days: 30
 
   test-integration:
+    if: github.ref != 'refs/heads/ci/security-controls-2026-10-16'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     
     services:
       mongodb:
-        image: mongo:4.4
+        image: mongo:7.0
         ports:
           - 27017:27017
         options: >-
@@ -153,11 +191,13 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '24'
         cache: 'npm'
         cache-dependency-path: server/package-lock.json
     
@@ -177,15 +217,19 @@ jobs:
         CLIENT_URL: http://localhost:3000
 
   lint:
+    if: github.ref != 'refs/heads/ci/security-controls-2026-10-16'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '24'
         cache: 'npm'
     
     - name: Install dependencies
@@ -198,32 +242,72 @@ jobs:
         cd next-frontend
         npm run lint
     
+  browser-image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: mcr.microsoft.com/playwright@sha256:65cefd09a5e943921ecd3a6e5414c603db2eb161e9eb48f2e2ccc63486dc7dc0
+      options: --ipc=host
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+    - name: Install locked frontend packages without lifecycle scripts
+      run: npm ci --ignore-scripts
+      working-directory: next-frontend
+    # Actions mounts /github/home with the host runner UID; Firefox rejects
+    # a root browser process using a home owned by a different container user.
+    - name: Align disposable container home ownership
+      run: chown "$(id -u):$(id -g)" /github/home
+
+    - name: Verify and launch all preinstalled browsers without external pages
+      run: node scripts/ci/smoke-browser-image.mjs
+
   security:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '24'
         cache: 'npm'
     
-    - name: Install dependencies
-      run: |
-        npm ci
-        cd next-frontend && npm ci
-        cd ../server && npm ci
-    
-    - name: Run security audit
-      run: |
-        npm audit --audit-level moderate
-        cd next-frontend && npm audit --audit-level moderate
-        cd ../server && npm audit --audit-level moderate
-    
+    - name: Verify audit collector behavior (offline)
+      run: node --test scripts/ci/collect-security-audits.test.mjs scripts/ci/development-exception.test.mjs scripts/ci/wait-for-vercel-preview.test.mjs
+
+    - name: Collect all audits and enforce existing gate
+      run: node scripts/ci/collect-security-audits.mjs
+
+    - name: Retain raw security evidence
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-audits-${{ github.run_id }}-${{ github.run_attempt }}
+        path: artifacts/ci-security/
+        if-no-files-found: error
+        retention-days: 30
+
+  # Credential-bearing advisory scan is isolated from PR installs/tooling.
+  # Protected-branch enforcement remains an external prerequisite.
+  snyk-advisory:
+    if: github.event_name == 'push' && github.ref_protected
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
     - name: Run Snyk security scan
-      uses: snyk/actions/node@master
+      uses: snyk/actions/node@11b673cfb4b0dc0d860a1323caa199d54950dcce # master resolved 2026-10-16
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       with:
@@ -231,15 +315,19 @@ jobs:
       continue-on-error: true
 
   build:
+    if: github.ref != 'refs/heads/ci/security-controls-2026-10-16'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '24'
         cache: 'npm'
     
     - name: Install dependencies
@@ -254,7 +342,7 @@ jobs:
         npm run build
 
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: next-frontend-build
         path: next-frontend/.next/

@@ -1,0 +1,1322 @@
+[
+  {
+    "source": "artifacts/trailie-anything-question-gate-2026-08-23/conversation-F/F2-lay-it-out-day-by-day-capture.json :: capture.canonicalPlan",
+    "days": [
+      {
+        "day": 1,
+        "stops": [
+          {
+            "name": "Craig Thomas Discovery & Visitor Center",
+            "type": "visitor_center",
+            "duration": 60
+          },
+          {
+            "name": "Teton Park Road scenic drive",
+            "type": "scenic_drive",
+            "duration": 120
+          },
+          {
+            "name": "Jenny Lake Scenic Drive and Jenny Lake Overlook",
+            "type": "scenic_drive",
+            "duration": 60
+          },
+          {
+            "name": "Jenny Lake Visitor Center",
+            "type": "visitor_center",
+            "duration": 45
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "stops": [
+          {
+            "name": "Colter Bay Visitor Center",
+            "type": "visitor_center",
+            "duration": 75
+          },
+          {
+            "name": "Jackson Lake scenic drive",
+            "type": "scenic_drive",
+            "duration": 150
+          },
+          {
+            "name": "Signal Mountain Summit Road",
+            "type": "scenic_drive",
+            "duration": 75
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "artifacts/trailie-broad-unseen-gate-2026-08-17/thread-1/T1-2-less-driving-capture.json :: capture.canonicalPlan",
+    "days": [
+      {
+        "day": 1,
+        "stops": [
+          {
+            "name": "Beech Mountain",
+            "type": "landmark",
+            "duration": 0
+          },
+          {
+            "name": "Carroll Homestead",
+            "type": "historic",
+            "duration": 0
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "stops": [
+          {
+            "name": "Gorham Mountain Trail",
+            "type": "trail",
+            "duration": 0
+          },
+          {
+            "name": "Beehive Overlook",
+            "type": "viewpoint",
+            "duration": 0
+          }
+        ]
+      },
+      {
+        "day": 3,
+        "stops": [
+          {
+            "name": "Somes Sound",
+            "type": "viewpoint",
+            "duration": 0
+          },
+          {
+            "name": "Acadia Mountain Trailhead",
+            "type": "trail",
+            "duration": 0
+          },
+          {
+            "name": "Bass Harbor Head Light Station",
+            "type": "landmark",
+            "duration": 0
+          }
+        ]
+      },
+      {
+        "day": 4,
+        "stops": [
+          {
+            "name": "Cadillac Mountain",
+            "type": "landmark",
+            "duration": 0
+          },
+          {
+            "name": "Cadillac Summit Accessibility Information",
+            "type": "accessible",
+            "duration": 0
+          },
+          {
+            "name": "Bear Brook Picnic Area",
+            "type": "picnic",
+            "duration": 0
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "artifacts/trailie-broad-unseen-gate-2026-08-17/thread-4/T4-1-badlands-non-hiker-capture.json :: capture.canonicalPlan",
+    "days": [
+      {
+        "day": 1,
+        "stops": [
+          {
+            "name": "Ben Reifel Visitor Center",
+            "type": "visitor_center",
+            "duration": 45
+          },
+          {
+            "name": "Badlands Loop Road (Highway 240)",
+            "type": "scenic_drive",
+            "duration": 240
+          },
+          {
+            "name": "Ancient Hunters Overlook — sunset stop",
+            "type": "viewpoint",
+            "duration": 45
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "stops": [
+          {
+            "name": "White River Visitor Center",
+            "type": "visitor_center",
+            "duration": 45
+          },
+          {
+            "name": "Badlands Loop Road (Highway 240) — unhurried second pass",
+            "type": "scenic_drive",
+            "duration": 180
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "artifacts/trailie-deterministic-broad-gate-2026-08-18/thread-4/T4-1-rainier-two-full-days-capture.json :: capture.canonicalPlan",
+    "days": [
+      {
+        "day": 1,
+        "stops": [
+          {
+            "name": "Longmire Museum and historic district",
+            "type": "museum",
+            "duration": 60
+          },
+          {
+            "name": "South-side scenic drive to Paradise",
+            "type": "scenic_drive",
+            "duration": 0
+          },
+          {
+            "name": "Henry M. Jackson Memorial Visitor Center, Paradise",
+            "type": "visitor_center",
+            "duration": 60
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "stops": [
+          {
+            "name": "Sunrise Road scenic drive",
+            "type": "scenic_drive",
+            "duration": 0
+          },
+          {
+            "name": "Sunrise Visitor Center",
+            "type": "visitor_center",
+            "duration": 60
+          },
+          {
+            "name": "Sunrise Road return-view stops",
+            "type": "photography",
+            "duration": 0
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "artifacts/trailie-gate3-constructor-2026-08-24/conversation-A/A1-redwood-three-relaxed-days-capture.json :: capture.canonicalPlan",
+    "days": [
+      {
+        "day": 1,
+        "stops": [
+          {
+            "name": "Crescent City Information Center",
+            "type": "visitor_center",
+            "duration": 45
+          },
+          {
+            "name": "Coastal Trail: Crescent Beach",
+            "type": "trail",
+            "duration": 120
+          },
+          {
+            "name": "Crescent City Information Center picnic area",
+            "type": "picnic",
+            "duration": 45
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "stops": [
+          {
+            "name": "Hiouchi Visitor Center",
+            "type": "visitor_center",
+            "duration": 60
+          },
+          {
+            "name": "Jedediah Smith Redwoods State Park campground area",
+            "type": "landmark",
+            "duration": 180
+          },
+          {
+            "name": "Jedediah Smith Visitor Center",
+            "type": "visitor_center",
+            "duration": 30
+          }
+        ]
+      },
+      {
+        "day": 3,
+        "stops": [
+          {
+            "name": "Prairie Creek Visitor Center",
+            "type": "visitor_center",
+            "duration": 60
+          },
+          {
+            "name": "Newton B. Drury Scenic Parkway",
+            "type": "scenic_drive",
+            "duration": 150
+          },
+          {
+            "name": "Coastal Trail: DeMartin",
+            "type": "trail",
+            "duration": 90
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "artifacts/trailie-gate3-constructor-2026-08-24/conversation-B/B1-everglades-four-easygoing-days-capture.json :: capture.canonicalPlan",
+    "days": [
+      {
+        "day": 1,
+        "stops": [
+          {
+            "name": "Ernest F. Coe Visitor Center",
+            "type": "visitor_center",
+            "duration": 60
+          },
+          {
+            "name": "Homestead entrance-to-Flamingo scenic drive",
+            "type": "scenic_drive",
+            "duration": 240
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "stops": [
+          {
+            "name": "Guy Bradley Visitor Center at Flamingo",
+            "type": "visitor_center",
+            "duration": 60
+          },
+          {
+            "name": "Flamingo marina and public boat-ramp area",
+            "type": "photography",
+            "duration": 120
+          },
+          {
+            "name": "Flamingo developed area rest and scenic finish",
+            "type": "picnic",
+            "duration": 90
+          }
+        ]
+      },
+      {
+        "day": 3,
+        "stops": [
+          {
+            "name": "Shark Valley Visitor Center",
+            "type": "visitor_center",
+            "duration": 45
+          },
+          {
+            "name": "Shark Valley 15-mile loop and observation tower",
+            "type": "wildlife",
+            "duration": 180
+          },
+          {
+            "name": "Shark Valley gateway photography",
+            "type": "photography",
+            "duration": 60
+          }
+        ]
+      },
+      {
+        "day": 4,
+        "stops": [
+          {
+            "name": "Marjory Stoneman Douglas Visitor Center at Gulf Coast",
+            "type": "visitor_center",
+            "duration": 75
+          },
+          {
+            "name": "Gulf Coast kayak-launch wildlife watching",
+            "type": "wildlife",
+            "duration": 90
+          },
+          {
+            "name": "Gulf Coast picnic area",
+            "type": "picnic",
+            "duration": 60
+          },
+          {
+            "name": "US 41 / Tamiami Trail scenic return",
+            "type": "scenic_drive",
+            "duration": 120
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "artifacts/trailie-gate3-constructor-2026-08-24/conversation-C/C1-rushmore-black-hills-two-days-capture.json :: capture.canonicalPlan",
+    "days": [
+      {
+        "day": 1,
+        "stops": [
+          {
+            "name": "Mount Rushmore Information Center",
+            "type": "visitor_center",
+            "duration": 30
+          },
+          {
+            "name": "Presidential Trail",
+            "type": "trail",
+            "duration": 90
+          },
+          {
+            "name": "Mount Rushmore Memorial grounds",
+            "type": "landmark",
+            "duration": 75
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "stops": [
+          {
+            "name": "Lincoln Borglum Visitor Center",
+            "type": "visitor_center",
+            "duration": 75
+          },
+          {
+            "name": "Sculptor’s Studio",
+            "type": "historic",
+            "duration": 45
+          },
+          {
+            "name": "Black Hills scenery drive",
+            "type": "scenic_drive",
+            "duration": 180
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "artifacts/trailie-generic-live-gate-2026-08-12/thread-A/A4-build-itinerary-capture.json :: capture.canonicalPlan",
+    "days": [
+      {
+        "day": 1,
+        "stops": [
+          {
+            "name": "Mammoth Hot Springs area",
+            "type": "landmark",
+            "duration": 150
+          },
+          {
+            "name": "Museum of the National Park Ranger",
+            "type": "museum",
+            "duration": 45
+          },
+          {
+            "name": "Lamar Valley wildlife drive",
+            "type": "wildlife",
+            "duration": 210
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "stops": [
+          {
+            "name": "Norris Geyser Basin",
+            "type": "geothermal",
+            "duration": 150
+          },
+          {
+            "name": "Norris Geyser Basin Museum and Information Station",
+            "type": "visitor_center",
+            "duration": 30
+          },
+          {
+            "name": "Old Faithful Geyser and Upper Geyser Basin area",
+            "type": "geothermal",
+            "duration": 240
+          },
+          {
+            "name": "Old Faithful Visitor Education Center",
+            "type": "visitor_center",
+            "duration": 45
+          }
+        ]
+      },
+      {
+        "day": 3,
+        "stops": [
+          {
+            "name": "Grand Canyon of the Yellowstone",
+            "type": "viewpoint",
+            "duration": 210
+          },
+          {
+            "name": "Canyon Visitor Education Center",
+            "type": "visitor_center",
+            "duration": 45
+          },
+          {
+            "name": "Hayden Valley scenic and wildlife drive",
+            "type": "wildlife",
+            "duration": 150
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "artifacts/trailie-generic-live-gate-2026-08-12/thread-A/A5-make-day-2-slower-capture.json :: capture.canonicalPlan",
+    "days": [
+      {
+        "day": 2,
+        "stops": [
+          {
+            "name": "Old Faithful",
+            "type": "geothermal",
+            "duration": 75
+          },
+          {
+            "name": "Upper Geyser Basin boardwalks",
+            "type": "walk",
+            "duration": 150
+          },
+          {
+            "name": "Artemisia Geyser",
+            "type": "geothermal",
+            "duration": 40
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "artifacts/trailie-generic-live-gate-2026-08-12/thread-C/C1-zion-no-exposure-capture.json :: capture.canonicalPlan",
+    "days": [
+      {
+        "day": 1,
+        "stops": [
+          {
+            "name": "Zion Canyon Visitor Center",
+            "type": "visitor_center",
+            "duration": 30
+          },
+          {
+            "name": "Pa'rus Trail",
+            "type": "trail",
+            "duration": 120
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "stops": [
+          {
+            "name": "Lower Emerald Pool Trail",
+            "type": "trail",
+            "duration": 120
+          },
+          {
+            "name": "Zion Lodge",
+            "type": "lodge",
+            "duration": 45
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "artifacts/trailie-generic-live-gate-rerun-2026-08-13/invalid-preflight-missing-evidence-secret/thread-A/A5-make-day-2-slower-capture.json :: capture.canonicalPlan",
+    "days": [
+      {
+        "day": 1,
+        "stops": [
+          {
+            "name": "Angel Terrace",
+            "type": "geothermal",
+            "duration": 2
+          },
+          {
+            "name": "Bachelor Officers' Quarters (1909)",
+            "type": "historic",
+            "duration": 1
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "stops": [
+          {
+            "name": "Old Faithful and Upper Geyser Basin",
+            "type": "geothermal",
+            "duration": 4
+          },
+          {
+            "name": "Aurum Geyser",
+            "type": "geothermal",
+            "duration": 1
+          }
+        ]
+      },
+      {
+        "day": 3,
+        "stops": [
+          {
+            "name": "Artist Point",
+            "type": "viewpoint",
+            "duration": 1
+          },
+          {
+            "name": "Artists Paintpots Trail",
+            "type": "trail",
+            "duration": 2
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "artifacts/trailie-generic-live-gate-rerun-2026-08-13/thread-A/A4-build-itinerary-capture.json :: capture.canonicalPlan",
+    "days": [
+      {
+        "day": 1,
+        "stops": [
+          {
+            "name": "Mammoth Hot Springs",
+            "type": "landmark",
+            "duration": 120
+          },
+          {
+            "name": "Museum of the National Park Ranger",
+            "type": "museum",
+            "duration": 45
+          },
+          {
+            "name": "Lamar Valley",
+            "type": "wildlife",
+            "duration": 180
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "stops": [
+          {
+            "name": "Canyon Visitor Education Center",
+            "type": "visitor_center",
+            "duration": 45
+          },
+          {
+            "name": "Artist Point",
+            "type": "viewpoint",
+            "duration": 75
+          },
+          {
+            "name": "Hayden Valley scenic drive",
+            "type": "scenic_drive",
+            "duration": 150
+          }
+        ]
+      },
+      {
+        "day": 3,
+        "stops": [
+          {
+            "name": "Old Faithful Geyser",
+            "type": "landmark",
+            "duration": 150
+          },
+          {
+            "name": "Old Faithful Visitor Education Center",
+            "type": "visitor_center",
+            "duration": 45
+          },
+          {
+            "name": "Grand Prismatic / Midway Geyser Basin",
+            "type": "geothermal",
+            "duration": 120
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "artifacts/trailie-generic-live-gate-rerun-2026-08-13/thread-A/A5-make-day-2-slower-capture.json :: capture.canonicalPlan",
+    "days": [
+      {
+        "day": 1,
+        "stops": [
+          {
+            "name": "Mammoth Hot Springs",
+            "type": "landmark",
+            "duration": 120
+          },
+          {
+            "name": "Museum of the National Park Ranger",
+            "type": "museum",
+            "duration": 45
+          },
+          {
+            "name": "Lamar Valley",
+            "type": "wildlife",
+            "duration": 180
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "stops": [
+          {
+            "name": "Artist Point",
+            "type": "viewpoint",
+            "duration": 90
+          },
+          {
+            "name": "Grand Canyon of the Yellowstone overlook time",
+            "type": "viewpoint",
+            "duration": 90
+          }
+        ]
+      },
+      {
+        "day": 3,
+        "stops": [
+          {
+            "name": "Old Faithful Geyser",
+            "type": "landmark",
+            "duration": 150
+          },
+          {
+            "name": "Old Faithful Visitor Education Center",
+            "type": "visitor_center",
+            "duration": 45
+          },
+          {
+            "name": "Grand Prismatic / Midway Geyser Basin",
+            "type": "geothermal",
+            "duration": 120
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "artifacts/trailie-generic-live-gate-rerun-2026-08-13/thread-C/C1-zion-no-exposure-capture.json :: capture.canonicalPlan",
+    "days": [
+      {
+        "day": 1,
+        "stops": [
+          {
+            "name": "Zion Canyon Visitor Center",
+            "type": "visitor_center",
+            "duration": 30
+          },
+          {
+            "name": "Pa'rus Trail",
+            "type": "trail",
+            "duration": 120
+          },
+          {
+            "name": "Human History Museum",
+            "type": "museum",
+            "duration": 45
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "stops": [
+          {
+            "name": "Lower Emerald Pool Trail",
+            "type": "trail",
+            "duration": 120
+          },
+          {
+            "name": "Zion Lodge",
+            "type": "lodge",
+            "duration": 45
+          },
+          {
+            "name": "Zion Nature Center",
+            "type": "visitor_center",
+            "duration": 60
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "artifacts/trailie-live-conversation-first-2026-08-12/q2-envelope.json :: capture.canonicalPlan",
+    "days": [
+      {
+        "day": 1,
+        "stops": [
+          {
+            "name": "Logan Pass: bighorn sheep viewing",
+            "type": "landmark",
+            "duration": 180
+          },
+          {
+            "name": "Glacier birdwatching and wildlife watching",
+            "type": "custom",
+            "duration": 120
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "artifacts/trailie-live-conversation-first-2026-08-12/q3-envelope.json :: capture.canonicalPlan",
+    "days": [
+      {
+        "day": 1,
+        "stops": [
+          {
+            "name": "Mouse's Tank Trail",
+            "type": "trail",
+            "duration": 60
+          },
+          {
+            "name": "Atlatl Rock",
+            "type": "landmark",
+            "duration": 45
+          },
+          {
+            "name": "Midday heat break",
+            "type": "custom",
+            "duration": 180
+          },
+          {
+            "name": "Cabins / historic CCC cabins area — sunset",
+            "type": "landmark",
+            "duration": 75
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "stops": [
+          {
+            "name": "The Beehives",
+            "type": "landmark",
+            "duration": 60
+          },
+          {
+            "name": "Elephant Rock",
+            "type": "landmark",
+            "duration": 45
+          },
+          {
+            "name": "Valley of Fire Scenic Drive viewpoints",
+            "type": "landmark",
+            "duration": 60
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "artifacts/trailie-live-conversation-first-2026-08-12/q4-envelope.json :: capture.canonicalPlan",
+    "days": [
+      {
+        "day": 1,
+        "stops": [
+          {
+            "name": "Pa’rus Trail",
+            "type": "trail",
+            "duration": 90
+          },
+          {
+            "name": "Lower Emerald Pool Trail",
+            "type": "trail",
+            "duration": 120
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "stops": [
+          {
+            "name": "Lower Emerald Pool Trail",
+            "type": "trail",
+            "duration": 120
+          },
+          {
+            "name": "Pa’rus Trail — golden-hour Watchman views",
+            "type": "trail",
+            "duration": 75
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "artifacts/trailie-live-conversation-first-2026-08-12/q5-envelope.json :: capture.canonicalPlan",
+    "days": [
+      {
+        "day": 1,
+        "stops": [
+          {
+            "name": "Lower Emerald Pool Trail",
+            "type": "trail",
+            "duration": 150
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "stops": [
+          {
+            "name": "Pa’rus Trail",
+            "type": "trail",
+            "duration": 120
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "artifacts/trailie-live-product-validation-2026-08-12/q2-envelope.json :: capture.canonicalPlan",
+    "days": [
+      {
+        "day": 1,
+        "stops": [
+          {
+            "name": "Logan Pass: priority visit",
+            "type": "landmark",
+            "duration": 180
+          },
+          {
+            "name": "Logan Pass wildlife observation",
+            "type": "custom",
+            "duration": 45
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "artifacts/trailie-live-product-validation-2026-08-12/q3-envelope.json :: capture.canonicalPlan",
+    "days": [
+      {
+        "day": 1,
+        "stops": [
+          {
+            "name": "Mouse's Tank Trail",
+            "type": "trail",
+            "duration": 60
+          },
+          {
+            "name": "Cabins / historic CCC cabins area — sunset",
+            "type": "landmark",
+            "duration": 60
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "stops": [
+          {
+            "name": "Atlatl Rock",
+            "type": "landmark",
+            "duration": 45
+          },
+          {
+            "name": "The Beehives",
+            "type": "landmark",
+            "duration": 60
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "artifacts/trailie-live-product-validation-2026-08-12/q4-envelope.json :: capture.canonicalPlan",
+    "days": [
+      {
+        "day": 1,
+        "stops": [
+          {
+            "name": "Zion Canyon Visitor Center",
+            "type": "visitor_center",
+            "duration": 30
+          },
+          {
+            "name": "Pa’rus Trail — Virgin River walk with Watchman views",
+            "type": "trail",
+            "duration": 150
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "stops": [
+          {
+            "name": "Lower Emerald Pool Trail",
+            "type": "trail",
+            "duration": 150
+          },
+          {
+            "name": "Zion Lodge",
+            "type": "landmark",
+            "duration": 45
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "artifacts/trailie-live-product-validation-2026-08-12/q5-envelope.json :: capture.canonicalPlan",
+    "days": [
+      {
+        "day": 1,
+        "stops": [
+          {
+            "name": "Pa’rus Trail — relaxed Virgin River walk",
+            "type": "trail",
+            "duration": 90
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "stops": [
+          {
+            "name": "Lower Emerald Pool Trail",
+            "type": "trail",
+            "duration": 120
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "artifacts/trailie-q1-q5-live-sequence-2026-08-12/q3-envelope.json :: capture.canonicalPlan",
+    "days": [
+      {
+        "day": 1,
+        "stops": [
+          {
+            "name": "Depart Las Vegas for Valley of Fire",
+            "type": "custom",
+            "duration": 0
+          },
+          {
+            "name": "Mouse's Tank Trail",
+            "type": "trail",
+            "duration": 60
+          },
+          {
+            "name": "The Beehives",
+            "type": "landmark",
+            "duration": 45
+          },
+          {
+            "name": "Midday heat break",
+            "type": "custom",
+            "duration": 180
+          },
+          {
+            "name": "Sunset at the historic CCC cabins area",
+            "type": "landmark",
+            "duration": 75
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "stops": [
+          {
+            "name": "Atlatl Rock",
+            "type": "landmark",
+            "duration": 45
+          },
+          {
+            "name": "Elephant Rock",
+            "type": "trail",
+            "duration": 45
+          },
+          {
+            "name": "Midday heat break",
+            "type": "custom",
+            "duration": 180
+          },
+          {
+            "name": "Valley of Fire Scenic Drive viewpoints in late-afternoon light",
+            "type": "landmark",
+            "duration": 75
+          },
+          {
+            "name": "Return to Las Vegas",
+            "type": "custom",
+            "duration": 0
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "artifacts/trailie-q1-q5-live-sequence-2026-08-12/q4-envelope.json :: capture.canonicalPlan",
+    "days": [
+      {
+        "day": 1,
+        "stops": [
+          {
+            "name": "Pa’rus Trail",
+            "type": "trail",
+            "duration": 120
+          },
+          {
+            "name": "Pa’rus Trail riverside exhibits and Virgin River views",
+            "type": "landmark",
+            "duration": 45
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "stops": [
+          {
+            "name": "Lower Emerald Pool Trail",
+            "type": "trail",
+            "duration": 120
+          },
+          {
+            "name": "Zion Lodge area",
+            "type": "landmark",
+            "duration": 30
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "artifacts/trailie-q1-q5-live-sequence-2026-08-12/q5-envelope.json :: capture.canonicalPlan",
+    "days": [
+      {
+        "day": 1,
+        "stops": [
+          {
+            "name": "Pa’rus Trail — Watchman-view sunset walk",
+            "type": "trail",
+            "duration": 120
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "stops": [
+          {
+            "name": "Lower Emerald Pool Trail",
+            "type": "trail",
+            "duration": 120
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "artifacts/trailie-q3-after-q2-inspect-2026-08-12/q3-envelope.json :: capture.canonicalPlan",
+    "days": [
+      {
+        "day": 1,
+        "stops": [
+          {
+            "name": "Drive from Las Vegas to Valley of Fire State Park",
+            "type": "custom",
+            "duration": 90
+          },
+          {
+            "name": "The Beehives",
+            "type": "landmark",
+            "duration": 45
+          },
+          {
+            "name": "Valley of Fire Scenic Drive viewpoints",
+            "type": "landmark",
+            "duration": 60
+          },
+          {
+            "name": "Cabins / historic CCC cabins area — sunset",
+            "type": "landmark",
+            "duration": 60
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "stops": [
+          {
+            "name": "Mouse's Tank Trail",
+            "type": "trail",
+            "duration": 75
+          },
+          {
+            "name": "Atlatl Rock",
+            "type": "landmark",
+            "duration": 40
+          },
+          {
+            "name": "Elephant Rock",
+            "type": "landmark",
+            "duration": 35
+          },
+          {
+            "name": "Return drive to Las Vegas",
+            "type": "custom",
+            "duration": 90
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "artifacts/trailie-q4-intro-2026-08-12/q4-envelope.json :: capture.canonicalPlan",
+    "days": [
+      {
+        "day": 1,
+        "stops": [
+          {
+            "name": "Lower Emerald Pool Trail",
+            "type": "trail",
+            "duration": 120
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "stops": [
+          {
+            "name": "Pa’rus Trail",
+            "type": "trail",
+            "duration": 120
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "artifacts/trailie-q4-intro-2026-08-12/q5-envelope.json :: capture.canonicalPlan",
+    "days": [
+      {
+        "day": 1,
+        "stops": [
+          {
+            "name": "Pa'rus Trail",
+            "type": "trail",
+            "duration": 120
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "stops": [
+          {
+            "name": "Lower Emerald Pool Trail",
+            "type": "trail",
+            "duration": 120
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "artifacts/trailie-turn2-final-2026-08-21/thread-M1/T2-zion-two-days-exposure-capture.json :: capture.canonicalPlan",
+    "days": [
+      {
+        "day": 1,
+        "stops": [
+          {
+            "name": "Zion Canyon Visitor Center",
+            "type": "visitor_center",
+            "duration": 30
+          },
+          {
+            "name": "Pa'rus Trail",
+            "type": "trail",
+            "duration": 120
+          },
+          {
+            "name": "Human History Museum",
+            "type": "museum",
+            "duration": 60
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "stops": [
+          {
+            "name": "Lower Emerald Pool Trail",
+            "type": "trail",
+            "duration": 120
+          },
+          {
+            "name": "Zion Lodge area",
+            "type": "lodge",
+            "duration": 60
+          },
+          {
+            "name": "Zion Nature Center",
+            "type": "visitor_center",
+            "duration": 45
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "source": "artifacts/trailie-turn3-final-2026-08-21/thread-M1/T3-knee-light-walking-capture.json :: capture.canonicalPlan",
+    "days": [
+      {
+        "day": 1,
+        "stops": [
+          {
+            "name": "Zion Canyon Visitor Center",
+            "type": "visitor_center",
+            "duration": 30
+          },
+          {
+            "name": "Pa'rus Trail",
+            "type": "trail",
+            "duration": 30
+          },
+          {
+            "name": "Human History Museum",
+            "type": "museum",
+            "duration": 60
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "stops": [
+          {
+            "name": "Lower Emerald Pool Trail",
+            "type": "trail",
+            "duration": 60
+          },
+          {
+            "name": "Zion Lodge area",
+            "type": "lodge",
+            "duration": 60
+          },
+          {
+            "name": "Zion Nature Center",
+            "type": "visitor_center",
+            "duration": 45
+          }
+        ]
+      }
+    ]
+  }
+]

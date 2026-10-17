@@ -7,7 +7,7 @@ export default function CompareLandingSeo({ landing }) {
   return (
     <>
       <section className="relative overflow-hidden py-6 sm:py-12 lg:py-16">
-        <div className="relative z-10 max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
+        <div className="relative z-10 public-shell">
           <p className="text-xs font-medium uppercase tracking-wider mb-3 sm:mb-4" style={{ color: 'var(--text-secondary)' }}>
             Park comparison
           </p>
@@ -17,10 +17,10 @@ export default function CompareLandingSeo({ landing }) {
           >
             {landing.headline}
           </h1>
-          <p className="text-base sm:text-lg lg:text-xl max-w-3xl mb-6" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-base sm:text-lg lg:text-xl public-content mb-6" style={{ color: 'var(--text-secondary)' }}>
             {landing.intro}
           </p>
-          <p className="text-sm max-w-3xl" style={{ color: 'var(--text-tertiary)' }}>
+          <p className="text-sm public-content" style={{ color: 'var(--text-tertiary)' }}>
             Compare entrance fees, parking, crowd levels, weather, and top activities side by side — then plan the winner with Trailie.
           </p>
         </div>
@@ -28,7 +28,7 @@ export default function CompareLandingSeo({ landing }) {
 
       {otherLandings.length > 0 && (
         <section className="pb-6 sm:pb-10">
-          <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
+          <div className="public-shell">
             <h2 className="text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
               More popular comparisons
             </h2>

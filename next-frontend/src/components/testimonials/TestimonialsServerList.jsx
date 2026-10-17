@@ -1,3 +1,5 @@
+import TestimonialBadge from './TestimonialBadge.jsx';
+
 function StarRating({ rating }) {
   const value = Math.min(5, Math.max(0, Number(rating) || 0));
   const stars = '★★★★★'.slice(0, value) + '☆☆☆☆☆'.slice(0, 5 - value);
@@ -14,10 +16,8 @@ function StarRating({ rating }) {
 function TestimonialStaticCard({ testimonial }) {
   return (
     <article
-      className="flex h-full flex-col rounded-2xl p-6 backdrop-blur"
+      className="info-panel flex h-full min-w-0 flex-col break-words"
       style={{
-        backgroundColor: 'var(--surface)',
-        borderWidth: '1px',
         borderColor: 'var(--border)',
       }}
     >
@@ -28,7 +28,7 @@ function TestimonialStaticCard({ testimonial }) {
       >
         &quot;{testimonial.content}&quot;
       </blockquote>
-      <footer className="mt-auto">
+      <footer className="mt-auto flex flex-col items-start">
         <cite className="not-italic">
           <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
             {testimonial.name}
@@ -44,6 +44,12 @@ function TestimonialStaticCard({ testimonial }) {
             {testimonial.parkName}
           </p>
         ) : null}
+        {/^https?:\/\//i.test(testimonial.sourceUrl || '') && (
+          <a href={testimonial.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-sm text-[var(--accent-green)] underline underline-offset-2">
+            {testimonial.sourceLabel || 'View source'}
+          </a>
+        )}
+        <TestimonialBadge testimonial={testimonial} />
       </footer>
     </article>
   );
@@ -52,17 +58,17 @@ function TestimonialStaticCard({ testimonial }) {
 /**
  * Crawler-visible testimonial grid (server-rendered).
  */
-export default function TestimonialsServerList({ testimonials = [] }) {
+export default function TestimonialsServerList({ testimonials = [], error = false }) {
   if (!testimonials.length) {
     return (
       <section className="py-8" aria-labelledby="testimonials-empty">
-        <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
+        <div className="public-shell">
           <p
             id="testimonials-empty"
             className="text-center text-base"
             style={{ color: 'var(--text-secondary)' }}
           >
-            No published testimonials yet. Be the first to share your experience below.
+            {error ? 'Traveler stories are temporarily unavailable. Please try again later.' : 'No approved traveler stories have been published yet. Check back for stories from the community.'}
           </p>
         </div>
       </section>
@@ -70,12 +76,12 @@ export default function TestimonialsServerList({ testimonials = [] }) {
   }
 
   return (
-    <section className="py-16" aria-labelledby="testimonials-list-heading">
-      <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
+    <section className="py-8 sm:py-12" aria-labelledby="testimonials-list-heading">
+      <div className="public-shell">
         <h2 id="testimonials-list-heading" className="sr-only">
           Published traveler reviews
         </h2>
-        <ul className="grid list-none gap-8 p-0 md:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid list-none gap-6 p-0 md:grid-cols-2">
           {testimonials.map((testimonial) => (
             <li key={testimonial._id}>
               <TestimonialStaticCard testimonial={testimonial} />

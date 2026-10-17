@@ -221,7 +221,8 @@ To prevent the mic from picking up Trailie's audio and triggering VAD self-inter
 
 ### Rate Limiting
 
-- 30 sessions per hour per user (keyed by UID or IP)
+- 10 sessions per hour per user (keyed by UID or IP)
+- Anonymous users: 3 free sessions per 24 hours, then sign-in required
 - Stale rate limit entries cleaned probabilistically (1% chance per request)
 - Returns 429 with descriptive error message when exceeded
 

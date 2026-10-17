@@ -1,0 +1,23 @@
+{
+  "recArea": {
+    "RecAreaID": 2991,
+    "RecAreaName": "Yosemite National Park"
+  },
+  "facilities": [
+    {
+      "FacilityID": 232447,
+      "FacilityName": "Upper Pines",
+      "FacilityTypeDescription": "Campground",
+      "FacilityDescription": "Reservable campground in Yosemite Valley.",
+      "FacilityReservationURL": "https://www.recreation.gov/camping/campgrounds/232447"
+    },
+    {
+      "FacilityID": 10086745,
+      "FacilityName": "Yosemite Wilderness Permits",
+      "FacilityTypeDescription": "Permit",
+      "FacilityDescription": "A permit listing for Yosemite wilderness travel.",
+      "FacilityReservationURL": "https://www.recreation.gov/permits/10086745"
+    }
+  ],
+  "observedAt": "2026-08-09T11:55:00.000Z"
+}

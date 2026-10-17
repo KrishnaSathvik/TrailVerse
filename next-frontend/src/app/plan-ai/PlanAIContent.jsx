@@ -9,8 +9,12 @@ import MyRecommendationsButton from '@components/plan-ai/MyRecommendationsButton
 import usePlanAI from '@hooks/usePlanAI';
 import { useAutoTrailieCompletionSound } from '@/hooks/useTrailieCompletionSound';
 import { derivePlanAiHeaderMeta } from '@/lib/planAiHeaderMeta';
+import { createUntouchedFormData } from '@/lib/formDataProvenance';
+import { buildQuickFillSummaryParts } from '@/lib/quickFillSummary';
 
-const defaultFormData = {
+// P0-4: fallback form state is all defaults — provenance keeps every field
+// out of the model context until the traveler touches it.
+const defaultFormData = createUntouchedFormData({
   parkCode: '',
   coordinates: null,
   startDate: '',
@@ -20,7 +24,7 @@ const defaultFormData = {
   interests: [],
   fitnessLevel: '',
   accommodation: ''
-};
+});
 
 const PlanAIContent = ({ tripId }) => {
   const {
@@ -51,9 +55,24 @@ const PlanAIContent = ({ tripId }) => {
     fromCompare,
     guestChatSessionKey,
     guestResumingChat,
+    entryContext,
     newChatKey
   } = usePlanAI(tripId);
   const [quickFillOpen, setQuickFillOpen] = useState(false);
+  // P0-1 (audit 2026-08-31): pinned at mount. guestChatSessionKey and the
+  // park/intent context change DURING a live conversation (first completed
+  // guest turn links the anonymous session; stale session-status can unlink
+  // it again), and a key derived from them remounted TripPlannerChat and
+  // destroyed the transcript. Only explicit resets (newChatKey, tripId) may
+  // remount the chat.
+  const [pinnedChatScopeKey] = useState(
+    () =>
+      guestChatSessionKey ||
+      (chatFormData || defaultFormData).parkCode ||
+      intentContext?.path ||
+      suggestText ||
+      'generic'
+  );
   const [quickFillMessage, setQuickFillMessage] = useState(null);
   const [hasAppliedQuickFill, setHasAppliedQuickFill] = useState(!!tripId || !!fromChatHistory);
   const [initialAskMessage, setInitialAskMessage] = useState(askText || null);
@@ -117,15 +136,7 @@ const PlanAIContent = ({ tripId }) => {
       setSelectedParkName(park.fullName);
     }
 
-    // Build a summary message to auto-send to the AI
-    const parts = [];
-    if (park) parts.push(`**Destination:** ${park.fullName}`);
-    if (data.startDate && data.endDate) parts.push(`**Dates:** ${data.startDate} to ${data.endDate}`);
-    if (data.groupSize) parts.push(`**Group size:** ${data.groupSize}`);
-    if (data.interests?.length) parts.push(`**Interests:** ${data.interests.join(', ')}`);
-    if (data.budget) parts.push(`**Budget:** ${data.budget}`);
-    if (data.fitnessLevel) parts.push(`**Fitness level:** ${data.fitnessLevel}`);
-    if (data.accommodation) parts.push(`**Accommodation:** ${data.accommodation}`);
+    const parts = buildQuickFillSummaryParts(data, park?.fullName || null);
 
     const message = hasAppliedQuickFill
       ? `I've updated my trip preferences:\n${parts.join('\n')}\n\nCan you adjust your suggestions based on these changes?`
@@ -143,11 +154,12 @@ const PlanAIContent = ({ tripId }) => {
         type="button"
         onClick={handleStartNewChat}
         title="Start a new chat"
-        className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-xs font-semibold transition hover:opacity-90 sm:h-9 sm:gap-2 sm:px-3.5 sm:text-sm"
+        className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:h-9 sm:gap-2 sm:px-3 sm:text-sm"
         style={{
-          backgroundColor: 'color-mix(in srgb, var(--accent-green) 12%, var(--bg-primary))',
-          border: '1px solid color-mix(in srgb, var(--accent-green) 35%, var(--border))',
-          color: 'var(--accent-green)',
+          backgroundColor: 'transparent',
+          border: '1px solid var(--border)',
+          color: 'var(--text-secondary)',
+          '--tw-ring-color': 'var(--accent-green)',
         }}
       >
         <NotePencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -165,7 +177,7 @@ const PlanAIContent = ({ tripId }) => {
         headerActions={headerActions}
       >
         <TripPlannerChat
-          key={`chat-${newChatKey || tripId || guestChatSessionKey || effectiveFormData.parkCode || intentContext?.path || suggestText || 'generic'}`}
+          key={`chat-${newChatKey || tripId || pinnedChatScopeKey}`}
           formData={effectiveFormData}
           parkName={effectiveParkName}
           existingTripId={tripId}
@@ -174,6 +186,7 @@ const PlanAIContent = ({ tripId }) => {
           suggestText={suggestText}
           intentContext={intentContext}
           entryMode={effectiveEntryMode}
+          entryContext={entryContext}
           fromCompare={fromCompare}
           fromChatHistory={fromChatHistory}
           refreshTrips={refetchUserTrips}

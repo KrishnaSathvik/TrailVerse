@@ -6,7 +6,10 @@ export const LANDING_RETURN_PATH = '/';
 /** Build a return path from pathname + query string. */
 export function buildReturnPath(pathname, search = '') {
   if (!pathname) return LANDING_RETURN_PATH;
-  const qs = typeof search === 'string' ? search : String(search || '');
+  const params = new URLSearchParams(typeof search === 'string' ? search : String(search || ''));
+  // Preserve filters/tab state, but never embed the previous return chain.
+  params.delete('from');
+  const qs = params.toString();
   return qs ? `${pathname}?${qs}` : pathname;
 }
 

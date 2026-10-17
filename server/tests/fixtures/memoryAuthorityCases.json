@@ -1,0 +1,207 @@
+[
+  {
+    "name": "explicit_car",
+    "message": "We’re renting a car",
+    "update": {
+      "field": "transportation",
+      "value": {
+        "rentalCar": true
+      },
+      "sourceQuote": "We’re renting a car",
+      "authority": "explicit"
+    },
+    "expectedAccept": true
+  },
+  {
+    "name": "explicit_no_car",
+    "message": "We won’t have a car",
+    "update": {
+      "field": "transportation",
+      "value": {
+        "rentalCar": false
+      },
+      "sourceQuote": "We won’t have a car",
+      "authority": "explicit"
+    },
+    "expectedAccept": true
+  },
+  {
+    "name": "maybe_car",
+    "message": "Maybe we’ll rent a car",
+    "update": {
+      "field": "transportation",
+      "value": {
+        "rentalCar": true
+      },
+      "sourceQuote": "Maybe we’ll rent a car",
+      "authority": "explicit"
+    },
+    "expectedAccept": false
+  },
+  {
+    "name": "conditional_car",
+    "message": "If we rent a car, we could visit both parks.",
+    "update": {
+      "field": "transportation",
+      "value": {
+        "rentalCar": true
+      },
+      "sourceQuote": "If we rent a car, we could visit both parks.",
+      "authority": "explicit"
+    },
+    "expectedAccept": false
+  },
+  {
+    "name": "negated_car",
+    "message": "We’re not renting a car",
+    "update": {
+      "field": "transportation",
+      "value": {
+        "rentalCar": true
+      },
+      "sourceQuote": "We’re not renting a car",
+      "authority": "explicit"
+    },
+    "expectedAccept": false
+  },
+  {
+    "name": "unrelated_car",
+    "message": "I want to visit Zion",
+    "update": {
+      "field": "transportation",
+      "value": {
+        "mode": "drive",
+        "rentalCar": true
+      },
+      "sourceQuote": "I want to visit Zion",
+      "authority": "explicit"
+    },
+    "expectedAccept": false
+  },
+  {
+    "name": "explicit_booking",
+    "message": "Hotel is already booked in Springdale",
+    "update": {
+      "field": "lodging",
+      "value": {
+        "baseTown": "Springdale",
+        "booked": true
+      },
+      "sourceQuote": "Hotel is already booked in Springdale",
+      "authority": "explicit"
+    },
+    "expectedAccept": true
+  },
+  {
+    "name": "maybe_booking",
+    "message": "Maybe Springdale would be nice",
+    "update": {
+      "field": "lodging",
+      "value": {
+        "baseTown": "Springdale",
+        "booked": true
+      },
+      "sourceQuote": "Maybe Springdale would be nice",
+      "authority": "explicit"
+    },
+    "expectedAccept": false
+  },
+  {
+    "name": "explicit_party",
+    "message": "2 adults and one child",
+    "update": {
+      "field": "travelers",
+      "value": {
+        "adults": 2,
+        "children": 1
+      },
+      "sourceQuote": "2 adults and one child",
+      "authority": "explicit"
+    },
+    "expectedAccept": true
+  },
+  {
+    "name": "unrelated_party",
+    "message": "I want to visit Zion",
+    "update": {
+      "field": "travelers",
+      "value": {
+        "adults": 6,
+        "children": 4
+      },
+      "sourceQuote": "I want to visit Zion",
+      "authority": "explicit"
+    },
+    "expectedAccept": false
+  },
+  {
+    "name": "explicit_dates",
+    "message": "We travel October 10 through October 12, 2026.",
+    "update": {
+      "field": "dates",
+      "value": {
+        "startDate": "2026-10-10",
+        "endDate": "2026-10-12",
+        "durationDays": 3
+      },
+      "sourceQuote": "We travel October 10 through October 12, 2026.",
+      "authority": "explicit"
+    },
+    "expectedAccept": true
+  },
+  {
+    "name": "unrelated_dates",
+    "message": "I want to visit Zion",
+    "update": {
+      "field": "dates",
+      "value": {
+        "startDate": "2026-10-10",
+        "endDate": "2026-10-12",
+        "durationDays": 3
+      },
+      "sourceQuote": "I want to visit Zion",
+      "authority": "explicit"
+    },
+    "expectedAccept": false
+  },
+  {
+    "name": "cherry_picked_negation",
+    "message": "We are not renting a car.",
+    "update": {
+      "field": "transportation",
+      "value": {
+        "rentalCar": true
+      },
+      "sourceQuote": "renting a car",
+      "authority": "explicit"
+    },
+    "expectedAccept": false
+  },
+  {
+    "name": "quoted_third_party",
+    "message": "My friend said “We have a rental car”, but we do not.",
+    "update": {
+      "field": "transportation",
+      "value": {
+        "rentalCar": true
+      },
+      "sourceQuote": "My friend said “We have a rental car”, but we do not.",
+      "authority": "explicit"
+    },
+    "expectedAccept": false
+  },
+  {
+    "name": "mixed_authority",
+    "message": "We are renting a car.",
+    "update": {
+      "field": "transportation",
+      "value": {
+        "rentalCar": true,
+        "mode": "fly"
+      },
+      "sourceQuote": "We are renting a car.",
+      "authority": "explicit"
+    },
+    "expectedAccept": false
+  }
+]

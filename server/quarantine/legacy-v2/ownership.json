@@ -1,0 +1,853 @@
+[
+  {
+    "file": "server/src/services/__tests__/trailieV2ExecutionService.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "} = require('../trailieV2ExecutionService');"
+    ],
+    "firstTests": [
+      "WP11A trailieV2ExecutionService \u2014 disabled by default",
+      "returns disabled without touching providers when runtime flag off",
+      "WP11A pure helpers"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/trailieV2RouteBridge.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "} = require('../trailieV2RouteBridge');"
+    ],
+    "firstTests": [
+      "WP11B route bridge context mapping",
+      "maps allExtractedParks to resolvedEntities with real coordinates",
+      "hydrates catalog coordinates when extracted park lat/lon are missing (Pass #3)"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/trailieV2TelemetryAttribution.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "const { executeTrailieV2Turn } = require('../trailieV2ExecutionService');",
+      "const { summarizeV2Telemetry } = require('../trailieV2RouteBridge');"
+    ],
+    "firstTests": [
+      "the projected attempt exposes the ACTUAL post-completeness reason",
+      "a traveler-language rejection is attributed, not swallowed",
+      "the attempt-2 shape: a prose exposure-suitability rejection is attributed"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/trailieV2StructurePolicy.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "const { executeTrailieV2Turn } = require('../trailieV2ExecutionService');"
+    ],
+    "firstTests": [
+      "structurePolicy governs whether missing structure is fatal",
+      "policy ",
+      "policy "
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/trailieTurn3MobilityCoverageReplay.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "const { executeTrailieV2Turn } = require('../trailieV2ExecutionService');",
+      "const { summarizeV2Telemetry, renderV2Content } = require('../trailieV2RouteBridge');"
+    ],
+    "firstTests": [
+      "the real Turn 3 patches through the real execution seam",
+      "attempt 1 reproduces the LIVE post-constraint days, and now finalizes",
+      "attempt 3 reproduces the LIVE post-constraint days, and now finalizes"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/trailieTurn2LiveReplay.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "const { executeTrailieV2Turn } = require('../trailieV2ExecutionService');",
+      "const { summarizeV2Telemetry } = require('../trailieV2RouteBridge');"
+    ],
+    "firstTests": [
+      "Turn 2 live attempts through the real validation/finalization chain",
+      "attempt 1 now finalizes into an accepted canonical plan",
+      "attempt 2 finalizes cleanly \u2014 day diversity was never its problem"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/activeTripPresentationField.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "const { executeTrailieV2Turn } = require('../trailieV2ExecutionService');",
+      "} = require('../trailieV2ExecutionService');"
+    ],
+    "firstTests": [
+      "Task 7B \u2014 activeTripPresentation, real executeTrailieV2Turn wiring, all 6 acceptance rows",
+      "Row 1: no active -> ",
+      "Row 2: Redwood active -> "
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/tripQualityWiring.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "const { executeTrailieTurn } = require('../trailieExecutionService');"
+    ],
+    "firstTests": [
+      "I/K: one focused quality repair, frozen first day, canonical narrative and diagnostics",
+      "J: persistent weak trip stops after one quality dispatch, with failure retryability",
+      "no eligible alternatives means no quality call and no full-plan retry"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/compoundActionabilityWiring.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "const {executeTrailieTurn}=require('../trailieExecutionService');"
+    ],
+    "firstTests": [
+      "G/K: actionability and seasonal quality coalesce, leaving one slot unused",
+      "H: no concrete candidate means evidence blocker and zero repairs",
+      "J: identity plus combined viability resolves actionability and seasonal weakness in two slots"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/coverageContainedRepairWiring.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "const { executeTrailieV2Turn } = require('../trailieV2ExecutionService');"
+    ],
+    "firstTests": [
+      "ROLLOUT GATE 6 \u2014 default ON, with an independent kill switch",
+      "dispatches coverage repair with the flag omitted",
+      "disabling required coverage blocks an incomplete multi-stage repair"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/downstreamRepairWiring.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "const { executeTrailieTurn } = require('../trailieExecutionService');"
+    ],
+    "firstTests": [
+      "Per-target eligibility (mandatory): ",
+      "\\nProjection fields: ",
+      "D/E: one viability dispatch covers every currently failing day and freezes the valid day"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/anchorContainedRepairWiring.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "const { executeTrailieV2Turn } = require('../trailieV2ExecutionService');"
+    ],
+    "firstTests": [
+      "the anchor branch fires and stays contained",
+      "dispatches a bounded contained repair and reports zero containment breaches",
+      "never carries plan content or a budget ticket into telemetry"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/namedExperienceWiring.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "const { executeTrailieV2Turn } = require('../trailieV2ExecutionService');"
+    ],
+    "firstTests": [
+      "(5) a named experience with no authoritative identity fails closed before any dispatch",
+      "the captured Mist Trail request \u2192 honest terminal, zero model dispatch, no plan",
+      "(4) a named identity outside the ordinary evidence window is pinned into attempt 1"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/namedExperienceSameAsWiring.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "const { executeTrailieV2Turn } = require('../trailieV2ExecutionService');"
+    ],
+    "firstTests": [
+      "trusted this turn: the same_as equivalent is pinned, offered as the same place, and satisfies the named request",
+      "reviewer not trusted this turn: identical bundle and plan, but the equivalence contributes nothing"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/trailieTier1GenerationContract.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "const { executeTrailieV2Turn } = require('../trailieV2ExecutionService');"
+    ],
+    "firstTests": [
+      "the generation contract sent to the model",
+      "a single-destination itinerary turn sends the reduced, park-bound contract",
+      "a multi-destination turn keeps model-authored stop-level park identity"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/crossPlanTargetMutation.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "const { executeTrailieV2Turn } = require('../trailieV2ExecutionService');",
+      "const { __testables } = require('../trailieV2ExecutionService');"
+    ],
+    "firstTests": [
+      "Task 10D \u2014 comprehensive real-wiring proof: every required invariant, one turn",
+      "Badlands active -> ",
+      "offline/read-only invariant: executeTrailieV2Turn never touches a conversation array or a DB handle"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/e2eProductRegression.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "const { executeTrailieV2Turn } = require('../trailieV2ExecutionService');",
+      "const { buildClassifierPriorTripState } = require('../trailieV2RouteBridge');"
+    ],
+    "firstTests": [
+      "Task 11 \u2014 end-to-end product regression, Turn A through Turn E",
+      "the full sequence holds every invariant, threaded turn to turn"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/liveBudgetGuardWiring.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "const { executeTrailieV2Turn } = require('../trailieV2ExecutionService');"
+    ],
+    "firstTests": [
+      "the guard works through the real execution path",
+      "injecting a guard does not break generation (TDZ regression)",
+      "a budget too small to afford any attempt blocks before the provider is called"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/zeroDurationMicroRepairWiring.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "const { executeTrailieV2Turn } = require('../trailieV2ExecutionService');"
+    ],
+    "firstTests": [
+      "the branch fires on the defect it was built for",
+      "dispatches ONE bounded micro-repair for a zero-duration candidate and merges it",
+      "carries per-dispatch cost and timing separately from generation attempts"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/operationalDirectivesWiring.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "const { executeTrailieV2Turn } = require('../trailieV2ExecutionService');"
+    ],
+    "firstTests": [
+      "R1 \u2014 the Glacier 24-ft RV prohibition reaches attempt 1",
+      "the first dispatched generation request carries both numbers and the subject, before any validation",
+      "R2 \u2014 the Zion exposure directive reaches attempt 1"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/travelLogisticsV2Attachment.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "} = require('../trailieV2ExecutionService');"
+    ],
+    "firstTests": [
+      "Trailie v2 travelLogistics attachment",
+      "drive-cap refuse path attaches route logistics without a canonical plan",
+      "anonymous stream constraint-infeasible terminal forwards travelLogistics"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/targetTripResolverWiring.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "const { executeTrailieV2Turn } = require('../trailieV2ExecutionService');"
+    ],
+    "firstTests": [
+      "Task 10 \u2014 real wiring: the 7 cases",
+      "case 1: active Badlands -> ",
+      "case 2: Badlands active -> "
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/targetTripHydrationWiring.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "const { executeTrailieV2Turn } = require('../trailieV2ExecutionService');"
+    ],
+    "firstTests": [
+      "Task 10B \u2014 cross-plan hydration attempt: the 8 rows",
+      "row 1: active Badlands -> ",
+      "row 2: Badlands active -> historical Redwood edit -> loadTargetPlan called with {tripId, userId}, generation proceeds, delivered via targetPlanMutation, Badlands untouched"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/planningStateDestinationSync.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "} = require('../trailieV2ExecutionService');"
+    ],
+    "firstTests": [
+      "Task 7 \u2014 syncPlanningStateDestinationFromIntent, real classifier, all 8 acceptance rows",
+      "Row 1: no active -> ",
+      "Row 2: Redwood active -> "
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/multiDestinationBuildClassification.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "const { __testables } = require('../trailieV2ExecutionService');"
+    ],
+    "firstTests": [
+      "Task 4A \u2014 multi-destination build classification (mandatory acceptance table)",
+      "Task 4A \u2014 known residual gaps (informational, not chased per coordinator instruction)",
+      "Task 4A \u2014 full Task 3 -> Task 4 -> Task 4A wiring assertion"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/coordinateProductionWiring.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "const { executeTrailieV2Turn } = require('../trailieV2ExecutionService');",
+      "const { runTrailieV2FromPreparedContext } = require('../trailieV2RouteBridge');"
+    ],
+    "firstTests": [
+      "production bridge supplies the singleton ephemeral dispatcher through the authority resolver"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/constructorRepairMonotonicity.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "const { executeTrailieV2Turn } = require('../trailieV2ExecutionService');"
+    ],
+    "firstTests": [
+      "P0-B \u2014 structural defects are refused immediately after parsing",
+      "the all-zero-duration candidate fails at the structural stage, not completeness",
+      "a candidate with real durations is never refused structurally"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/semanticTurnResolver.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "const { executeTrailieV2Turn } = require('../trailieV2ExecutionService');"
+    ],
+    "firstTests": [
+      "trigger gate \u2014 reasons only, never confidence",
+      "elliptical_reference \u2192 exactly one dispatch",
+      "unclear_destination_relationship \u2192 exactly one dispatch"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/tripScopeIntentSync.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "} = require('../trailieV2ExecutionService');"
+    ],
+    "firstTests": [
+      "syncTripScopeDestinationFromIntent \u2014 pure",
+      "case 1: no active trip, ",
+      "case 2: Redwood active, "
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/resolvedEntitiesAuthoritativeSubject.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "} = require('../trailieV2ExecutionService');"
+    ],
+    "firstTests": [
+      ":",
+      "Task 6 \u2014 applyResolvedEntitiesOverride, real classifier, all 7 acceptance rows",
+      "Row 1: Redwood active -> "
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/turnUnderstandingContinuity.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "const { executeTrailieV2Turn } = require('../trailieV2ExecutionService');"
+    ],
+    "firstTests": [
+      "\u00a710 \u2014 active decisions own their follow-ups",
+      "a lodging simplification after a skeleton is a lodging decision",
+      "a new hard constraint on an existing plan refines it rather than rebuilding"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/groundedScopeRepairWiring.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "const {executeTrailieTurn}=require('../trailieExecutionService');"
+    ],
+    "firstTests": [
+      "O: facility support and seasonal quality share one viability slot",
+      "no grounded primary candidates means evidence blocker without a repair",
+      "P: identity and combined viability resolve all structural blockers in two slots"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/trailieExecutionContractIntegrity.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "} = require('../trailieV2ExecutionService');"
+    ],
+    "firstTests": [
+      "artifact escalation ceiling",
+      "a blocked escalation is recorded as a reconciliation, not silently dropped",
+      "the ceiling holds even with implicit trip framing plus a long duration"
+    ]
+  },
+  {
+    "file": "server/src/routes/__tests__/canonicalRouteConvergence.test.js",
+    "owner": "rollback executor/bridge (explicit compatibility aliases and zero hits in current-runtime reachability trace)",
+    "imports": [
+      "const bridge = require('../../services/trailieRouteBridge');"
+    ],
+    "firstTests": [
+      "\\n",
+      "newly grounded relocation accepts only the new identity geography",
+      "chat-anonymous"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/evidencePlannerProviderContract.test.js",
+    "owner": "retired pre-model evidence planner topic/provider matrix",
+    "imports": [
+      "../evidencePlannerService",
+      "../trailieIntentClassifier",
+      "../providers/npsEvidenceProvider",
+      "../providers/ridbEvidenceProvider",
+      "../providers/weatherEvidenceProvider",
+      "../providers/mapsEvidenceProvider",
+      "../providers/astronomyEvidenceProvider",
+      "../providers/feeFreeDatesEvidenceProvider",
+      "../providers/braveEvidenceProvider",
+      "../providers/serperEvidenceProvider",
+      "../providers/tavilyEvidenceProvider",
+      "../providers/directOfficialPageEvidenceProvider",
+      "../providers/knownPlaceEvidenceProvider"
+    ],
+    "firstTests": [
+      "every plannable topic declares a provider that can serve it",
+      "there are no unserviceable plannable topics left",
+      "every declared provider id is a real provider"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/trailieTravelerJobResolver.test.js",
+    "owner": "retired deterministic traveler-job resolver",
+    "imports": [
+      "../trailieTravelerJobResolver"
+    ],
+    "firstTests": [
+      "trailieTravelerJobResolver",
+      "treats spelled and numeric durations as the same duration",
+      "duration-enough questions are advice, not day-by-day, for both spellings"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/turnUnderstandingHardening.test.js",
+    "owner": "retired turn-understanding/classifier contract",
+    "imports": [
+      "../turnUnderstanding",
+      "../travelerJobTaskFamilyMap",
+      "../trailieTravelerJobResolver",
+      "../trailieIntentClassifier",
+      "../../utils/destinationRelationship",
+      "../../utils/genericDestinationResolver",
+      "../trailieV2ExecutionService",
+      "../../utils/evidenceBundle",
+      "../../config/providerTestPolicy"
+    ],
+    "firstTests": [
+      "P1 \u2014 every traveler job maps to a semantic family",
+      "mapping covers TRAVELER_JOBS exhaustively",
+      "every mapped family is a real family"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/planningEntryReliability.test.js",
+    "owner": "retired pre-model planning readiness contract",
+    "imports": [
+      "../turnUnderstanding",
+      "../../utils/destinationRelationship",
+      "../../utils/roadTripContract",
+      "../artifactFulfillment",
+      "../../utils/travelerStateExtraction",
+      "../../utils/tripDateParser",
+      "../../utils/itineraryCompleteness",
+      "../../utils/itineraryToolSchema",
+      "../../utils/refinementSemantics"
+    ],
+    "firstTests": [
+      "A1 \u2014 indecision between two parks is a CHOICE, not a combined trip",
+      "distribution language still means COMBINE, not choice",
+      "A2 \u2014 a choice between two parks is not a multi-destination trip"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/webWaveEntryDemand.test.js",
+    "owner": "retired evidence planner demand and sufficiency gates",
+    "imports": [
+      "../evidencePlannerService",
+      "../trailieIntentClassifier",
+      "../webEvidencePolicyService",
+      "../trailieV2ExecutionService",
+      "../../utils/evidenceKey",
+      "../evidenceBrokerService",
+      "../layeredEvidenceBroker",
+      "../../utils/turnTimeline",
+      "../../utils/evidenceContractVersions",
+      "../webEvidencePolicyService"
+    ],
+    "firstTests": [
+      "transit is planned on demand, not universally",
+      "ordinary self-drive creation plans no transit",
+      "an explicit shuttle question plans it"
+    ]
+  },
+  {
+    "file": "server/src/utils/__tests__/actionableContingencyAnswer.test.js",
+    "owner": "retired contingency intent-to-evidence planner",
+    "imports": [
+      "../constraintFamilies",
+      "../../services/turnUnderstanding",
+      "../../services/trailieTravelerJobResolver",
+      "../../services/trailieIntentClassifier",
+      "../../services/evidencePlannerService",
+      "../actionableContingencyAnswer"
+    ],
+    "firstTests": [
+      "alternative-ask recognition (not backup-plan collocation)",
+      "produce + fallback remains itinerary-dominant",
+      "contingency evidence includes fallback activities"
+    ]
+  },
+  {
+    "file": "server/src/utils/__tests__/actionableContingencyIndependentEval.test.js",
+    "owner": "retired contingency classifier independent evaluation",
+    "imports": [
+      "../constraintFamilies",
+      "../../services/turnUnderstanding",
+      "../../services/trailieTravelerJobResolver",
+      "../../services/trailieIntentClassifier",
+      "../../services/evidencePlannerService",
+      "../actionableContingencyAnswer"
+    ],
+    "firstTests": [
+      "12H2-D independent evaluation",
+      "alternative ask recognized without backup-plan collocation",
+      "correct contingency job fetches fallback activities"
+    ]
+  },
+  {
+    "file": "server/src/utils/__tests__/comparisonSelectionIndependentEval.test.js",
+    "owner": "retired deterministic comparison/job decision",
+    "imports": [
+      "../comparisonSelectionObligation",
+      "../../services/turnUnderstanding",
+      "../../services/trailieTravelerJobResolver"
+    ],
+    "firstTests": [
+      "12H2-C independent evaluation",
+      "selection-required: make the call between Glacier and Grand Teton",
+      "selected candidate stays inside the compared set"
+    ]
+  },
+  {
+    "file": "server/src/utils/__tests__/dominantIntentArbitrationFreshParaphrase.test.js",
+    "owner": "retired deterministic intent arbitration",
+    "imports": [
+      "../../services/turnUnderstanding",
+      "../../services/trailieTravelerJobResolver",
+      "../../services/trailieIntentClassifier",
+      "../constraintEngine",
+      "../../services/travelerJobTaskFamilyMap"
+    ],
+    "firstTests": [
+      "fresh transport arbitration",
+      "how should we drive from A to B is route_planning",
+      "how far is the drive is route_planning"
+    ]
+  },
+  {
+    "file": "server/src/utils/__tests__/dominantIntentArbitrationMetamorphic.test.js",
+    "owner": "retired deterministic intent arbitration",
+    "imports": [
+      "../../services/turnUnderstanding",
+      "../../services/trailieTravelerJobResolver",
+      "../../services/trailieIntentClassifier",
+      "../constraintEngine",
+      "../../services/travelerJobTaskFamilyMap"
+    ],
+    "firstTests": [
+      "transport \u2014 primary route vs preference",
+      "how do I get from A to B is route_planning",
+      "how long is the drive is route_planning"
+    ]
+  },
+  {
+    "file": "server/src/utils/__tests__/boundedGapClosureFreshIndependent.test.js",
+    "owner": "retired semantic intent and constraint engine integration",
+    "imports": [
+      "../../services/turnUnderstanding",
+      "../../services/trailieTravelerJobResolver",
+      "../constraintEngine",
+      "../namedExperienceRequirements",
+      "../genericDestinationResolver",
+      "../parkExtractor",
+      "../officialPlaceIndex",
+      "../persistedOfficialPlaceLookup",
+      "../constraintFamilies"
+    ],
+    "firstTests": [
+      "independent produce-object paraphrases",
+      "independent contingency paraphrases",
+      "independent distance / pace / drive paraphrases"
+    ]
+  },
+  {
+    "file": "server/src/utils/__tests__/boundedGapClosureMetamorphic.test.js",
+    "owner": "retired semantic intent and constraint engine integration",
+    "imports": [
+      "../../services/turnUnderstanding",
+      "../../services/trailieTravelerJobResolver",
+      "../constraintEngine",
+      "../produceTripRequest",
+      "../namedExperienceRequirements",
+      "../genericDestinationResolver",
+      "../parkExtractor",
+      "../officialPlaceIndex",
+      "../persistedOfficialPlaceLookup",
+      "../constraintFamilies"
+    ],
+    "firstTests": [
+      "12F.1 produce-object ordering",
+      "12F.1 generic unavailable-target contingency",
+      "12F.1 activity-distance ceilings"
+    ]
+  },
+  {
+    "file": "server/src/utils/__tests__/systematicGapClosureFreshIndependent.test.js",
+    "owner": "retired semantic intent and constraint engine integration",
+    "imports": [
+      "../../services/turnUnderstanding",
+      "../../services/trailieTravelerJobResolver",
+      "../constraintEngine",
+      "../namedExperienceRequirements",
+      "../genericDestinationResolver",
+      "../parkExtractor",
+      "../officialPlaceIndex",
+      "../persistedOfficialPlaceLookup",
+      "../stopIdentityResolution",
+      "../../services/evidencePlannerService",
+      "../../services/trailieV2ExecutionService",
+      "../../services/trailieIntentClassifier",
+      "../modelSelectedIdentityDegradation"
+    ],
+    "firstTests": [
+      "independent slack-noun pace",
+      "opening hours are not pace",
+      "independent minute/hour daily drive caps"
+    ]
+  },
+  {
+    "file": "server/src/utils/__tests__/systematicGapClosureMetamorphic.test.js",
+    "owner": "retired semantic intent and constraint engine integration",
+    "imports": [
+      "../../services/turnUnderstanding",
+      "../../services/trailieTravelerJobResolver",
+      "../constraintEngine",
+      "../namedExperienceRequirements",
+      "../genericDestinationResolver",
+      "../parkExtractor",
+      "../officialPlaceIndex",
+      "../persistedOfficialPlaceLookup",
+      "../stopIdentityResolution",
+      "../modelSelectedIdentityDegradation",
+      "../canonicalExperience"
+    ],
+    "firstTests": [
+      "12F.3 slack-noun pace",
+      "12F.3 numeric daily-drive ceilings",
+      "qualitative minimize-driving stays uncapped"
+    ]
+  },
+  {
+    "file": "server/src/utils/__tests__/identityProviderDegradationFreshIndependent.test.js",
+    "owner": "retired deterministic replacement selection/evidence gate",
+    "imports": [
+      "../canonicalExperience",
+      "../stopIdentityResolution",
+      "../namedExperienceRequirements",
+      "../stopObligationOwnership",
+      "../modelSelectedIdentityDegradation",
+      "../../services/evidencePlannerService",
+      "../../services/trailieV2ExecutionService",
+      "../../services/trailieIntentClassifier",
+      "../constraintEngine",
+      "../coordinateValidation"
+    ],
+    "firstTests": [
+      "fresh independent \u2014 model-selected identity recovery",
+      "an unused compatible catalog walk replaces one unsupported model stop",
+      "two unsupported optional stops are omitted when no unused compatible places remain"
+    ]
+  },
+  {
+    "file": "server/src/utils/__tests__/planningReadinessP1Closure.test.js",
+    "owner": "retired executor planning-readiness gate",
+    "imports": [
+      "../constraintEngine",
+      "../planningState",
+      "../budgetContract",
+      "../itineraryCompleteness",
+      "../planningInputContract",
+      "../../services/trailieV2ExecutionService",
+      "../evidenceBundle"
+    ],
+    "firstTests": [
+      "P1-1 \u2014 interest clear authority",
+      "A \u2014 explicit empty planningState beats stale formData hiking",
+      "B \u2014 absent interests field still allows formData compatibility"
+    ]
+  },
+  {
+    "file": "server/src/utils/__tests__/planPatchApplyForensicsCapture.test.js",
+    "owner": "rollback executor forensic capture",
+    "imports": [
+      "fs",
+      "path",
+      "../../services/trailieV2ExecutionService",
+      "../evidenceBundle"
+    ],
+    "firstTests": [
+      "plan_patch_apply forensics",
+      "a target miss leaves the patch the model actually emitted on disk",
+      "an evidence-bound mutation is captured with the offending stop"
+    ]
+  },
+  {
+    "file": "server/src/services/__tests__/trailieOutputBudgetPolicy.test.js",
+    "owner": "rollback tiered executor output budget policy",
+    "imports": [
+      "../trailieV2ExecutionService",
+      "../liveBudgetGuard",
+      "../liveBudgetGuard",
+      "../../utils/evidenceBundle"
+    ],
+    "firstTests": [
+      "B8 \u2014 output policy routing",
+      "(1) Terra architect maximum is UNCHANGED",
+      "(2) Sol medium architect gets the larger reasoning-aware maximum"
+    ]
+  },
+  {
+    "file": "server/src/routes/__tests__/wp12Phase2Switch.test.js",
+    "owner": "retired V2-only route switch; current modelFirstCutover stays active",
+    "imports": [
+      "fs",
+      "path",
+      "../../config/trailieV2Runtime",
+      "../ai"
+    ],
+    "firstTests": [
+      "WP12 Phase 4 \u2014 Trailie v2-only product chat",
+      "all four product chat routes fail-closed when runtime disabled",
+      "product chat routes never call deleted legacy generation engines"
+    ]
+  },
+  {
+    "file": "server/src/utils/__tests__/strictProductionReadiness.test.js",
+    "owner": "V2 create_itinerary strict generator golden schema and executor wiring; current propose_trip_update does not use this tool",
+    "imports": [
+      "fs",
+      "path",
+      "../itineraryToolSchema",
+      "../../config/itineraryGenerationConfig",
+      "../itineraryStructuralValidation"
+    ],
+    "firstTests": [
+      "\u00a72 \u2014 the strict contract, in one place",
+      "optional SCALAR semantics survive as approved nullable fields",
+      "optional ARRAYS are required arrays carrying the empty-state rule"
+    ]
+  },
+  {
+    "file": "server/src/utils/__tests__/strictModeFeasibility.test.js",
+    "owner": "V2 strict create_itinerary generator feasibility and historical timing replay",
+    "imports": [
+      "../itineraryToolSchema",
+      "../../config/itineraryGenerationConfig",
+      "../generationContractBinding",
+      "../finalizeItinerary",
+      "../itineraryStructuralValidation",
+      "../itineraryCompleteness",
+      "../travelerFitEvaluation",
+      "../canonicalResponse",
+      "../../services/structuredItineraryGenerator",
+      "../promptTokenAccounting",
+      "../../../../artifacts/trailie-days-first-2026-08-27/results.json",
+      "../refinementScope",
+      "../refinementScope",
+      "fs",
+      "fs",
+      "fs"
+    ],
+    "firstTests": [
+      "A \u2014 strict-incompatible constructs, by exact path",
+      "narrativeSections.maxItems is present in every variant",
+      "alternatives.minItems appears ONLY when a backup was requested"
+    ]
+  },
+  {
+    "file": "server/src/utils/__tests__/exactDemoQ3SeasonalSubjectSemantics.test.js",
+    "owner": "historical V2 demo replay through deterministic itineraryCompleteness",
+    "imports": [
+      "fs",
+      "path",
+      "../trailieOperationalConstraints",
+      "../itineraryCompleteness",
+      "../../data/officialPlaceActivityCandidates",
+      "../../services/providers/knownPlaceEvidenceProvider"
+    ],
+    "firstTests": [
+      "Exact Demo Q3 \u2014 seasonal subject identity semantics",
+      "seasonal rule is active in August and includes Fire Wave",
+      "A \u2014 avoidance note does not identify stop as Fire Wave"
+    ]
+  },
+  {
+    "file": "server/src/routes/__tests__/trailieDisconnectCancellation.test.js",
+    "owner": "V2 bridge injection; current disconnect coverage remains in modelFirstCutover",
+    "imports": [
+      "express",
+      "supertest",
+      "crypto",
+      "../../models/AnonymousSession",
+      "../../utils/conversationPlanContinuity",
+      "../../services/trailieV2RouteBridge",
+      "../ai"
+    ],
+    "firstTests": [
+      "Phase 8D.1 \u2014 anonymous identity at the actual HTTP route",
+      "two missing IDs under identical request fingerprints mint independent sessions",
+      "an invalid legacy ID rotates without importing the legacy conversation"
+    ]
+  },
+  {
+    "file": "server/src/controllers/__tests__/crossPlanTargetMutationPersistence.test.js",
+    "owner": "retired plan-only cross-plan PUT; current rejection covered in manualTripMutationController",
+    "imports": [
+      "../../models/TripPlan",
+      "../tripController",
+      "../../utils/canonicalPersistence"
+    ],
+    "firstTests": [
+      "Task 10E \u2014 source provenance ACCEPTS a legitimate cross-plan write",
+      "real source Badlands assistant message with matching responseId and targetTripId === redwood -> Redwood write accepted",
+      "a successfully accepted target write adds ZERO messages to Redwood\\"
+    ]
+  }
+]

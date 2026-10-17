@@ -1,18 +1,24 @@
 const express = require('express');
 const router = express.Router();
+const { trailieTurnTelemetryScope } = require('../services/trailieTurnLedger');
+router.use(trailieTurnTelemetryScope);
+// Primary Trailie (TRAILIE_RUNTIME unset or model_first) terminates matched
+// chat/stream/plan-itinerary requests in modelFirstTrailie. Only an explicit
+// TRAILIE_RUNTIME=legacy selection falls through to the rollback handlers
+// below. Production defaults to model_first — it does not fall through.
+// Voice, providers, session status, and other non-chat routes in this file
+// remain live for the current product.
+router.use(require('./modelFirstTrailie').createModelFirstRouter());
 const { protect, optionalAuth } = require('../middleware/auth');
 const { checkTokenLimit, trackTokenUsage, getTokenUsage } = require('../middleware/tokenLimits');
-const { fetchRelevantFacts, fetchNPSFacts, needsWebSearch, needsAstroFacts, shouldAppendAnonymousWebSearchUpsell, isTravelRelated, extractUserCity, getCandidateParks, formatCandidateParksBlock } = require('../services/factsService');
+const { extractUserCity, shouldAppendAnonymousWebSearchUpsell, isTravelRelated } = require('../services/factsService');
+const { CANONICAL_FACT_STATUS } = require('../utils/canonicalFacts');
 const {
-  planTrailieFetches,
-  formatGuestLiveDataBoundaryBlock,
-  needsLiveData,
   isItineraryPlanningQuery: hasItineraryIntentFromPlanner,
 } = require('../services/trailieFetchPlanner');
 const {
   resolveActiveTripContext,
   applyPrimaryDestinationToMetadata,
-  formatActiveTripContextPromptBlock,
   finalizeActiveTripContextForClient,
 } = require('../services/activeTripContextService');
 const {
@@ -37,7 +43,10 @@ const {
   shouldShowDayByDayPlanCta,
 } = require('../utils/discoveryQuery');
 const { isItineraryRefinementFollowUp } = require('../services/trailieFetchPlanner');
+const { activePlanConstraintRefinement } = require('../utils/refinementScope');
 const { stripAnyItineraryJsonArtifacts } = require('../utils/extractItineraryJSON');
+const { isCompletedSemanticTerminal } = require('../utils/trailieV2TerminalOutcome');
+const { persistCommittedTripMutation } = require('../services/tripMutationCommit');
 const {
   assessItineraryReadiness,
   formatItineraryGatheringBlock,
@@ -46,6 +55,7 @@ const {
 const { shouldAttachParkImages } = require('../utils/parkImagePolicy');
 const { buildDrivingTimeContext, enrichItineraryDrivingTimes } = require('../services/drivingTimesContextService');
 const { executePlanItineraryRequest } = require('../services/fastItineraryPlannerService');
+const { hasSemanticTrailieEntryContext, mergeTrailieEntryContext, normalizeTrailieEntryContext, shouldStartFreshGuestEntry } = require('../utils/trailieEntryContext');
 
 const STREAM_POST_PROCESS_OPTIONS = {
   enableConflictRetry: true,
@@ -178,7 +188,23 @@ const { getAIAnalytics, getLearningInsights } = require('../controllers/aiAnalyt
 const AnonymousSession = require('../models/AnonymousSession');
 const Favorite = require('../models/Favorite');
 const VisitedPark = require('../models/VisitedPark');
-const { generateAnonymousIdFromRequest } = require('../utils/anonymousIdGenerator');
+const {
+  isValidGuestSessionId,
+  resolveAnonymousRequestIdentity,
+} = require('../utils/anonymousIdGenerator');
+const { latestCanonicalPlanFromMessages } = require('../utils/guestConversationPlan');
+const { rememberConversationPlan } = require('../utils/conversationPlanContinuity');
+const { projectGuestConversationForStatus } = require('../utils/anonymousSessionStatusMessages');
+// Stage 14.8A.2 — guest quota is coupled to COMPLETION, not arrival. Both
+// anonymous handlers admit exactly one pending logical turn, and only an
+// atomic terminal completion grows the guest's completed-turn count.
+const {
+  GUEST_ROUTE_CODES,
+  GUEST_TURN_FAILURE_CODES,
+  classifyGuestTurnFailure,
+  openGuestTurn,
+} = require('../services/guestTurnScope');
+const { readGuestQuota, releaseStalePendingTurns } = require('../services/anonymousTurnLedger');
 const {
   buildAnonymousConversionMessage,
   buildGuestChatPublicUrl,
@@ -186,16 +212,14 @@ const {
 const { extractItineraryJSON, validateItineraryFeasibility } = require('../utils/extractItineraryJSON');
 const { extractItineraryFromResponse } = require('../utils/claudeResponseParser');
 const {
-  CREATE_ITINERARY_TOOL,
-  formatItineraryToolInstruction,
-} = require('../utils/itineraryToolSchema');
-const {
   CLAUDE_FALLBACK_MODELS,
   CLAUDE_EXTRACTOR_MODEL,
   CLAUDE_PRIMARY_MODEL,
   OPENAI_PRIMARY_MODEL,
   OPENAI_FALLBACK_MODELS,
 } = require('../config/aiModels');
+// Stage 14.7I §2/§3 — the single Claude model resolution + pre-dispatch guard.
+const { resolveProviderModel } = require('../config/resolveProviderModel');
 function formatClaudeModelLabel(model = CLAUDE_PRIMARY_MODEL) {
   if (/sonnet-5/i.test(model)) return 'Claude Sonnet 5';
   if (/sonnet-4-6/i.test(model)) return 'Claude Sonnet 4.6';
@@ -203,11 +227,11 @@ function formatClaudeModelLabel(model = CLAUDE_PRIMARY_MODEL) {
 }
 
 function getTrailieProviders() {
-  if (!anthropic || !process.env.ANTHROPIC_API_KEY) return [];
+  if (!process.env.OPENAI_API_KEY) return [];
   return [{
-    id: 'claude',
+    id: 'openai',
     name: 'Trailie',
-    model: formatClaudeModelLabel(),
+    model: 'GPT-5.6',
     description: 'Live NPS data, constraint-aware trip planning, and insider park picks',
     available: true,
   }];
@@ -216,38 +240,74 @@ function getTrailieProviders() {
 const {
   autoRouteProvider,
   resolveResponseMode,
-  getSystemPromptForMode,
 } = require('../utils/trailieResponseMode');
-const { runReviewAndRepair } = require('../services/trailieReviewerService');
+// Stage 9 — reviewer execution is OFF the request path. The route no longer
+// imports the model-calling review pipeline; it only schedules a durable,
+// sampled shadow review that a separate worker runs later.
+const { getFinalResponseRejectionReason } = require('../utils/finalResponseGuards');
+const { normalizeCoordinates, COORDINATE_SOURCE } = require('../utils/coordinateValidation');
+const { stripAlignmentMarkers } = require('../utils/proseAlignmentMarkers');
+const { getTrailieReviewConfig } = require('../config/trailieReviewConfig');
+const {
+  classifyReviewEligibility,
+  shouldSampleTrailieReview,
+} = require('../utils/trailieReviewSampler');
+const { buildTrailieReviewSnapshot } = require('../utils/trailieReviewSnapshot');
+const { enqueueReviewJob, ENQUEUE_RESULT } = require('../services/trailieReviewQueue');
+const { enrichItineraryParkIdentity } = require('../utils/itineraryParkIdentity');
+const { buildCanonicalTrailieResponse } = require('../utils/canonicalResponse');
+const { createTurnResponseIdentity, readPriorResponseVersion } = require('../utils/responseIdentity');
+const {
+  createEarlyEventEmitter,
+  buildRevisionOneOutbound,
+  buildRevisionTwoOutbound,
+  buildMismatchSafeTerminal,
+  assertItineraryUnchanged,
+} = require('../utils/earlyRevisionEvents');
+const { stripItineraryArtifacts } = require('../utils/itineraryArtifacts');
 const {
   callClaudeWithFallback,
   formatCorrectionNotice,
   buildPlanDocument,
   buildAuditTrail,
-  computeContentUnchanged,
 } = require('../utils/trailiePipelineUtils');
 const { parseConstraints, preflightCheck, buildConstraintBlock, validateItineraryConstraints, detectHypothetical, detectConflicts, detectIntent } = require('../utils/constraintEngine');
+const { resolveOperationalConstraints, formatOperationalConstraintBlock } = require('../utils/trailieOperationalConstraints');
+const { resolveDestinationDisplayName } = require('../utils/resolvedDestinationDisplay');
 const { correctItinerary, computeConfidence, scoreItinerary } = require('../utils/itineraryCorrector');
 const { logAIRequest, extractParksMentioned } = require('../utils/aiLogger');
 const { TRAILIE_VOICE_INSTRUCTIONS } = require('../prompts');
-const {
-  buildTrailieContext,
-  formatStructuredContextInjection,
-  maybeAttachDebugTrailieContext,
-} = require('../utils/trailieContextBuilder');
-const {
-  extractConversationSummaryFromMessages,
-} = require('../utils/tripStateBuilder');
-const { streamRawLLMToSse } = require('../services/aiProviderStream');
+const { buildItineraryOutputInstruction } = require('../prompts/itineraryOutputInstruction');
+// Stage 11 — itinerary generation config (early-event gating on auth stream).
+const { getItineraryGenerationConfig } = require('../config/itineraryGenerationConfig');
 const {
   setSseHeaders,
   writeSseEvent,
   attachClientDisconnectAbort,
 } = require('../utils/sseStream');
+// WP10B — transport/client compatibility layer. The route emits canonical
+// concepts; the adapter serializes them for the connection's dialect.
+const { resolveTrailieTransportDialect } = require('../utils/trailieTransportDialect');
+const {
+  createTrailieTransportAdapter,
+  routeEarlyEventToTransport,
+} = require('../utils/trailieTransportAdapter');
+// One Trailie execution path; availability compatibility stays at this boundary.
+const { isTrailieRuntimeEnabled } = require('../config/trailieRuntime');
+const { buildGenericLiveGatePreflight } = require('../eval/trailie/genericLiveGatePreflight');
+const {
+  createTrailieStreamEventBinder,
+  runTrailieFromPreparedContext,
+  summarizeTrailieTelemetry,
+} = require('../services/trailieRouteBridge');
 const crypto = require('crypto');
 const claudeService = require('../services/claudeService');
 const openaiService = require('../services/openaiService');
-const npsService = require('../services/npsService');
+const {
+  assertLiveProviderAllowed,
+  isLiveProviderDenied,
+} = require('../config/providerTestPolicy');
+const { getNpsService } = require('../services/npsService');
 const { pickPrimaryEntranceFee } = require('../utils/entranceFeeUtils');
 
 // Initialize AI clients
@@ -257,16 +317,21 @@ let openai = null;
 try {
   if (process.env.ANTHROPIC_API_KEY) {
     const Anthropic = require('@anthropic-ai/sdk');
-    anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-    });
+    const synthetic = Anthropic.__trailieSyntheticProvider === true;
+    if (!isLiveProviderDenied() || synthetic) {
+      assertLiveProviderAllowed({ provider: 'claude', phase: 'constructor', synthetic });
+      anthropic = new Anthropic({
+        apiKey: process.env.ANTHROPIC_API_KEY,
+      });
+    }
   }
 } catch (error) {
   console.warn('Claude SDK not available:', error.message);
 }
 
 try {
-  if (process.env.OPENAI_API_KEY) {
+  if (process.env.OPENAI_API_KEY && !isLiveProviderDenied()) {
+    assertLiveProviderAllowed({ provider: 'openai', phase: 'constructor' });
     const OpenAI = require('openai');
     openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
@@ -401,8 +466,8 @@ function selectParkImagesForChat(pool, need) {
  */
 async function collectParkImagesForChat(parkCode, need) {
   const [gallery, parkRecord] = await Promise.all([
-    npsService.getParkGalleryPhotos(parkCode),
-    npsService.getParkImages(parkCode),
+    getNpsService().getParkGalleryPhotos(parkCode),
+    getNpsService().getParkImages(parkCode),
   ]);
   const pool = mergeParkImagePool(gallery, parkRecord);
   return selectParkImagesForChat(pool, need);
@@ -410,8 +475,215 @@ async function collectParkImagesForChat(parkCode, need) {
 
 // Helper: fetch images for multiple parks with smart distribution (target 4 total)
 // 1 park → 4 images, 2 parks → 2 each, 3 parks → 2+1+1, 4+ parks → 1 each
-async function saveStreamItineraryToTrip(req, itineraryData, meta = {}) {
-  return saveItineraryToTrip(req, itineraryData, meta);
+/**
+ * Stage 8 — build the canonical response identity + the exact plan document the
+ * FRONTEND will persist. The server owns content/hashes; the browser submits
+ * this verbatim (it must not rebuild content or re-derive itineraryData). The
+ * server no longer writes trip.plan itself — this removes the F-PERSIST-1 race.
+ *
+ * responseVersion is a per-trip monotonic counter: the client echoes the
+ * currently-stored plan version as metadata.priorResponseVersion so each new
+ * turn / regeneration increments it and the controller guard can reject stale
+ * or conflicting writes.
+ */
+async function buildCanonicalOutbound({
+  processed,
+  response,
+  rawStreamContent,
+  req,
+  resolvedMetadata,
+  auditTrail,
+  preparedContext = null,
+  constraints = null,
+  // Stage 14.1 §2 — the identity minted once at TURN ADMISSION. When supplied, no
+  // second identity is minted here; the same responseId serves revision 1,
+  // revision 2, and terminal structured-failure responses. Omitted (legacy call) →
+  // the pre-Stage-14 behavior of minting at envelope construction.
+  responseIdentity = null,
+}) {
+  const destinationDisplay = resolveDestinationDisplayName({
+    resolvedMetadata,
+    allExtractedParks: preparedContext?.allExtractedParks || [],
+    activeTripContext: preparedContext?.activeTripContext || null,
+  });
+  const priorVersion = Number(req.body?.metadata?.priorResponseVersion) || 0;
+  const envelope = buildCanonicalTrailieResponse({
+    responseId: responseIdentity ? responseIdentity.responseId : undefined,
+    responseVersion: responseIdentity ? responseIdentity.responseVersion : priorVersion + 1,
+    processedContent: processed.cleanContent,
+    rawStreamContent: rawStreamContent || processed.cleanContent,
+    itineraryData: processed.itineraryData || null,
+    planScore: processed.planScore || null,
+    corrections: processed.correctionsApplied || [],
+    feasibilityIssues: processed.feasibilityIssues || [],
+    provider: response.provider,
+    model: response.model,
+    reviewMeta: processed.reviewMeta || null,
+  });
+
+  // Stage 10 — the canonical response is IMMUTABLE after construction. Review
+  // scheduling is computed as SEPARATE outbound metadata (reviewScheduling) and
+  // is never written back into the envelope, plan, or hashes. This guarantees
+  // canonical content/plan/identity are byte-identical regardless of whether
+  // enqueue is disabled, succeeds, or fails.
+  const reviewScheduling = await scheduleShadowReview({
+    envelope,
+    response,
+    preparedContext,
+    constraints,
+    resolvedMetadata,
+  });
+
+  const identity = {
+    responseId: envelope.responseId,
+    responseVersion: envelope.responseVersion,
+    contentHash: envelope.contentHash,
+    itineraryHash: envelope.itineraryHash,
+  };
+
+  const canonicalPlan = processed.itineraryData
+    ? buildPlanDocument({
+        itineraryData: processed.itineraryData,
+        parkName: destinationDisplay || resolvedMetadata.parkName || req.body.metadata?.parkName,
+        parkCode: req.body.metadata?.parkCode || resolvedMetadata.parkCode,
+        // The stable, content-independent review marker — never the dynamic
+        // queue status. Identical across every enqueue outcome.
+        reviewMeta: envelope.reviewMeta,
+        auditTrail,
+        identity,
+        feasibilityIssues: processed.feasibilityIssues || [],
+      })
+    : null;
+
+  return { envelope, identity, canonicalPlan, reviewScheduling };
+}
+
+/**
+ * Stage 9/10 — the ONLY request-path touchpoint with the review system. Samples
+ * deterministically on the canonical responseId and (when enabled + sampled)
+ * builds the immutable snapshot from the EXACT evidence fetched during
+ * generation, then enqueues one durable job with a strict, bounded timeout.
+ *
+ * PURE with respect to the canonical response: it reads the envelope but never
+ * mutates it. It never waits for a reviewer/model call, never falls back to
+ * inline review, and never throws to the caller — any failure resolves to a
+ * queue status while the user response proceeds unchanged.
+ *
+ * @returns {Promise<Object>} reviewScheduling — separate outbound metadata
+ *   (never part of the content identity). Excludes the internal job id.
+ */
+async function scheduleShadowReview({
+  envelope,
+  response,
+  preparedContext = null,
+  constraints = null,
+  resolvedMetadata = {},
+}) {
+  const config = getTrailieReviewConfig();
+  const startedAt = Date.now();
+
+  const scheduling = {
+    reviewerMode: 'shadow',
+    reviewExecution: 'async',
+    repaired: false,
+    patchesApplied: 0,
+    reviewQueueStatus: 'disabled',
+    reviewSampleRate: 0,
+    reviewSampleBucket: null,
+    reviewEnqueueDurationMs: 0,
+  };
+
+  const eligibility = classifyReviewEligibility({
+    provider: response?.provider,
+    model: response?.model,
+    content: envelope.content,
+    isConversionMessage: response?.isConversionMessage === true,
+  });
+
+  const decision = shouldSampleTrailieReview({
+    responseId: envelope.responseId,
+    sampleRate: config.sampleRate,
+    eligible: eligibility.eligible,
+    reason: eligibility.reason,
+  });
+
+  // Aggregate-safe sampling provenance only — never user-identifying data.
+  scheduling.reviewSampleRate = decision.sampleRate;
+  scheduling.reviewSampleBucket = decision.bucket;
+
+  if (!config.enqueueEnabled) {
+    scheduling.reviewQueueStatus = 'disabled';
+    return scheduling;
+  }
+  if (!decision.sampled) {
+    scheduling.reviewQueueStatus = 'not_sampled';
+    return scheduling;
+  }
+
+  let snapshot;
+  try {
+    snapshot = buildTrailieReviewSnapshot({
+      envelope,
+      canonicalFactBundle: preparedContext?.canonicalFactBundle || { facts: [] },
+      canonicalFactStatus: preparedContext?.canonicalFactStatus || null,
+      constraints,
+      resolvedMetadata: resolvedMetadata || {},
+    });
+  } catch (err) {
+    console.warn('[AI] Shadow-review snapshot build failed:', err.message);
+    scheduling.reviewQueueStatus = 'enqueue_failed';
+    scheduling.reviewEnqueueDurationMs = Date.now() - startedAt;
+    return scheduling;
+  }
+
+  const result = await enqueueReviewJob({
+    snapshot,
+    reviewerVersion: config.reviewerVersion,
+    sampleRate: decision.sampleRate,
+    sampleBucket: decision.bucket,
+    maxAttempts: config.jobMaxAttempts,
+    timeoutMs: config.enqueueTimeoutMs,
+  });
+
+  scheduling.reviewEnqueueDurationMs = Date.now() - startedAt;
+
+  // reviewJobId is INTERNAL (admin/telemetry only) — logged, never returned in
+  // the public scheduling payload.
+  if (result.jobId) {
+    console.log(
+      `[AI] Shadow review scheduled: status=${result.status} job=${result.jobId} response=${envelope.responseId}`
+    );
+  }
+
+  scheduling.reviewQueueStatus =
+    result.status === ENQUEUE_RESULT.QUEUED || result.status === ENQUEUE_RESULT.DUPLICATE
+      ? 'queued'
+      : 'enqueue_failed';
+
+  return scheduling;
+}
+
+/**
+ * Stage 10 (F-ACC-2) — every coordinate from the fallback extractor is a model
+ * estimate, so it is never trusted. This nulls lat/lon on each stop and marks
+ * provenance unknown. Coordinates only reappear later via trusted enrichment
+ * (resolved metadata / geocoder / stored records), never from the extractor.
+ */
+function stripUntrustedExtractedCoordinates(itineraryData) {
+  if (!itineraryData?.days) return itineraryData;
+  for (const day of itineraryData.days) {
+    for (const stop of day.stops || []) {
+      const norm = normalizeCoordinates({
+        latitude: stop.latitude,
+        longitude: stop.longitude,
+        source: 'model_estimate',
+      });
+      stop.latitude = norm.latitude; // always null for an estimate
+      stop.longitude = norm.longitude;
+      stop.coordinateSource = COORDINATE_SOURCE.UNKNOWN;
+    }
+  }
+  return itineraryData;
 }
 
 async function fetchMultiParkImages(parks, logPrefix = '[AI]') {
@@ -466,65 +738,6 @@ async function fetchMultiParkImages(parks, logPrefix = '[AI]') {
   return result;
 }
 
-/** Client session context from body.systemPrompt or legacy messages[0].role=system */
-function extractClientSystemContext(systemPrompt, messages = []) {
-  const fromBody = typeof systemPrompt === 'string' ? systemPrompt.trim() : '';
-  if (fromBody) return fromBody;
-  const fromMessages = messages.find((m) => m.role === 'system')?.content;
-  return typeof fromMessages === 'string' ? fromMessages.trim() : '';
-}
-
-/** Trip history / prefs from frontend getAIContext() */
-function formatMetadataAiContext(metadata = {}) {
-  const ctx = metadata.aiContext;
-  if (!ctx || typeof ctx !== 'object') return '';
-
-  const parts = ['\n\n--- TRIP HISTORY (saved plans & preferences) ---'];
-  if (ctx.totalTrips) parts.push(`- Saved trip plans: ${ctx.totalTrips}`);
-  if (Array.isArray(ctx.topInterests) && ctx.topInterests.length > 0) {
-    parts.push(`- Top interests: ${ctx.topInterests.join(', ')}`);
-  }
-  if (ctx.preferredBudget) parts.push(`- Preferred budget: ${ctx.preferredBudget}`);
-  if (ctx.preferredFitness) parts.push(`- Preferred fitness: ${ctx.preferredFitness}`);
-  if (Array.isArray(ctx.favoriteParks) && ctx.favoriteParks.length > 0) {
-    parts.push(`- Frequently planned parks (codes): ${ctx.favoriteParks.join(', ')}`);
-  }
-  if (Array.isArray(ctx.recentParks) && ctx.recentParks.length > 0) {
-    parts.push(
-      `- Recently planned: ${ctx.recentParks.map((p) => p.name || p.code).filter(Boolean).join(', ')}`
-    );
-  }
-  parts.push(
-    'Use only when directly relevant to the question. Do NOT inventory their history on generic discovery asks.'
-  );
-  parts.push('--- END TRIP HISTORY ---');
-  return parts.join('\n');
-}
-
-function buildBaseSystemPrompt(provider, systemPrompt, messages, metadata = {}, responseMode = 'buddy') {
-  const defaultPrompt =
-    getSystemPromptForMode(responseMode, { claudeService, openaiService }) ||
-    claudeService.defaultSystemPrompt;
-  const clientContext = extractClientSystemContext(systemPrompt, messages);
-  const aiContextBlock = metadata.skipUserContext ? '' : formatMetadataAiContext(metadata);
-  let prompt = defaultPrompt;
-  if (clientContext) {
-    prompt += `\n\n--- SESSION CONTEXT ---\n${clientContext}\n--- END SESSION CONTEXT ---\n`;
-  }
-  if (aiContextBlock) {
-    prompt += aiContextBlock;
-  }
-  const today = new Date();
-  const todayLabel = today.toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
-  prompt += `\n\n--- CURRENT DATE ---\nToday is ${todayLabel}. When the user mentions a month without a year, use ${today.getFullYear()} if that month is still ahead in the calendar year; otherwise use ${today.getFullYear() + 1}.\n--- END CURRENT DATE ---\n`;
-  return prompt;
-}
-
 const PERSONALIZATION_MODE_RULES = `
 --- PERSONALIZATION MODE (My Recommendations) ---
 The user opened My Recommendations. Follow these rules:
@@ -532,7 +745,7 @@ The user opened My Recommendations. Follow these rules:
 FIRST RESPONSE (only when this is their first message in this thread):
 - Under ~90 words
 - Optional first-name greeting once — skip if the question is already specific
-- One line that you'll use saved trips/favorites for ideas (not live booking data)
+- One line that you'll use their saved trips and favorites for ideas. Do not claim live booking or current availability.
 - At most ONE history detail if natural — never count trips or inventory parks
 - End with exactly ONE clarifying question (length, region, vibe, or season)
 - Do NOT list destinations yet
@@ -566,26 +779,6 @@ function resolveProvider(bodyProvider, messages) {
     return bodyProvider;
   }
   return autoRouteProvider(messages);
-}
-
-async function saveItineraryToTrip(req, itineraryData, { reviewMeta, auditTrail, parkName, parkCode } = {}) {
-  if (!itineraryData) return;
-  const tripId = req.body.tripId || req.body.conversationId || req.body.metadata?.tripId;
-  if (!tripId) return;
-  try {
-    const TripPlan = require('../models/TripPlan');
-    const planDoc = buildPlanDocument({
-      itineraryData,
-      parkName: parkName || req.body.metadata?.parkName || null,
-      parkCode: parkCode || req.body.metadata?.parkCode || null,
-      reviewMeta,
-      auditTrail,
-    });
-    await TripPlan.findByIdAndUpdate(tripId, { plan: planDoc });
-    console.log(`[AI] Itinerary saved to TripPlan ${tripId}`);
-  } catch (saveErr) {
-    console.error('[AI] Failed to save itinerary:', saveErr.message);
-  }
 }
 
 /**
@@ -701,7 +894,15 @@ async function appendIntentGuideDiscoveryToPrompt({
 
 // Helper: parse request body and prepare messages, facts, and system prompt
 async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
-  const { isAnonymous = false, isTrustedMcp = false, req: httpReq = null } = options;
+  const {
+    isAnonymous = false,
+    isTrustedMcp = false,
+    req: httpReq = null,
+    // Server-persisted canonical plan for this conversation (guest sessions
+    // store it on their assistant messages). Server-owned only — never read
+    // from client-supplied body/metadata.
+    persistedConversationPlan = null,
+  } = options;
   const skipWebSearchForGuest = isAnonymous && !isTrustedMcp;
 
   let {
@@ -722,20 +923,60 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
   }
 
   const originalMessages = messages;
-  const conversationSummary = extractConversationSummaryFromMessages(originalMessages);
 
   let savedTripPlan = null;
-  const tripId = metadata.tripId || body.tripId;
-  if (tripId && !skipUserContext) {
+  const tripId = metadata.tripId || body.tripId || body.conversationId;
+  if (tripId) {
     try {
       const TripPlan = require('../models/TripPlan');
       savedTripPlan = await TripPlan.findById(tripId)
-        .select('formData parkCode parkName')
+        .select('formData parkCode parkName plan conversation planningState entryContext')
         .lean();
     } catch (tripLoadErr) {
       console.warn(`${logPrefix} Could not load TripPlan ${tripId}:`, tripLoadErr.message);
     }
   }
+
+  // WP-TU Phase 4 Task 10 — bounded metadata for the traveler's OTHER saved
+  // plans, fetched here (before classification exists) so Task 9's pure
+  // `resolveTargetTripId` can be called later, in trailieV2ExecutionService.js,
+  // once the single authoritative `intent` is available. Guests have no
+  // concept of multiple saved plans (AnonymousSession is single-session), so
+  // this is always empty for them.
+  let candidatePlans = [];
+  if (!isAnonymous && httpReq?.user?._id) {
+    const { fetchCandidatePlans } = require('../utils/candidatePlanDiscovery');
+    candidatePlans = await fetchCandidatePlans({
+      userId: httpReq.user._id,
+      excludeTripId: tripId || null,
+      logPrefix,
+    });
+  }
+
+  const entryContext = normalizeTrailieEntryContext(savedTripPlan?.entryContext || metadata.entryContext).context;
+  const entryDestination = entryContext.requestedDestinations[0] || null;
+  const entryState = mergeTrailieEntryContext({ entryContext });
+  const entryPreferenceForm = {
+    ...(entryState.preferences?.interests?.length ? { interests: entryState.preferences.interests } : {}),
+    ...(entryState.preferences?.fitnessLevel ? { fitnessLevel: entryState.preferences.fitnessLevel } : {}),
+    ...(entryState.preferences?.budgetPreference ? { budget: entryState.preferences.budgetPreference } : {}),
+    ...(entryState.preferences?.origin ? { origin: entryState.preferences.origin } : {}),
+  };
+  metadata = {
+    ...metadata,
+    entryContext,
+    formData: {
+      ...(entryContext.formData || {}),
+      ...entryPreferenceForm,
+      ...(metadata.formData || {}),
+      ...(savedTripPlan?.formData || {}),
+    },
+    parkCode: savedTripPlan?.parkCode || metadata.parkCode || entryDestination?.parkCode || null,
+    parkName: savedTripPlan?.parkName || metadata.parkName || entryDestination?.name || null,
+    lat: metadata.lat ?? entryDestination?.lat,
+    lon: metadata.lon ?? entryDestination?.lon,
+    activeTripContext: metadata.activeTripContext || entryContext.activeTripContext || null,
+  };
 
   // Auto-route provider if not explicitly set
   const explicitProvider = provider && provider !== 'auto' ? provider : null;
@@ -745,6 +986,29 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
   } else {
     provider = explicitProvider;
   }
+
+  /**
+   * Stage 14.7I §2 — resolve the provider model ONCE, here, for every handler.
+   *
+   * The client does not send `model`. Before this, each downstream call site
+   * compensated separately: the prose path used `model || CLAUDE_FALLBACK_MODELS[0]`
+   * and the tool-first path used `model` unchanged. Phase A therefore reached
+   * the Anthropic SDK with `undefined` and was rejected with
+   * `400 "model: Field required"`, silently degrading the route to prose-only.
+   *
+   * Resolving in `prepareChatContext` means all four handlers (/chat,
+   * /chat-stream and both anonymous variants) and both generation branches read
+   * the same value, so the two expressions can never drift apart again.
+   *
+   * This runs AFTER auto-routing, not before. Real clients send `provider: 'auto'`,
+   * which resolved down the Claude branch and produced `provider=openai` paired
+   * with `model=claude-sonnet-5` once routing ran. Nothing dispatched that pair —
+   * v2 re-resolves through its own router and the legacy call sites are guarded
+   * by `provider === 'claude'` — but a contradictory pair should never exist to
+   * be read in the first place.
+   */
+  const modelResolution = resolveProviderModel({ requestedModel: model, provider });
+  model = modelResolution.ok ? modelResolution.model : null;
 
   const responseMode = resolveResponseMode(messages, metadata);
   console.log(`${logPrefix} Response mode: ${responseMode}`);
@@ -823,12 +1087,56 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
 
   // Auto-extract parks and resolve multi-turn active destination memory
   let resolvedMetadata = { ...metadata };
-  const initialMessageParks = lastUserMessage ? extractAllParksFromMessage(lastUserMessage) : [];
+  // `existingCanonicalPlan` is server-authored ONLY — a saved TripPlan, the
+  // guest session's persisted plan, or the authenticated conversational-plan
+  // store (all set below). A client-supplied plan blob must never become the
+  // trusted refinement target.
+  delete resolvedMetadata.existingCanonicalPlan;
+  const explicitMessageParks = lastUserMessage ? extractAllParksFromMessage(lastUserMessage) : [];
+  const entryDestinationText = [
+    ...(entryContext.comparisonTargets || []),
+    ...(entryContext.requestedDestinations || []),
+  ].map((item) => item.name || item.parkName || item.parkCode).filter(Boolean).join(' and ');
+  const entryParks = entryDestinationText ? extractAllParksFromMessage(entryDestinationText) : [];
+  // Current explicit destination wins. Typed entry destinations only fill an
+  // otherwise destination-free turn; saved TripPlan state remains authoritative
+  // through the server-owned merge above.
+  const initialMessageParks = explicitMessageParks.length ? explicitMessageParks : entryParks;
 
   const discoveryRefinement = isDiscoveryRefinementReply(filteredMessages);
   const discoverySearchQuery = buildDiscoverySearchQuery(filteredMessages);
   const storedTripContext = metadata.activeTripContext || null;
   const refinementFollowUp = isItineraryRefinementFollowUp(lastUserMessage);
+  if (savedTripPlan?.plan?.days?.length) {
+    resolvedMetadata.existingCanonicalPlan = savedTripPlan.plan;
+  } else if (persistedConversationPlan?.days?.length) {
+    // Guest continuation: the session's latest accepted plan IS the active
+    // plan. Without this, "make day 2 more relaxed" classifies as a brand-new
+    // itinerary request and the whole trip is regenerated — the refinement
+    // machinery downstream is generic and engages purely on plan presence.
+    resolvedMetadata.existingCanonicalPlan = persistedConversationPlan;
+  } else if (metadata.planningState?.draftPlan?.days?.length) {
+    // Draft skeletons record intended day count only. They are NOT an accepted
+    // itinerary and must not enable day patches or "redo day N" mutations.
+    resolvedMetadata.draftPlan = metadata.planningState.draftPlan;
+    resolvedMetadata.intendedDayCount = metadata.planningState.draftPlan.days.length;
+  } else if (!isAnonymous && httpReq?.user?._id) {
+    // Authenticated-unsaved continuation: recall the server-stored active
+    // conversational plan — but only when the echoed transcript proves this
+    // is the same conversation (a new chat has no assistant history, so
+    // nothing lifts). Plan content is always server-authored; a loaded
+    // TripPlan above always wins.
+    try {
+      const { recallConversationPlan } = require('../utils/conversationPlanContinuity');
+      const recalled = await recallConversationPlan({
+        userId: httpReq.user._id,
+        messages: filteredMessages,
+      });
+      if (recalled) resolvedMetadata.existingCanonicalPlan = recalled;
+    } catch (recallErr) {
+      console.warn(`${logPrefix} conversation-plan recall failed:`, recallErr.message);
+    }
+  }
   const itineraryCommitTurn = isItineraryCommitRequest(lastUserMessage);
   const hasLockedOrStoredDestination =
     hasActivePlanDestination({ activeTripContext: storedTripContext }) ||
@@ -838,6 +1146,17 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
     shouldInjectParkDiscovery(lastUserMessage, {
       namedParkCount: initialMessageParks.length,
     }) || discoveryRefinement;
+
+  // A loaded canonical plan plus a recognized edit request is never discovery.
+  // This precedence must not depend on the browser echoing activeTripContext:
+  // the saved trip is already the authoritative target of the refinement.
+  const activePlan = savedTripPlan?.plan?.days?.length
+    ? savedTripPlan.plan
+    : (persistedConversationPlan?.days?.length ? persistedConversationPlan : null);
+  const constraintRefinement = activePlanConstraintRefinement(lastUserMessage, activePlan);
+  if ((refinementFollowUp || constraintRefinement) && activePlan) {
+    openEndedDiscovery = false;
+  }
 
   if (
     (refinementFollowUp || itineraryCommitTurn || hasLockedOrStoredDestination) &&
@@ -858,6 +1177,10 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
     filteredMessages,
     storedContext: metadata.activeTripContext || null,
     openEndedDiscovery,
+    authoritativeDestination: constraintRefinement ? {
+      name: savedTripPlan?.parkName || savedTripPlan?.planningState?.destination?.name || resolvedMetadata.parkName || null,
+      parkCode: savedTripPlan?.parkCode || savedTripPlan?.planningState?.destination?.parkCode || resolvedMetadata.parkCode || null,
+    } : null,
   });
 
   let allExtractedParks = contextParks.length > 0 ? contextParks : initialMessageParks;
@@ -896,7 +1219,7 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
       lat: resolvedMetadata.lat,
       lon: resolvedMetadata.lon,
     }];
-  } else if (openEndedDiscovery && !hasLockedOrStoredDestination && !refinementFollowUp) {
+  } else if (openEndedDiscovery && !hasLockedOrStoredDestination && !refinementFollowUp && !constraintRefinement) {
     resolvedMetadata.parkCode = null;
     resolvedMetadata.parkName = null;
     resolvedMetadata.lat = resolvedMetadata.lat || null;
@@ -912,12 +1235,80 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
   const parkNames = allExtractedParks.map(p => p.parkName).filter(Boolean);
   resolvedMetadata.parksForDisplay = allExtractedParks;
 
-  // Geocode non-NPS destinations before itinerary readiness (Valley of Fire, etc.)
-  if ((!resolvedMetadata.lat || !resolvedMetadata.lon) && !resolvedMetadata.parkCode) {
+  // Pass #5 — durable planningState from saved trip (or client metadata echo).
+  // Must load BEFORE place geocoding so active-trip region/coords bias lodging
+  // and other place mentions on plain-answer turns (not only itinerary builds).
+  // When present, constraint parsing uses last user message only so older
+  // transcript cannot resurrect cleared budgets / removed interests.
+  let persistedPlanningState = null;
+  if (savedTripPlan?.planningState) {
+    const {
+      normalizePersistedPlanningState,
+    } = require('../utils/planningState');
+    const n = normalizePersistedPlanningState(savedTripPlan.planningState);
+    if (n.ok) persistedPlanningState = n.state;
+  }
+  if (!persistedPlanningState && resolvedMetadata.planningState) {
+    const {
+      normalizePersistedPlanningState,
+    } = require('../utils/planningState');
+    const n = normalizePersistedPlanningState(resolvedMetadata.planningState);
+    if (n.ok) persistedPlanningState = n.state;
+  }
+  if (persistedPlanningState) {
+    resolvedMetadata.planningState = persistedPlanningState;
+    // Restored sessions may keep parkCode only on planningState while session
+    // parkName is a generic label — seed destination identity before geocode.
+    if (!resolvedMetadata.parkCode && persistedPlanningState.destination?.parkCode) {
+      resolvedMetadata.parkCode = persistedPlanningState.destination.parkCode;
+    }
+    if (!resolvedMetadata.parkName && persistedPlanningState.destination?.parkName) {
+      resolvedMetadata.parkName = persistedPlanningState.destination.parkName;
+    }
+    if (resolvedMetadata.lat == null || resolvedMetadata.lon == null) {
+      const scopeDest = (persistedPlanningState.tripScope?.destinations || [])
+        .find((d) => d && (d.latitude != null || d.lat != null));
+      if (scopeDest) {
+        resolvedMetadata.lat = resolvedMetadata.lat ?? scopeDest.latitude ?? scopeDest.lat ?? null;
+        resolvedMetadata.lon = resolvedMetadata.lon ?? scopeDest.longitude ?? scopeDest.lon ?? null;
+      }
+    }
+  }
+
+  const {
+    resolvePlaceFromMessage,
+    buildActivePlaceResolutionContext,
+    buildGeocodeBiasFromTripContext,
+  } = require('../services/geocodePlaceService');
+  const activePlaceTripContext = buildActivePlaceResolutionContext({
+    activeTripContext,
+    planningState: persistedPlanningState || resolvedMetadata.planningState || null,
+    resolvedMetadata,
+    primaryDestination: activeTripContext?.primaryDestination || null,
+  });
+  const activePlaceBias = buildGeocodeBiasFromTripContext(activePlaceTripContext || {
+    activeTripContext,
+    planningState: persistedPlanningState,
+    resolvedMetadata,
+  });
+  const lodgingFact = require('../utils/travelerFactTransition').extractLodgingFact(lastUserMessage || '', persistedPlanningState || {});
+  const lodgingBaseTurn = Boolean(lodgingFact);
+
+  // Geocode non-NPS destinations before itinerary readiness (Valley of Fire, etc.).
+  // Lodging-base mentions inside an active trip must NOT replace the destination.
+  if (
+    (!resolvedMetadata.lat || !resolvedMetadata.lon)
+    && !resolvedMetadata.parkCode
+    && !(lodgingBaseTurn && activePlaceTripContext)
+  ) {
     try {
-      const { resolvePlaceFromMessage } = require('../services/geocodePlaceService');
-      const place = await resolvePlaceFromMessage(lastUserMessage || conversationUserText);
-      if (place) {
+      const place = await resolvePlaceFromMessage(lastUserMessage || conversationUserText, {
+        tripContext: activePlaceTripContext,
+        bias: activePlaceBias,
+      });
+      if (place?.lat != null && place?.lon != null && place.resolutionStatus !== 'provider_failure'
+        && place.resolutionStatus !== 'context_mismatch'
+        && place.resolutionStatus !== 'unresolved') {
         resolvedMetadata.lat = place.lat;
         resolvedMetadata.lon = place.lon;
         resolvedMetadata.resolvedPlaceName = place.name;
@@ -931,9 +1322,41 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
     } catch (geoErr) {
       console.warn(`${logPrefix} Place geocode error:`, geoErr.message);
     }
+  } else if (lodgingBaseTurn && activePlaceTripContext) {
+    // Resolve lodging base with active-trip context; keep destination intact.
+    try {
+      const lodgingPlace = await resolvePlaceFromMessage(`Visit ${lodgingFact.place}`, {
+        tripContext: activePlaceTripContext,
+        bias: activePlaceBias,
+        placeQuery: lodgingFact.place,
+      });
+      resolvedMetadata.lodgingFactResolution = { baseTown: lodgingFact.place, place: lodgingPlace };
+      resolvedMetadata.lodgingPlaceResolution = lodgingPlace?.telemetry || {
+        resolutionStatus: lodgingPlace?.resolutionStatus || 'unresolved',
+      };
+      if (lodgingPlace?.name) {
+        console.log(
+          `${logPrefix} Lodging place resolution: ${lodgingPlace.name || 'unresolved'} (${lodgingPlace.selectionReason || lodgingPlace.resolutionStatus})`
+        );
+      }
+    } catch (geoErr) {
+      console.warn(`${logPrefix} Lodging place geocode error:`, geoErr.message);
+    }
   }
 
-  const constraints = parseConstraints(resolvedMetadata, conversationUserText || lastUserMessage);
+  const constraintParseText = persistedPlanningState
+    ? (lastUserMessage || '')
+    : (conversationUserText || lastUserMessage);
+
+  const constraints = parseConstraints(resolvedMetadata, constraintParseText);
+  const operationalDestination =
+    resolvedMetadata.parkName || resolvedMetadata.resolvedPlaceName ||
+    activeTripContext?.primaryDestination?.name || allExtractedParks[0]?.parkName || '';
+  constraints.operational = resolveOperationalConstraints({
+    destination: operationalDestination,
+    constraints,
+    userText: conversationUserText || lastUserMessage,
+  });
   const assumeItineraryDefaults =
     skipUserContext ||
     itineraryCommitTurn ||
@@ -965,6 +1388,18 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
     }
   }
 
+  // Travel & Stay v1 — wire departure city/hub airport into planningState so
+  // logistics cards can show St. Louis/STL (and refinement MCI) without requiring
+  // the golden fixture's injected transportation block.
+  if (userCity && constraints?.planningState) {
+    const { applyDepartureContextToPlanningState } = require('../utils/planningState');
+    constraints.planningState = applyDepartureContextToPlanningState(
+      constraints.planningState,
+      userCity,
+      lastUserMessage || conversationUserText || ''
+    );
+  }
+
   // City coordinate fallback for weather when no park coordinates exist
   if (!resolvedMetadata.lat || !resolvedMetadata.lon) {
     if (userCity) {
@@ -976,11 +1411,21 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
     }
   }
 
-  if ((!resolvedMetadata.lat || !resolvedMetadata.lon) && !resolvedMetadata.parkCode && !resolvedMetadata.resolvedPlaceName) {
+  if (
+    (!resolvedMetadata.lat || !resolvedMetadata.lon)
+    && !resolvedMetadata.parkCode
+    && !resolvedMetadata.resolvedPlaceName
+    && !(lodgingBaseTurn && activePlaceTripContext)
+  ) {
     try {
-      const { resolvePlaceFromMessage } = require('../services/geocodePlaceService');
-      const place = await resolvePlaceFromMessage(lastUserMessage);
-      if (place) {
+      const place = await resolvePlaceFromMessage(lastUserMessage, {
+        tripContext: activePlaceTripContext,
+        bias: activePlaceBias,
+      });
+      if (place?.lat != null && place?.lon != null
+        && place.resolutionStatus !== 'provider_failure'
+        && place.resolutionStatus !== 'context_mismatch'
+        && place.resolutionStatus !== 'unresolved') {
         resolvedMetadata.lat = place.lat;
         resolvedMetadata.lon = place.lon;
         resolvedMetadata.resolvedPlaceName = place.name;
@@ -1004,543 +1449,108 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
   let feeFreeFacts = null;
   let webSearchUnavailable = false;
   let factsMeta = null;
+  // Canonical evidence threaded to the shadow reviewer. Defaults are an explicit
+  // "bundle failed to thread" so a null never silently becomes an empty bundle.
+  let canonicalFactBundle = null;
+  let canonicalFactStatus = null;
+  // Stage 10 (F-DATA-2) — explicit weather coverage across the itinerary's parks.
+  let weatherCoverage = null;
 
-  let fetchPlan = planTrailieFetches({
-    userMessage: lastUserMessage,
-    parkCode: resolvedMetadata.parkCode,
-    parkName: resolvedMetadata.parkName || resolvedMetadata.resolvedPlaceName,
-    lat: resolvedMetadata.lat,
-    lon: resolvedMetadata.lon,
-    isAnonymous: skipWebSearchForGuest,
-    conversationUserText,
-    resolvedMetadata,
-    allExtractedParks,
-  });
-
-  try {
-    // Fetch weather + web search using primary park
-    const tripDates = {
-      startDate: constraints?.dates?.start || resolvedMetadata?.formData?.startDate || null,
-      endDate: constraints?.dates?.end || resolvedMetadata?.formData?.endDate || null,
-    };
-    const factsResult = await fetchRelevantFacts({
-      userMessage: lastUserMessage,
-      parkCode: resolvedMetadata.parkCode,
-      lat: resolvedMetadata.lat,
-      lon: resolvedMetadata.lon,
-      parkName: resolvedMetadata.parkName || resolvedMetadata.resolvedPlaceName,
-      isAnonymous: skipWebSearchForGuest,
-      tripDates,
-      conversationUserText,
-      resolvedMetadata,
-      allExtractedParks,
-    });
-    weatherFacts = factsResult.weatherFacts;
-    webSearchFacts = factsResult.webSearchFacts;
-    astroFacts = factsResult.astroFacts;
-    feeFreeFacts = factsResult.feeFreeFacts;
-    webSearchUnavailable = !!factsResult.webSearchUnavailable;
-    factsMeta = factsResult.factsMeta || null;
-    fetchPlan = factsResult.fetchPlan || fetchPlan;
-
-    // Fetch NPS facts for ALL mentioned parks in parallel
-    if (allExtractedParks.length > 1) {
-      const allNpsResults = await Promise.all(
-        allExtractedParks.map((p) =>
-          fetchNPSFacts({ parkCode: p.parkCode, parkName: p.parkName, userMessage: lastUserMessage }).catch(() => null)
-        )
-      );
-      const labeledFacts = allExtractedParks
-        .map((p, i) => allNpsResults[i] ? `[${p.parkName}]\n${allNpsResults[i]}` : null)
-        .filter(Boolean);
-      npsFacts = labeledFacts.join('\n\n');
-    } else {
-      npsFacts = factsResult.npsFacts;
-    }
-
-    console.log(`${logPrefix} Facts fetched:`, { hasWeather: !!weatherFacts, hasNPS: !!npsFacts, hasWebSearch: !!webSearchFacts, hasAstro: !!astroFacts, hasFeeFree: !!feeFreeFacts, parks: parkNames });
-  } catch (factsError) {
-    console.error(`${logPrefix} Facts fetching error:`, factsError.message);
-  }
-
-  // Park photos only when the question calls for visuals or a focused single-park plan.
-  let parkImages = [];
-  const alreadyShownImages = messages.some(m =>
-    m.role === 'assistant' && m.content?.includes('(Photos shown to user:')
-  );
-  const attachParkImages = shouldAttachParkImages(lastUserMessage, {
-    namedParkCount: allExtractedParks.length,
-  });
-  if (attachParkImages && allExtractedParks.length > 0 && !alreadyShownImages && !openEndedDiscovery) {
-    parkImages = await fetchMultiParkImages(allExtractedParks, logPrefix);
-  } else if (!attachParkImages) {
-    console.log(`${logPrefix} Skipping park images — not requested for this query`);
-  } else if (alreadyShownImages) {
-    console.log(`${logPrefix} Skipping park images — already shown in this conversation`);
-  } else if (openEndedDiscovery) {
-    console.log(`${logPrefix} Deferring park images — open-ended discovery query`);
-  }
-
-  // Logging-related variables hoisted for return
-  let candidateParksBlock = false;
-
-  // Base persona (responseMode) + client session context from systemPrompt body
-  let enhancedSystemPrompt = buildBaseSystemPrompt(provider, systemPrompt, messages, metadata, responseMode);
-
-  // Fee-free block hoisted to top of assembled prompt — models attend most to
-  // the start and end of long prompts (lost-in-the-middle effect). Placing this
-  // before live data / candidate parks ensures it doesn't get buried.
-  if (feeFreeFacts) {
-    enhancedSystemPrompt += formatFeeFreeBlock(feeFreeFacts);
-  }
-
-  // Determine if this is a non-NPS destination query with web search context
-  const isNonNpsWithWebSearch = !resolvedMetadata.parkCode && webSearchFacts && isTravelRelated(lastUserMessage);
-  if (skipWebSearchForGuest && fetchPlan.guestNeedsLiveBoundary) {
-    enhancedSystemPrompt += formatGuestLiveDataBoundaryBlock();
-  }
-
-  enhancedSystemPrompt += formatActiveTripContextPromptBlock(activeTripContext);
-  if (activeTripContext?.lowConfidenceClarification) {
-    enhancedSystemPrompt += `\n\n--- CLARIFICATION NEEDED ---\n${activeTripContext.lowConfidenceClarification}\n--- END CLARIFICATION ---\n`;
-  }
-
-  if (npsFacts || weatherFacts || webSearchFacts || astroFacts) {
-    const parkLabel = parkNames.length > 1 ? parkNames.join(', ') : (resolvedMetadata.parkName || resolvedMetadata.resolvedPlaceName || 'this destination');
-    const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-
-    // Build data availability manifest so the model knows what's present and what's missing
-    const available = [];
-    const missing = [];
-    if (npsFacts) available.push('NPS alerts/closures/permits/campgrounds'); else if (resolvedMetadata.parkCode) missing.push('NPS park data (API unavailable)');
-    if (weatherFacts) {
-      if (factsMeta?.weather?.source === 'TrailVerseClimateEstimate') {
-        available.push('typical seasonal weather (climate estimate for trip dates)');
-      } else {
-        available.push('live weather forecast (next few days only)');
-      }
-    } else if (resolvedMetadata.lat) missing.push('weather forecast');
-    if (webSearchFacts) {
-      available.push('live web search');
-    } else if (webSearchUnavailable && !skipWebSearchForGuest) {
-      missing.push('web search (temporarily unavailable — qualify answers as typically and link the TrailVerse park page)');
-    } else {
-      missing.push(skipWebSearchForGuest ? 'web search (requires sign-up)' : 'web search');
-    }
-    if (astroFacts) {
-      available.push('computed astronomical data (moon phase / Milky Way timing)');
-    } else if (needsAstroFacts(lastUserMessage) && resolvedMetadata.lat) {
-      missing.push('astronomical data (could not compute moon window for dates)');
-    } else if (needsAstroFacts(lastUserMessage)) {
-      missing.push('astronomical data (location not geocoded)');
-    }
-
-    enhancedSystemPrompt += `\n\n--- LIVE TRAILVERSE DATA: ${parkLabel.toUpperCase()} ---`;
-    enhancedSystemPrompt += `\nThis is AUTHORITATIVE real-time data as of ${today}. This OVERRIDES your training data where they conflict.`;
-    enhancedSystemPrompt += `\nDATA AVAILABLE: ${available.join(', ')}`;
-    if (missing.length > 0) {
-      if (isNonNpsWithWebSearch) {
-        enhancedSystemPrompt += `\nDATA MISSING: ${missing.join(', ')}`;
-      } else {
-        enhancedSystemPrompt += `\nDATA MISSING: ${missing.join(', ')} — for missing categories, qualify your knowledge as "typically" or "generally" and link the TrailVerse park page (see TRAILVERSE LINKS below), not nps.gov.`;
-      }
-      if (skipWebSearchForGuest && missing.some((m) => m.includes('web search')) && !fetchPlan.guestNeedsLiveBoundary) {
-        enhancedSystemPrompt += `\nGUEST ACCOUNT: Live web search requires a free TrailVerse sign-in. For this turn, qualify changeable details as "typically" and link TrailVerse park pages when helpful.`;
-      }
-      if (webSearchUnavailable && !skipWebSearchForGuest) {
-        enhancedSystemPrompt += `\nWEB SEARCH UNAVAILABLE: Live web search timed out or returned no results for this query. Do NOT invent current prices, hours, or closure status from training data. Qualify logistics as "typically" or "check official sources" and prioritize NPS data above when present.`;
-      }
-    }
-    enhancedSystemPrompt += `\nYou MUST use this data as your primary source. Weave live facts naturally into your answer — don't use robotic prefixes like "📍 Current NPS data shows...", "Live-data note:", "NPS note:", "Weather note:", or "As of today...". Just state the fact directly (e.g., "Toxic cyanobacteria is active in the Virgin River — don't swallow the water" or "No timed entry required this year"). Do NOT call a cyanobacteria advisory a trail closure unless an ACTIVE CLOSURE alert says the trail is closed. Users trust you; you don't need to label your source every time.`;
-    enhancedSystemPrompt += `\nCRITICAL — PERMITS, CAMPGROUNDS & RESERVATIONS: Only state what the data below explicitly says. Do NOT add booking windows, release dates, sell-out times, seasonal date ranges, or reservation tips from your training knowledge — these change frequently and your training data is likely outdated. If the data lists a permit name and URL, mention the name and link the URL. Do NOT add specifics like "required May–September" or "reservations open 14 days out at 7am" unless that exact text appears in the data below.`;
-    if (isSpecificPermitOnlyQuery(lastUserMessage)) {
-      enhancedSystemPrompt += `\nPERMIT-ONLY QUESTION: Answer whether the named trail/activity requires a permit. A permit or lottery is NOT a closure — do not say the trail is "closed" or "off-limits" unless an ACTIVE CLOSURE in the data says so. Water-quality cautions are separate; mention in one short sentence at most. Do not list unrelated permits for other trails. Do not start with one trail's permit and self-correct ("wait, actually") — answer the trail the user named.`;
-      if (/\bnarrows\b/i.test(lastUserMessage) && /top[- ]?down/i.test(lastUserMessage)) {
-        enhancedSystemPrompt += `\nZION NARROWS TOP-DOWN: 16-mile through-hike from Chamberlain's Ranch — NOT the Subway (Left Fork) and NOT the bottom-up day hike from Temple of Sinawava. Do not mention the Subway.`;
-      }
-    }
-    if (isTrailStatusQuery(lastUserMessage)) {
-      enhancedSystemPrompt += `\nTRAIL OPEN/CLOSED: Check ACTIVE CLOSURES in the live data first. If the named trail is closed there, lead with closed — do not open with "yes, it's open." Permit or lottery requirements are separate; state closure status before permits.`;
-    }
-    if (needsNpsRoadConditionsBlock(lastUserMessage)) {
-      enhancedSystemPrompt += `\nROAD OPEN/CLOSED: When the NPS ROAD & CONDITIONS block appears below, use it for current mileage and open/closed status — do NOT say you lack live road data. Prefer that block over training data and over generic "check the alerts page" deferrals. If live web search snippets are also present, NPS road block wins for open/closed claims.`;
-    }
-    enhancedSystemPrompt += `\nCROWD IMPACT: If a popular park has NO timed-entry requirement, that means NO crowd control — warn users to expect heavier traffic, packed trailheads, full parking lots by mid-morning, and longer waits. Advise arriving before 7am for popular spots and visiting on weekdays when possible. Do NOT frame the absence of timed entry as purely positive.`;
-    if (isNonNpsWithWebSearch) {
-      if (shouldRequestItineraryJson({
-        userMessage: lastUserMessage,
-        openEndedDiscovery,
-        metadata: resolvedMetadata,
-        constraints,
-        allExtractedParks,
-        conversationUserText,
-      })) {
-        enhancedSystemPrompt += `\nYou CAN generate an [ITINERARY_JSON] block for this day-by-day plan request. Use web search data for logistics, activities, and recommendations. Answer naturally as you would for any travel destination — do NOT mention "NPS" or "National Park Service" unless the user brought it up.\n\n`;
-      }
-    } else if (webSearchFacts) {
-      enhancedSystemPrompt += `\nLIVE WEB SEARCH IS ACTIVE: Synthesize NPS + web search below into a direct answer. Answer as TrailVerse live data — do NOT punt with "check nps.gov", "visit conditions.htm", or "call the park" when the live block already supports your reply. Link the TrailVerse park page if users need more detail.\n`;
-      enhancedSystemPrompt += `Do NOT invent closures, permits, or conditions not listed in the live block.\n\n`;
-    } else {
-      enhancedSystemPrompt += `\nDo NOT invent closures, permits, or conditions not listed here. If something is NOT in this data, link the TrailVerse park page for live alerts — do not punt to nps.gov.\n\n`;
-    }
-
-    if (allExtractedParks.length > 0) {
-      enhancedSystemPrompt += formatTrailverseLinksBlock(allExtractedParks);
-    }
-
-    if (npsFacts) {
-      enhancedSystemPrompt += npsFacts + '\n\n';
-    }
-    if (weatherFacts) {
-      enhancedSystemPrompt += weatherFacts + '\n\n';
-      if (factsMeta?.weather?.source === 'TrailVerseClimateEstimate') {
-        enhancedSystemPrompt +=
-          'WEATHER NOTE: The block above is a TYPICAL SEASONAL ESTIMATE for the user\'s trip month/dates — not live forecast data. Phrase it as "typically" or "in October expect…". Do NOT say "forecast" or "this week" for future trips.\n\n';
-      }
-    }
-    if (webSearchFacts) {
-      enhancedSystemPrompt += webSearchFacts + '\n';
-    }
-    if (astroFacts) {
-      enhancedSystemPrompt += `\n${astroFacts}\n\n`;
-      enhancedSystemPrompt +=
-        'ASTRO NOTE: The astronomical block above is computed for the user\'s stated dates. Use those moon phases and illumination percentages exactly. Do NOT invent new/full moon dates from training data. For non-NPS towns, do not guess administering national forest or park unit names unless confirmed in live data.\n\n';
-    }
-
-    enhancedSystemPrompt += `--- END LIVE DATA ---\n`;
-  } else if (resolvedMetadata.parkCode) {
-    // Park was detected but ALL data failed — warn the model so it doesn't silently hallucinate
-    const parkLabel = resolvedMetadata.parkName || resolvedMetadata.parkCode;
-    enhancedSystemPrompt += `\n\n--- DATA NOTICE ---`;
-    enhancedSystemPrompt += `\nLive data for ${parkLabel} is COMPLETELY UNAVAILABLE right now (APIs may be down).`;
-    enhancedSystemPrompt += `\nDATA AVAILABLE: none`;
-    enhancedSystemPrompt += `\nDATA MISSING: NPS alerts/closures/permits, weather forecast, web search`;
-    enhancedSystemPrompt += formatTrailverseLinksBlock(allExtractedParks.length > 0 ? allExtractedParks : [{ parkCode: resolvedMetadata.parkCode, parkName: parkLabel }]);
-    enhancedSystemPrompt += `\n${formatNoLiveDataPromptInstruction({ parkCode: resolvedMetadata.parkCode, parkName: parkLabel })}`;
-    enhancedSystemPrompt += `\nDo NOT present training-data knowledge as current facts. Hedge changeable details with "usually" or "typically" in the plan — no "general knowledge" disclaimer.`;
-    enhancedSystemPrompt += `\n--- END NOTICE ---\n`;
-  } else if (!resolvedMetadata.parkCode) {
-    // No park detected — check if it's a travel query about a non-NPS destination
-    const isNonNpsTravelQuery = isTravelRelated(lastUserMessage);
-
-    if (isStateParkQuery) {
-      // State park query — no NPS data available, but we may have city weather
-      const hasWeatherFromCity = !!(weatherFacts && userCity);
-      enhancedSystemPrompt += `\n\n--- STATE PARK GUIDANCE ---`;
-      enhancedSystemPrompt += `\nThe user is asking about a STATE PARK (not managed by NPS). No NPS alerts, closures, or permit data is available for state parks.`;
-      enhancedSystemPrompt += `\nUse your training knowledge and web search results to help plan their trip. Do NOT apologize for missing NPS data — state parks aren't NPS sites.`;
-      enhancedSystemPrompt += `\nWrite in Trailie voice: natural opener + ## At a glance — no "Live-data note" or "you've given me enough" filler.`;
-      if (shouldRequestItineraryJson({
-        userMessage: lastUserMessage,
-        openEndedDiscovery,
-        metadata: resolvedMetadata,
-        constraints,
-        allExtractedParks,
-        conversationUserText,
-      })) {
-        enhancedSystemPrompt += `\nYou CAN output an [ITINERARY_JSON] block for this day-by-day plan request.`;
-      }
-      if (hasWeatherFromCity) {
-        enhancedSystemPrompt += `\nWeather data below is from the nearest city (${userCity.name}) — note this in your response if relevant.`;
-      }
-      enhancedSystemPrompt += `\n--- END GUIDANCE ---\n`;
-
-      if (weatherFacts) {
-        enhancedSystemPrompt += `\n${weatherFacts}\n`;
-      }
-      if (webSearchFacts) {
-        enhancedSystemPrompt += `\n${webSearchFacts}\n`;
-      }
-    } else if (isNonNpsTravelQuery) {
-      // User is asking about a non-NPS destination — help naturally
-      enhancedSystemPrompt += `\n\n--- DESTINATION GUIDANCE ---`;
-      if (needsAstroFacts(lastUserMessage)) {
-        enhancedSystemPrompt += `\nThe user is asking about stargazing or astrophotography timing.`;
-        enhancedSystemPrompt += `\nNo computed astronomical data is available for this turn. Do NOT state specific new/full moon dates or exact moon illumination from memory. Tell the user moon timing depends on their exact dates and suggest verifying with a moon calendar.`;
-        enhancedSystemPrompt += `\nFor land management names (national forest vs state park), only name an agency if you are confident — otherwise describe the area without guessing the administering forest.`;
-        enhancedSystemPrompt += `\nYou may describe typical dark-sky character of rural mountain valleys as "generally dark" — do not cite exact Bortle numbers unless sourced in live data.`;
-      } else if (skipWebSearchForGuest && needsLiveData(lastUserMessage)) {
-        enhancedSystemPrompt += formatGuestLiveDataBoundaryBlock();
-      } else {
-        enhancedSystemPrompt += `\nHelp the user plan their trip using your training knowledge. Answer naturally and enthusiastically.`;
-        enhancedSystemPrompt += `\nDo NOT say things like "I don't have live data" or "this isn't a national park" — just help them like a knowledgeable travel friend would.`;
-      }
-      if (shouldRequestItineraryJson({
-        userMessage: lastUserMessage,
-        openEndedDiscovery,
-        metadata: resolvedMetadata,
-        constraints,
-        allExtractedParks,
-        conversationUserText,
-      })) {
-        enhancedSystemPrompt += `\nYou CAN output an [ITINERARY_JSON] block for this day-by-day plan request.`;
-      }
-      enhancedSystemPrompt += `\nIf the query is vague (no specific destination), suggest 2–3 concrete places that fit what they described — do not only ask them to pick a destination.`;
-      enhancedSystemPrompt += `\n--- END GUIDANCE ---\n`;
-    } else {
-      // Truly off-topic or vague request
-      enhancedSystemPrompt += `\n\n--- GUIDANCE ---`;
-      enhancedSystemPrompt += `\nNo specific destination was identified. Do NOT generate a detailed itinerary for a vague request.`;
-      enhancedSystemPrompt += `\n- If the user's question is answerable from general knowledge (e.g., "what parks have the best stargazing?"), answer it helpfully.`;
-      enhancedSystemPrompt += `\n- If the user needs a trip plan, ask which destination they're considering — or suggest 2-3 options based on what they described.`;
-      enhancedSystemPrompt += `\n--- END GUIDANCE ---\n`;
-    }
-
-  }
-
-  const headToHeadCompare = isHeadToHeadCompareQuery(lastUserMessage, allExtractedParks.length);
-  if (headToHeadCompare) {
-    enhancedSystemPrompt += HEAD_TO_HEAD_COMPARE_BLOCK;
-    console.log(`${logPrefix} Head-to-head compare mode — skipping catalog discovery`);
-  } else if (
-    allExtractedParks.length === 1 &&
-    shouldRequestItineraryJson({
-      userMessage: lastUserMessage,
-      openEndedDiscovery: false,
-      metadata: resolvedMetadata,
-    })
-  ) {
-    enhancedSystemPrompt += SINGLE_PARK_PLAN_BLOCK;
-  }
-
-  // Open-ended discovery only when no parks are named in the message
-  let rankedDiscoveryAppended = false;
-
-  const clientContextForIntent = extractClientSystemContext(systemPrompt, messages);
-  if (metadata.intentGuide?.searchQuery) {
-    const intentGuideResult = await appendIntentGuideDiscoveryToPrompt({
-      enhancedSystemPrompt,
-      intentGuide: metadata.intentGuide,
-      clientContext: clientContextForIntent,
-      isAnonymous,
-      httpReq,
-      logPrefix,
-      originCity: userCity,
-    });
-    enhancedSystemPrompt = intentGuideResult.prompt;
-  }
-
-  if (openEndedDiscovery && allExtractedParks.length === 0) {
-    const discoveryResult = await appendRankedDiscoveryToPrompt({
-      enhancedSystemPrompt,
-      discoveryQuery: discoverySearchQuery,
-      namedParkCount: allExtractedParks.length,
-      isAnonymous,
-      httpReq,
-      logPrefix,
-      allowRefinement: discoveryRefinement,
-      originCity: userCity,
-    });
-    enhancedSystemPrompt = discoveryResult.prompt;
-    rankedDiscoveryAppended = discoveryResult.appended;
-    if (rankedDiscoveryAppended) {
-      candidateParksBlock = true;
-      if (discoveryRefinement) {
-        enhancedSystemPrompt += DISCOVERY_REFINEMENT_FOLLOWUP_BLOCK;
-      } else {
-        enhancedSystemPrompt += DISCOVERY_RESPONSE_FORMAT_BLOCK;
-        enhancedSystemPrompt += DISCOVERY_REFINEMENT_CLOSE_BLOCK;
-      }
-    }
-  }
-
-  // Regional fallback when catalog search did not produce a block
-  if (!rankedDiscoveryAppended && !resolvedMetadata.parkCode) {
-    try {
-      const candidateResult = await getCandidateParks(userCity);
-      const candidateBlock = formatCandidateParksBlock(candidateResult);
-      candidateParksBlock = !!candidateBlock;
-      if (candidateBlock) {
-        enhancedSystemPrompt += candidateBlock;
-        console.log(`${logPrefix} Candidate parks injected:`, { userCity: userCity?.name || 'none', tiered: !!candidateResult.userCity });
-      }
-    } catch (candidateErr) {
-      console.error(`${logPrefix} Candidate parks error:`, candidateErr.message);
-    }
-  }
-
-  // Inject relevant blog posts when a park is detected
-  if (allExtractedParks.length > 0) {
-    const parkNamesForBlog = allExtractedParks.map(p => p.parkName).filter(Boolean);
-    const blogContext = await fetchBlogContext(parkNamesForBlog);
-    if (blogContext) {
-      enhancedSystemPrompt += blogContext;
-      console.log(`${logPrefix} Blog context found for: ${parkNamesForBlog.join(', ')}`);
-    }
-  }
-
-  // Inject driving times: multi-park chains, single-park airport/city access, in-park routes
-  if (allExtractedParks.length > 0) {
-    const drivingBlock = await buildDrivingTimeContext({
-      parks: allExtractedParks,
-      userCity,
-      userMessage: lastUserMessage,
-      logPrefix,
-    });
-    if (drivingBlock) {
-      enhancedSystemPrompt += drivingBlock;
-      console.log(`${logPrefix} Driving times injected for ${allExtractedParks.length} park(s)`);
-    }
-  }
-
-  // Track whether a park was detected for downstream itinerary gating
+  // WP12 Phase 4 — product-chat prep is permanently the shared v2 path.
+  // Legacy facts/fetch, giant prompts, and buildTrailieContext are deleted.
   const noParkDetected = !resolvedMetadata.parkCode;
-
   const augmentedMessages = filteredMessages;
-
-  console.log(`${logPrefix} Augmented messages:`, {
-    hasSystemFacts: !!(npsFacts || weatherFacts || webSearchFacts || astroFacts),
-    totalMessageCount: augmentedMessages.length,
-    provider,
-    parks: parkNames
-  });
-
-  // ── Constraint Engine: preflight, inject blocks ──
   const lastMsg = lastUserMessage;
   const preflightResult = preflightCheck(constraints, resolvedMetadata.parkCode);
   const hypothetical = detectHypothetical(lastMsg);
-
-  // Inject constraint block into system prompt
-  if (constraints.hasConstraints) {
-    const constraintBlock = buildConstraintBlock(constraints);
-    enhancedSystemPrompt += constraintBlock;
-    console.log(`${logPrefix} Constraints injected:`, { fitnessLevel: constraints.fitnessLevel, numDays: constraints.dates?.numDays, hasChildren: constraints.hasChildren, accommodation: constraints.accommodation });
-  }
-
-  // Inject preflight warnings into system prompt
-  if (preflightResult.warnings.length > 0) {
-    enhancedSystemPrompt += `\n\n--- PRE-FLIGHT WARNINGS ---\n${preflightResult.warnings.map(w => `- ${w}`).join('\n')}\nAddress these proactively in your response.\n--- END WARNINGS ---\n`;
-    console.log(`${logPrefix} Preflight warnings:`, preflightResult.warnings);
-  }
-
-  // Detect and inject conflicts
   const conflicts = detectConflicts(constraints, lastMsg, { skipUserContext });
-  if (conflicts.length > 0) {
-    enhancedSystemPrompt += `\n\n--- CONSTRAINT CONFLICTS DETECTED ---\nThe user's request contains CONTRADICTORY constraints. You MUST address each conflict — do NOT silently merge them into a generic plan.\n`;
-    for (const conflict of conflicts) {
-      enhancedSystemPrompt += `\nCONFLICT: ${conflict.constraintA} vs. ${conflict.constraintB}\n${conflict.prompt}\n`;
-    }
-    enhancedSystemPrompt += `\n--- END CONFLICTS ---\n`;
-    console.log(`${logPrefix} Conflicts detected:`, conflicts.map(c => c.type));
-  }
-
-  // Detect and inject user intent
   const intent = detectIntent(lastMsg, constraints);
-  if (intent.adaptations) {
-    enhancedSystemPrompt += `\n\n--- USER INTENT DETECTED ---\n${intent.adaptations}\n--- END USER INTENT ---\n`;
-    console.log(`${logPrefix} Intent detected:`, { primary: intent.primaryIntent, intents: intent.intents.map(i => `${i.type}(${i.confidence.toFixed(2)})`) });
-  }
-
-  // Inject hypothetical/scenario mode
-  if (hypothetical.isHypothetical) {
-    enhancedSystemPrompt += `\n\n--- SCENARIO MODE ACTIVE ---
-The user is asking a hypothetical/what-if question ("${hypothetical.scenarioDescription}").
-
-CRITICAL ISOLATION RULES — follow these exactly:
-1. The user's scenario assumptions OVERRIDE all real-world data above. If the scenario says "canyon is closed", it IS closed for this plan — even if live NPS data says otherwise.
-2. Do NOT include any live data citations in your scenario plan. The live data block above is REFERENCE ONLY — do not surface it to the user.
-3. Structure your response as a SINGLE scenario plan under the user's assumed conditions. Do NOT show a "real conditions" section followed by a "scenario" section — that causes confusion. Just plan for the scenario.
-4. If the scenario makes certain permits/reservations irrelevant (e.g., area is closed), do NOT mention them.
-5. Do NOT append a meta disclaimer ("this plan assumes…", "see real-world conditions on TrailVerse", "check TrailVerse" without a park link) — end on the plan itself.
-6. Do NOT pad with unrelated real-world details, closure lists, or weather data that contradicts the scenario.
---- END SCENARIO MODE ---\n`;
-    console.log(`${logPrefix} Hypothetical detected:`, hypothetical.scenarioDescription);
-  }
-
-  const trailieContext = buildTrailieContext({
+  const userRequestedItinerary =
+    (
+      (refinementFollowUp && Boolean(savedTripPlan?.plan?.days?.length)) ||
+      shouldRequestItineraryJson({
+        userMessage: lastUserMessage,
+        openEndedDiscovery,
+        metadata: resolvedMetadata,
+        constraints,
+        allExtractedParks,
+        conversationUserText,
+      })
+    )
+    // Material sufficiency: never force a structured itinerary when readiness
+    // says clarification is still required (HTTP path must match offline gate).
+    && !(itineraryReadiness?.clarificationNeeded === true && itineraryReadiness?.ready === false);
+  const alreadyShownImages = messages.some((m) =>
+    m.role === 'assistant' && m.content?.includes('(Photos shown to user:')
+  );
+  const attachParkImages = false;
+  const parkImages = [];
+  const candidateParksBlock = false;
+  const fetchPlan = null;
+  const trailieContext = null;
+  const enhancedSystemPrompt = '';
+  console.log(`${logPrefix}[Trailie] prepared canonical context`);
+  return {
     provider,
     responseMode,
-    lastUserMessage: lastMsg,
-    constraints,
-    intent,
-    preflightResult,
-    conflicts,
-    hypothetical,
-    factsMeta,
-    fetchPlan,
-    activeTripContext,
-    resolvedMetadata,
-    allExtractedParks,
+    model,
+    temperature,
+    top_p,
+    maxTokens,
+    enhancedSystemPrompt,
+    augmentedMessages,
+    metadata,
     npsFacts,
     weatherFacts,
     webSearchFacts,
     astroFacts,
     feeFreeFacts,
     webSearchUnavailable,
-    skipWebSearchForGuest,
-    metadata,
+    canonicalFactBundle,
+    canonicalFactStatus,
+    weatherCoverage,
     userCity,
-    conversationSummary,
-    savedTripPlan,
-  });
-  enhancedSystemPrompt += formatStructuredContextInjection(trailieContext);
-  console.log(`${logPrefix} Structured context injected:`, {
-    schemaVersion: trailieContext.contextMeta.schemaVersion,
-    providerMode: trailieContext.providerMode,
-    intent: trailieContext.intent.primary,
-    npsStatus: trailieContext.liveData.nps.status,
-    weatherStatus: trailieContext.liveData.weather.status,
-    fetchPlanConfidence: trailieContext.fetchPlan?.confidence || null,
-    fetchPlanQueryTypes: trailieContext.fetchPlan?.queryTypes || [],
-  });
-
-  const userRequestedItinerary = shouldRequestItineraryJson({
-    userMessage: lastUserMessage,
-    openEndedDiscovery,
-    metadata: resolvedMetadata,
-    constraints,
+    candidateParksBlock,
+    resolvedMetadata,
+    parkNames,
     allExtractedParks,
-    conversationUserText,
-  });
-
-  const wantsDayByDayPlan =
-    !openEndedDiscovery &&
-    !resolvedMetadata.dayByDayPlanIntake &&
-    (isSpecificItineraryRequest(lastUserMessage) ||
-      (resolvedMetadata.parkCode && /\b(plan|itinerary|schedule|day[- ]?by[- ]?day|build\s+(me\s+)?(a\s+)?(plan|itinerary)|help\s+(me\s+)?plan)\b/i.test(lastUserMessage)));
-
-  // Final reinforcement: day-by-day plans — prefer create_itinerary tool + legacy JSON fallback
-  if (userRequestedItinerary) {
-    if (responseMode === 'architect' && provider === 'claude') {
-      enhancedSystemPrompt += formatItineraryToolInstruction();
-    }
-    enhancedSystemPrompt += `\n\n--- CRITICAL REMINDER ---\nThis is a day-by-day planning request. You MUST provide structured itinerary data via the create_itinerary tool when available, OR include the [ITINERARY_JSON] block at the end of your response as fallback. Even if there are conflicts or warnings, include your recommended safe plan. Do NOT skip structured output for planning requests.\n--- END REMINDER ---\n`;
-  } else if (resolvedMetadata.dayByDayPlanIntake) {
-    enhancedSystemPrompt += formatDayByDayIntakeBlock({
-      parkName: resolvedMetadata.intakeParkName || resolvedMetadata.parkName || parkNames[0] || null,
-      missing: itineraryReadiness.missing,
-    });
-  } else if (wantsDayByDayPlan && !itineraryReadiness.ready) {
-    enhancedSystemPrompt += formatItineraryGatheringBlock(itineraryReadiness.missing, {
-      assumeDefaults: skipUserContext || assumeItineraryDefaults,
-    });
-  } else if (openEndedDiscovery) {
-    enhancedSystemPrompt += `\n\n--- DISCOVERY RESPONSE (NO ITINERARY JSON) ---\nThis is an open-ended destination or recommendation question. Recommend 2–4 specific parks or destinations with brief why-each. Do NOT include a [ITINERARY_JSON] block. Do NOT produce a day-by-day schedule unless the user explicitly asks for one. Driving times and distances in prose are fine.\n--- END DISCOVERY ---\n`;
-  }
-
-  // Bookend: repeat fee-free reminder at the end of the prompt (models attend
-  // most to the start and end — the full block is at the top, this short nudge
-  // ensures it isn't lost in the middle of long prompts)
-  if (feeFreeFacts && feeFreeFacts.hasOverlap) {
-    const dayNames = feeFreeFacts.days.map(d => d.label).join(', ');
-    enhancedSystemPrompt += `\n\n⚠️ REMINDER: The user's trip overlaps fee-free entrance day(s): ${dayNames}. You MUST mention this in your first paragraph.\n`;
-  }
-
-  // Prevent AI from leaking internal JSON mechanism to the user
-  enhancedSystemPrompt += `\n\n--- OUTPUT RULES ---\nThe [ITINERARY_JSON] block is an internal data format automatically extracted from your response. NEVER mention JSON, code blocks, data formats, or offer to "regenerate the JSON" or "output the updated JSON" in your user-facing text. Speak naturally about the itinerary as a travel plan. If the user has an existing itinerary and asks for modifications, describe the specific changes in plain language — do not regenerate the entire plan unless they explicitly ask for a full replan.\n--- END OUTPUT RULES ---\n`;
-
-  console.log(`${logPrefix} Trip planning context:`, {
-    responseMode,
-    skipUserContext,
+    noParkDetected,
+    constraints,
+    planningState: constraints?.planningState || persistedPlanningState || null,
+    preflightResult,
+    hypothetical,
+    conflicts,
+    intent,
+    evidencePlannerShadowInput: null,
+    promptV2ShadowInput: null,
+    parkImages,
+    alreadyShownImages,
+    attachParkImages,
+    openEndedDiscovery,
+    discoveryRefinement,
+    lastMsg,
+    trailieContext,
     userRequestedItinerary,
-    itineraryReadinessReady: itineraryReadiness.ready,
-    itineraryReadinessMissing: itineraryReadiness.missing,
-    activeDestination: activeTripContext?.primaryDestination?.name || null,
-    activeResolutionSource: activeTripContext?.resolutionSource || null,
-    parkCode: resolvedMetadata.parkCode || null,
-  });
-
-  return { provider, responseMode, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, metadata, npsFacts, weatherFacts, webSearchFacts, astroFacts, feeFreeFacts, webSearchUnavailable, userCity, candidateParksBlock, resolvedMetadata, parkNames, allExtractedParks, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, attachParkImages, openEndedDiscovery, discoveryRefinement, lastMsg, trailieContext, userRequestedItinerary, activeTripContext, fetchPlan, skipUserContext };
+    itineraryReadiness,
+    activeTripContext,
+    savedTripPlan,
+    storedTripContext,
+    entryContext,
+    fetchPlan,
+    skipUserContext,
+    // WP-TU Phase 4 Task 10 — the trip currently loaded/active for this turn
+    // (mirrors `tripId` above), and the traveler's other saved plans as
+    // bounded candidate metadata. Neither is a target decision — see
+    // candidatePlanDiscovery.js and targetTripResolver.js.
+    activeTripId: tripId || null,
+    candidatePlans,
+    // WP-TU Phase 4 Task 10B — the owner these candidates/this trip were
+    // scoped under, so a later single-document hydration fetch (a DIFFERENT
+    // trip than `tripId`, resolved by Task 9's targetTripResolver) can apply
+    // the SAME ownership check `fetchCandidatePlans` already applies to its
+    // list query. Null for guests (candidatePlans is always [] for them too).
+    userId: (!isAnonymous && httpReq?.user?._id) ? String(httpReq.user._id) : null,
+  };
 }
 
 function appendUserContextToPrompt(enhancedSystemPrompt, userContext, personalizedRecommendations = false) {
@@ -2016,6 +2026,44 @@ async function processAssistantResponse({
     repaired: false,
   };
 
+  // Stage 11 — tool-first fast path. The itinerary was already generated,
+  // finalized, and FROZEN in Phase A; `response.content` is Phase B prose about
+  // that exact plan. We do NOT re-extract, re-correct, re-enrich, or run inline
+  // JSON extraction — we only strip stray artifacts and attach the frozen plan.
+  if (options.preFinalized) {
+    const pf = options.preFinalized;
+    // Stage 12 — defense in depth: alignment markers must never reach canonical
+    // content/hash (the seam already strips them from the selected prose).
+    let finalContent = stripAlignmentMarkers(unwrapMislinkedParkMarkdown(response.content || ''));
+    const rej = getFinalResponseRejectionReason(finalContent, finalContent);
+    if (rej) console.warn(`${logPrefix} Final-response guard flagged (tool-first): ${rej}`);
+
+    reviewMeta = {
+      reviewerMode: 'shadow',
+      reviewExecution: 'async',
+      repaired: false,
+      patchesApplied: 0,
+    };
+
+    if (pf.correctionsApplied?.length > 0) {
+      finalContent += formatCorrectionNotice(pf.correctionsApplied);
+    }
+    // Final safety pass — never leak raw itinerary JSON markers.
+    response.content = stripItineraryArtifacts(finalContent).content;
+
+    return {
+      cleanContent: response.content,
+      itineraryData: pf.itineraryData || null, // FROZEN — never mutated here
+      confidence: pf.confidence || { level: 'high', score: 1.0 },
+      planScore: pf.planScore || null,
+      constraintIssues: [],
+      feasibilityIssues: pf.feasibilityIssues || [],
+      correctionsApplied: pf.correctionsApplied || [],
+      contentChangedByValidation: !!pf.contentChangedByValidation,
+      reviewMeta,
+    };
+  }
+
   const hasConflicts = conflicts?.length > 0;
 
   if (enableConflictRetry && hasConflicts && !req._hasConflictRetried) {
@@ -2033,9 +2081,8 @@ async function processAssistantResponse({
         let retryContent;
         if (provider === 'claude' && anthropic) {
           const retryResult = await anthropic.messages.create({
-            model: model || CLAUDE_FALLBACK_MODELS[0],
+            model, // Stage 14.7I §2 — pre-resolved by prepareChatContext
             max_tokens: maxTokens,
-            temperature,
             system: conflictRetryPrompt,
             messages: augmentedMessages,
           });
@@ -2060,10 +2107,16 @@ async function processAssistantResponse({
     }
   }
 
-  let { cleanContent, itineraryData } = extractItineraryFromResponse({
-    content: response.content,
-    toolItinerary: response.toolItinerary || null,
-  });
+  // Stage 11 — in tool_first mode, a structured-generation FAILURE falls back to
+  // prose-only. We must NOT recover an itinerary by inline-parsing that prose.
+  const disableInlineItineraryExtraction = options.disableInlineItineraryExtraction === true;
+
+  let { cleanContent, itineraryData } = disableInlineItineraryExtraction
+    ? { cleanContent: stripItineraryArtifacts(response.content || '').content, itineraryData: null }
+    : extractItineraryFromResponse({
+        content: response.content,
+        toolItinerary: response.toolItinerary || null,
+      });
 
   if (itineraryData && response.toolItinerary) {
     console.log(`${logPrefix} Itinerary extracted via create_itinerary tool`);
@@ -2084,30 +2137,35 @@ async function processAssistantResponse({
   if (
     userRequestedItinerary &&
     enableItineraryFallbackExtraction &&
+    !disableInlineItineraryExtraction &&
     !itineraryData &&
     /\b(plan|itinerary|trip)\b/i.test(lastMsg) &&
     /day\s*[1-9]|day\s*one|day\s*two|morning.*afternoon|## .*day\b/i.test(cleanContent)
   ) {
     try {
       console.log(`${logPrefix} Planning response missing JSON block — running fallback extraction`);
+      // Stage 10 (F-ACC-2) — the extractor must NOT invent coordinates. It
+      // omits lat/lon entirely; any coordinate it emits anyway is treated as an
+      // untrusted model estimate and discarded by normalizeCoordinates below.
       const extractionPrompt = `Extract the structured itinerary from this trip plan text. Return ONLY a valid JSON object (no markdown, no explanation) in this format:
-{"days":[{"id":"day-1","dayNumber":1,"label":"Day 1 — label","stops":[{"id":"s1-1","order":0,"type":"trail|landmark|campground|visitor_center|restaurant|lodging|custom","name":"Stop Name","note":"brief note","startTime":"08:00","duration":60,"latitude":0.0,"longitude":0.0,"difficulty":"easy|moderate|strenuous","why":"why this stop fits","drivingTimeFromPreviousMin":0}]}]}
+{"days":[{"id":"day-1","dayNumber":1,"label":"Day 1 — label","stops":[{"id":"s1-1","order":0,"type":"trail|landmark|campground|visitor_center|restaurant|lodging|custom","name":"Stop Name","note":"brief note","startTime":"08:00","duration":60,"difficulty":"easy|moderate|strenuous","why":"why this stop fits","drivingTimeFromPreviousMin":0}]}]}
 
-Include latitude/longitude (estimate if needed), duration in minutes, and difficulty for trails. Here is the plan text:
+Do NOT include latitude or longitude — omit those fields entirely. Never guess or estimate coordinates. Include duration in minutes and difficulty for trails. Here is the plan text:
 
 ${cleanContent.substring(0, 6000)}`;
 
       const claudeService = require('../services/claudeService');
       const extractedJSON = await claudeService.chat(
         [{ role: 'user', content: extractionPrompt }],
-        'You are a JSON extraction tool. Return only valid JSON, no markdown or explanation.',
+        'You are a JSON extraction tool. Return only valid JSON, no markdown or explanation. Never fabricate coordinates.',
         { model: CLAUDE_EXTRACTOR_MODEL, temperature: 0.1 }
       );
       const jsonMatch = extractedJSON.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         if (parsed.days && Array.isArray(parsed.days) && parsed.days.length > 0) {
-          itineraryData = parsed;
+          // Any coordinate the extractor emitted is a model estimate — strip it.
+          itineraryData = stripUntrustedExtractedCoordinates(parsed);
           console.log(
             `${logPrefix} Fallback extraction successful: ${parsed.days.length} days`
           );
@@ -2177,11 +2235,9 @@ ${cleanContent.substring(0, 6000)}`;
       correctionSummary = `\n\n---\n📍 **Adjusted to fit your constraints:**\n${allCorrections.map((c) => `- ${c}`).join('\n')}`;
       console.log(`${logPrefix} Corrections applied:`, allCorrections);
     }
-
-    const postIssues = validateItineraryFeasibility(currentItinerary);
-    if (postIssues.length > 0) {
-      correctionSummary += `\n\n⏱️ **After adjustment:**\n${postIssues.map((w) => `- ${w}`).join('\n')}`;
-    }
+    // Stage 10 (F-QUAL-1) — feasibility warnings are NOT duplicated into prose
+    // here. They are re-computed on the FINAL corrected itinerary below and
+    // surfaced once, as structured `feasibilityIssues`, in the done payload.
   }
 
   if (enableRegeneration && needsRegeneration && !req._hasRegenerated) {
@@ -2203,7 +2259,7 @@ ${cleanContent.substring(0, 6000)}`;
       let regenResponse;
       if (provider === 'claude' && anthropic) {
         const regenResult = await anthropic.messages.create({
-          model: model || CLAUDE_FALLBACK_MODELS[0],
+          model, // Stage 14.7I §2 — pre-resolved by prepareChatContext
           max_tokens: maxTokens,
           temperature,
           system: regenPrompt,
@@ -2258,33 +2314,48 @@ ${cleanContent.substring(0, 6000)}`;
 
   const planScore = itineraryData ? scoreItinerary(itineraryData, constraints) : null;
 
-  // Generate → Review → Repair loop
-  let finalContent = cleanContent;
-  const reviewRepair = await runReviewAndRepair({
-    anthropic,
-    responseContent: finalContent,
-    itineraryData,
-    constraints,
-    npsFacts,
-    weatherFacts,
-    webSearchFacts,
-    astroFacts,
-    feeFreeFacts,
-    trailieContext,
-    userMessage: lastMsg,
-    responseMode,
-    provider,
-    userRequestedItinerary,
-    correctionsApplied,
-    constraintIssues,
-    logPrefix: `${logPrefix} Reviewer`,
-  });
+  // Deterministic park identity for section scope — metadata only, never rendering.
+  if (itineraryData) {
+    const enriched = enrichItineraryParkIdentity({
+      itineraryData,
+      resolvedMetadata: options.resolvedMetadata || {},
+      allExtractedParks: parksForLinks,
+    });
+    itineraryData = enriched.itineraryData;
+  }
 
-  finalContent = reviewRepair.content;
-  itineraryData = reviewRepair.itineraryData;
-  reviewMeta = reviewRepair.reviewMeta;
-  if (reviewMeta.repaired) {
-    contentChangedByValidation = true;
+  // Stage 9 — reviewer/model execution is OFF the critical path. The itinerary
+  // is immutable from here on: it has already been constraint-corrected,
+  // enriched, validated, and scored. We keep ONLY deterministic protections in
+  // the request path; the model-based shadow review runs later in a durable
+  // worker (scheduled by scheduleShadowReview after the canonical envelope
+  // exists) and can never alter this response, itinerary, or hashes.
+  let finalContent = cleanContent;
+  const frozenItinerary = itineraryData;
+
+  // Deterministic final-response guard — never calls a model. Rejects an empty
+  // answer or a leaked hand-off placeholder. On rejection we keep the original
+  // cleaned content: we never ship empty, but we also never fabricate.
+  const finalRejection = getFinalResponseRejectionReason(cleanContent, finalContent);
+  if (finalRejection) {
+    console.warn(`${logPrefix} Final-response guard flagged: ${finalRejection}`);
+  }
+
+  // Stage 10 — the canonical response carries a STABLE, content-independent
+  // review marker only. It never includes the dynamic queue status, which is
+  // computed later as separate outbound metadata (reviewScheduling) so the
+  // canonical response/plan/hashes are identical across every enqueue outcome.
+  reviewMeta = {
+    reviewerMode: 'shadow',
+    reviewExecution: 'async',
+    repaired: false,
+    patchesApplied: 0,
+  };
+
+  // Defense in depth: nothing above may mutate the validated itinerary.
+  if (itineraryData !== frozenItinerary) {
+    console.error(`${logPrefix} itineraryData changed post-validation — restoring validated plan`);
+    itineraryData = frozenItinerary;
   }
 
   // Append visible correction notice so prose matches saved itinerary
@@ -2304,8 +2375,10 @@ ${cleanContent.substring(0, 6000)}`;
     response.content = finalContent;
   }
 
-  // Final safety pass — never leak raw itinerary JSON markers to the user
-  response.content = stripAnyItineraryJsonArtifacts(response.content);
+  // Final safety pass — never leak raw itinerary JSON markers to the user.
+  // Stage 8: use the ISOMORPHIC stripper so the shipped content is byte-for-byte
+  // what the browser's stripper produces (F-STREAM-1 parity).
+  response.content = stripItineraryArtifacts(response.content).content;
 
   return {
     cleanContent: response.content,
@@ -2320,9 +2393,107 @@ ${cleanContent.substring(0, 6000)}`;
   };
 }
 
+/**
+ * Single orchestration seam shared by every chat route (/chat, /chat-stream,
+ * and both anonymous variants). It ALWAYS sources the canonical fact evidence
+ * from the prepared context, so no individual route can forget to plumb the
+ * bundle/status into the reviewer. This is the exact plumbing Stage 6A fixed;
+ * routing all variants through here makes that regression structurally
+ * impossible and gives the route-contract tests a real production seam.
+ *
+ * @param {Object} params
+ * @param {Object} params.preparedContext - the object returned by prepareChatContext
+ * @param {Object} params.processorArgs - everything the route passes to processAssistantResponse
+ */
+async function processPreparedTrailieResponse({ preparedContext, processorArgs }) {
+  return processAssistantResponse({
+    ...processorArgs,
+    options: {
+      ...(processorArgs.options || {}),
+      // Canonical evidence is injected here — never by the individual routes —
+      // straight from the prepared context that fetched it.
+      canonicalFactBundle: preparedContext.canonicalFactBundle,
+      canonicalFactStatus: preparedContext.canonicalFactStatus,
+    },
+  });
+}
+
+/**
+ * Recover the monotonic response counter from the authenticated saved trip.
+ * A prose-only prior turn gives the browser no currentPlan, so it otherwise
+ * echoes zero even though the conversation already contains version one.
+ */
+async function hydrateStoredPriorResponseVersion(body, logPrefix) {
+  const metadata = body?.metadata || {};
+  const tripId = metadata.tripId || body?.tripId || body?.conversationId;
+  if (!tripId || metadata.skipUserContext === true) return;
+
+  try {
+    const TripPlan = require('../models/TripPlan');
+    const stored = await TripPlan.findById(tripId)
+      .select('plan.responseVersion conversation.responseVersion')
+      .lean();
+    const versions = [stored?.plan?.responseVersion]
+      .concat((stored?.conversation || []).map((message) => message?.responseVersion))
+      .map(Number)
+      .filter((version) => Number.isFinite(version) && version > 0);
+    const storedPrior = versions.length ? Math.max(...versions) : 0;
+    body.metadata = {
+      ...metadata,
+      priorResponseVersion: Math.max(readPriorResponseVersion(body), storedPrior),
+    };
+  } catch (err) {
+    console.warn(`${logPrefix} Could not recover stored response version for ${tripId}:`, err.message);
+  }
+}
+
+function latestUserText(messages) {
+  const last = [...(messages || [])].reverse().find((message) => message?.role === 'user');
+  return typeof last?.content === 'string' ? last.content : '';
+}
+
+function planningStateWithTravelerJob(preparedContext, result) {
+  return require('../utils/planningState').finalizePlanningStateForTurn(
+    preparedContext?.planningState || preparedContext?.constraints?.planningState || null, result);
+}
+
+function finalizeTrailieNonCompleteResponse({ transport, v2Result, terminalPayload, preparedContext = null }) {
+  transport.responseFinalized({
+    ...terminalPayload,
+    travelLogistics: v2Result.travelLogistics ?? null,
+    responseArtifacts: v2Result.responseArtifacts ?? null,
+    intent: v2Result.intent ?? null,
+    presentation: v2Result.presentation ?? null,
+    planningState: terminalPayload.planningState
+      ?? planningStateWithTravelerJob(preparedContext, v2Result)
+      ?? null,
+    // WP-TU Phase 3 Task 7B — additive only, same field as the complete-status
+    // call sites; kept consistent here for non-complete terminals too.
+    activeTripPresentation: v2Result.activeTripPresentation ?? null,
+    // WP-TU Phase 4 Task 10 — same additive-field pattern as
+    // activeTripPresentation (Task 7B) immediately above.
+    targetTripId: v2Result.targetTripId ?? null,
+  });
+}
+
 // Chat endpoint — no token limit for logged-in users, trackTokenUsage kept for analytics
+router.get('/live-gate-preflight', protect, (req, res) => {
+  if (String(process.env.NODE_ENV || '').toLowerCase() === 'production') {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  const preflight = buildGenericLiveGatePreflight({
+    env: process.env,
+    authenticated: Boolean(req.user),
+  });
+  return res.status(preflight.ready ? 200 : 503).json({ data: preflight });
+});
+
 router.post('/chat', protect, trackTokenUsage, async (req, res) => {
   const requestStartTime = Date.now();
+  // Phase 6B.2 — same disconnect-cancellation seam the streaming routes use
+  // (sseStream.js's attachClientDisconnectAbort), extended to the
+  // non-stream routes: previously no signal was constructed here at all.
+  const { signal, cleanup } = attachClientDisconnectAbort(req, res);
   try {
     console.log('[AI] Chat request received:', {
       provider: req.body.provider,
@@ -2331,253 +2502,105 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
       metadata: req.body.metadata
     });
 
-    let { provider, responseMode, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, webSearchFacts, astroFacts, feeFreeFacts, webSearchUnavailable, userCity, candidateParksBlock, resolvedMetadata, parkNames, allExtractedParks, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, attachParkImages, openEndedDiscovery, discoveryRefinement, lastMsg, trailieContext, userRequestedItinerary, activeTripContext } = await prepareChatContext(req.body, '[AI]', { req });
+    await hydrateStoredPriorResponseVersion(req.body, '[AI]');
+
+    // Stage 14.1 §2 — ONE identity per logical turn, minted at admission (before
+    // Phase A). Both revisions and any terminal failure response reuse it.
+    const responseIdentity = createTurnResponseIdentity({
+      priorResponseVersion: readPriorResponseVersion(req.body),
+    });
+
+    // WP10C — non-stream terminal transport. Terminal mode emits no intermediate
+    // events and exactly one HTTP body: legacy `{ data: … }` is preserved verbatim;
+    // the v2 terminal shape appears only when a client explicitly negotiates it.
+    const transport = createTrailieTransportAdapter({
+      dialect: resolveTrailieTransportDialect(req),
+      mode: 'terminal',
+      emit: (body) => res.json(body),
+    });
+
+    const preparedContext = await prepareChatContext(req.body, '[AI]', { req });
+    let { provider, responseMode, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, webSearchFacts, astroFacts, feeFreeFacts, webSearchUnavailable, userCity, candidateParksBlock, resolvedMetadata, parkNames, allExtractedParks, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, attachParkImages, openEndedDiscovery, discoveryRefinement, lastMsg, trailieContext, userRequestedItinerary, activeTripContext } = preparedContext;
+
+    // Stage 14.7I §2 — `model` is already resolved by prepareChatContext, for
+    // every handler and both generation branches. Nothing to default here.
 
     // Pre-flight BLOCKER — stop before calling AI
     if (preflightResult.blockers.length > 0) {
       const blockerMsg = preflightResult.blockers.map(b => `- ${b}`).join('\n');
-      return res.json({ data: { content: `📍 **Can't plan this trip yet:**\n${blockerMsg}\n\nAdjust your dates or destination and try again.`, provider: 'system' } });
+      transport.responseFinalized({ content: `📍 **Can't plan this trip yet:**\n${blockerMsg}\n\nAdjust your dates or destination and try again.`, provider: 'system' });
+      return;
     }
 
-    // Inject user context for personalized responses
-    const personalizedRecommendations = req.body.metadata?.personalizedRecommendations === true;
-    const skipUserContext = req.body.metadata?.skipUserContext === true;
-    const userContext = skipUserContext ? '' : await buildUserContext(req.user);
-    enhancedSystemPrompt = appendUserContextToPrompt(
-      enhancedSystemPrompt,
-      userContext,
-      personalizedRecommendations
-    );
-
-    let response;
-
-    // Fallback: resolve 'auto' or unknown providers to claude
-    if (provider !== 'claude' && provider !== 'openai') {
-      provider = anthropic ? 'claude' : 'openai';
-    }
-
-    if (provider === 'claude') {
-      if (!anthropic) {
-        return res.status(500).json({ error: 'Claude API key not configured' });
-      }
-
-      const useItineraryTool = responseMode === 'architect' && userRequestedItinerary;
-
-      try {
-        response = await callClaudeWithFallback({
-          anthropic,
-          modelsToTry: CLAUDE_FALLBACK_MODELS,
-          maxTokens,
-          temperature,
-          system: enhancedSystemPrompt,
-          messages: augmentedMessages,
-          tools: useItineraryTool ? [CREATE_ITINERARY_TOOL] : undefined,
-          toolChoice: useItineraryTool ? { type: 'auto' } : undefined,
-          logPrefix: '[Chat]',
-        });
-      } catch (claudeErr) {
-        console.error('[Chat] All Claude models failed');
-        return res.status(400).json({
-          error: 'No Claude models available with your API key',
-          details: claudeErr.message || 'Unknown error',
-          availableModels: CLAUDE_FALLBACK_MODELS,
-        });
-      }
-
-    } else if (provider === 'openai') {
-      // OpenAI API
-      if (!openai) {
-        return res.status(500).json({ error: 'OpenAI API key not configured' });
-      }
-
-      const openaiMessages = augmentedMessages.map((m) => ({ role: m.role, content: m.content }));
-      let openaiResponse = null;
-      let openaiModelUsed = model || OPENAI_PRIMARY_MODEL;
-      let lastOpenAiError = null;
-
-      for (const modelId of OPENAI_FALLBACK_MODELS) {
-        try {
-          openaiResponse = await openai.chat.completions.create({
-            model: modelId,
-            messages: [{ role: 'system', content: enhancedSystemPrompt }, ...openaiMessages],
-            max_completion_tokens: maxTokens,
-            temperature,
-            top_p,
-          });
-          openaiModelUsed = modelId;
-          break;
-        } catch (err) {
-          lastOpenAiError = err;
-          if (err.status === 404 || err.code === 'model_not_found') continue;
-          throw err;
-        }
-      }
-
-      if (!openaiResponse) {
-        return res.status(400).json({
-          error: 'No OpenAI models available',
-          details: lastOpenAiError?.message,
-        });
-      }
-
-      response = {
-        content: openaiResponse.choices[0].message.content,
-        provider: 'openai',
-        model: openaiModelUsed,
-        usage: {
-          inputTokens: openaiResponse.usage.prompt_tokens,
-          outputTokens: openaiResponse.usage.completion_tokens,
-        },
-      };
-
-    } else {
-      return res.status(400).json({ error: 'Invalid provider. Use "claude" or "openai"' });
-    }
-
-    const processed = await processAssistantResponse({
-      response,
-      lastMsg,
-      npsFacts,
-      weatherFacts,
-      webSearchFacts,
-      astroFacts,
-      feeFreeFacts,
-      noParkDetected,
-      constraints,
-      conflicts,
-      hypothetical,
-      provider: response.provider,
-      model: response.model,
-      maxTokens,
-      temperature,
-      top_p,
-      enhancedSystemPrompt,
-      augmentedMessages,
-      req,
-      parksForLinks: allExtractedParks,
-      trailieContext,
-      responseMode,
-      options: {
-        enableConflictRetry: true,
-        enableRegeneration: true,
-        appendAnonymousWebUpsell: false,
-        userRequestedItinerary,
-        logPrefix: '[AI]',
-      },
-    });
-
-    const itineraryData = processed.itineraryData;
-    const confidence = processed.confidence;
-    const planScore = processed.planScore;
-
-    response.content = processed.cleanContent;
-    response.hasItinerary = !!itineraryData;
-    response.itineraryData = itineraryData || null;
-
-    const auditTrail = buildAuditTrail({
-      provider: response.provider,
-      model: response.model,
-      responseMode,
-      confidence,
-      planScore,
-      correctionsApplied: processed.correctionsApplied,
-      npsFacts,
-      weatherFacts,
-      webSearchFacts,
-      astroFacts,
-      feeFreeFacts,
-    });
-
-    if (itineraryData) {
-      await saveItineraryToTrip(req, itineraryData, {
-        reviewMeta: processed.reviewMeta,
-        auditTrail,
-        parkName: req.body.metadata?.parkName || resolvedMetadata.parkName,
-        parkCode: req.body.metadata?.parkCode || resolvedMetadata.parkCode,
+    // WP11B-1 — flag-gated integrated Trailie v2 runtime. Auth/identity/context
+    // above stay exactly as legacy; only generation + terminal emission change.
+    // Persistence remains client-driven (single writer) via the canonical
+    // responseId/version — no server-side plan write here, same as legacy.
+    // Canonical Trailie; availability gating applies only at the deployment boundary.
+    if (!isTrailieRuntimeEnabled()) {
+      return res.status(503).json({
+        success: false,
+        error: 'Trailie AI runtime unavailable',
+        code: 'trailie_runtime_disabled',
       });
     }
 
-    const displayMeta = await finalizeParkImagesAndMetadata({
-      validatedContent: response.content,
-      resolvedMetadata,
-      parkNamesFromUser: parkNames,
-      parkImages,
-      alreadyShownImages,
-      attachParkImages,
-      openEndedDiscovery,
-      logPrefix: '[AI]',
+    await persistCommittedTripMutation({
+      message: latestUserText(req.body.messages),
+      preparedContext,
     });
-
-    // Structured logging — fire and forget
-    const requestEndTime = Date.now();
-    const parksMentioned = await extractParksMentioned(response.content || '');
-    logAIRequest({
-      endpoint: 'chat',
-      userId: req.user?.id || null,
-      provider: response.provider,
-      model: response.model,
-      durationMs: requestEndTime - requestStartTime,
-      promptHash: crypto.createHash('sha256').update(enhancedSystemPrompt).digest('hex').slice(0, 12),
-      blocks: {
-        npsFacts: !!npsFacts,
-        weatherFacts: !!weatherFacts,
-        webSearch: !!webSearchFacts,
-        feeFree: !!(feeFreeFacts && feeFreeFacts.hasOverlap),
-        candidateParks: !!candidateParksBlock,
-        constraints: constraints.hasConstraints,
-        preflight: { blockers: preflightResult.blockers.length, warnings: preflightResult.warnings.length },
-        conflicts: conflicts.length,
-        hypothetical: hypothetical.isHypothetical,
-        intent: intent?.primaryIntent || null,
-        userContext: !!req.user,
-      },
-      park: resolvedMetadata.parkCode ? { code: resolvedMetadata.parkCode, name: resolvedMetadata.parkName } : null,
-      cityDetected: userCity?.name || null,
-      messageCount: augmentedMessages.length,
-      promptTokenEstimate: Math.round(enhancedSystemPrompt.length / 4),
-      tokens: response.usage || null,
-      response: {
-        length: response.content?.length || 0,
-        hasItinerary: !!itineraryData,
-        mentionsFeeFree: /fee.free|free\s+entrance/i.test(response.content || ''),
-        parksMentioned,
-      },
-      error: null,
+    const { result: v2Result, content: v2Content } = await runTrailieFromPreparedContext({
+      preparedContext,
+      messages: req.body.messages,
+      // WP-TU Phase 4 Task 10E — the ONE identity this turn already has;
+      // never a second mint downstream.
+      responseId: responseIdentity.responseId,
+      signal,
     });
-
-    res.json({
-      data: maybeAttachDebugTrailieContext(
-        {
-          ...response,
-          hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts || astroFacts),
-          hasWebSearch: !!webSearchFacts,
-          parkName: displayMeta.parkName,
-          parkNames: displayMeta.parkNames,
-          confidence,
-          planScore,
-          intent: intent?.primaryIntent || null,
-          parkImages: displayMeta.parkImages,
-          activeTripContext: buildClientActiveTripContext({
-            activeTripContext,
-            assistantContent: response.content,
-            resolvedMetadata,
-            openEndedDiscovery,
-            hasItinerary: !!itineraryData,
-          }),
-          showDayByDayPlanCta: shouldShowDayByDayPlanCta({
-            openEndedDiscovery,
-            userRequestedItinerary,
-            hasItinerary: !!itineraryData,
-            discoveryRefinement,
-            dayByDayPlanIntake: Boolean(resolvedMetadata.dayByDayPlanIntake),
-            lastUserMessage: lastMsg,
-            namedParkCount: allExtractedParks.length,
-          }),
-        },
-        trailieContext
-      ),
+    const v2Telemetry = summarizeTrailieTelemetry(v2Result);
+    console.log('[AI][Trailie]', JSON.stringify(v2Telemetry));
+    // Same continuity write as the streaming handler (non-stream fallback path).
+    if (v2Result.status === 'complete' && v2Result.canonicalPlan && req.user?._id) {
+      rememberConversationPlan({
+        userId: req.user._id,
+        responseId: responseIdentity.responseId,
+        content: v2Content,
+        canonicalPlan: v2Result.canonicalPlan,
+      }).catch((err) => console.warn('[AI] conversation-plan remember failed:', err.message));
+    }
+    transport.responseFinalized({
+      content: v2Content,
+      provider: 'openai',
+      model: v2Telemetry.model || null,
+      responseId: responseIdentity.responseId,
+      responseVersion: responseIdentity.responseVersion,
+      hasItinerary: !!v2Result.canonicalPlan,
+      itinerary: v2Result.canonicalPlan || null,
+      itineraryData: v2Result.canonicalPlan || null,
+      itineraryHash: v2Result.itineraryHash || null,
+      travelLogistics: v2Result.travelLogistics ?? null,
+      responseArtifacts: v2Result.responseArtifacts ?? null,
+      planningState: planningStateWithTravelerJob(preparedContext, v2Result),
+      intent: v2Result.intent ?? null,
+      presentation: v2Result.presentation ?? null,
+      // WP-TU Phase 3 Task 7B — additive only, alongside the legacy
+      // `planningState`/`activeTripContext` fields above (which are stale
+      // pre-Task-7-correction, see `planningStateWithTravelerJob`). This is
+      // the FINAL, already-gated (preserve/set) destination for this turn.
+      activeTripPresentation: v2Result.activeTripPresentation ?? null,
+      // WP-TU Phase 4 Task 10 — same additive-field pattern as
+      // activeTripPresentation (Task 7B) immediately above.
+      targetTripId: v2Result.targetTripId ?? null,
+      // WP-TU Phase 4 Task 10D — additive only, alongside (never replacing)
+      // `canonicalPlan` above (which stays whatever the active trip's own
+      // turn produced — null on a cross-plan turn). Authenticated call
+      // sites only: guest sessions never reach candidate-plan discovery, so
+      // `v2Result.targetPlanMutation` is always null for them and this field
+      // is deliberately NOT threaded through the guest call sites.
+      targetPlanMutation: v2Result.targetPlanMutation ?? null,
+      trailieV2: v2Telemetry,
     });
-
+    return;
   } catch (error) {
     // Structured error logging
     logAIRequest({
@@ -2634,6 +2657,8 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
       errorType: error.type || 'unknown',
       suggestion: 'Please try again in a moment or switch providers'
     });
+  } finally {
+    cleanup();
   }
 });
 
@@ -2647,16 +2672,53 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
       hasMetadata: !!req.body.metadata,
     });
 
-    const { signal, cleanup } = attachClientDisconnectAbort(req);
+    await hydrateStoredPriorResponseVersion(req.body, '[AI Stream]');
+
+    // Stage 14.1 §2 — ONE identity per logical turn, minted at admission (before
+    // Phase A). Both revisions and any terminal failure response reuse it.
+    const responseIdentity = createTurnResponseIdentity({
+      priorResponseVersion: readPriorResponseVersion(req.body),
+    });
+
+    const { signal, cleanup } = attachClientDisconnectAbort(req, res);
     try {
       setSseHeaders(res);
-      writeSseEvent(res, {
-        type: 'thinking',
-        sources: [],
-        parkName: req.body.metadata?.parkName || null,
-        parkNames: [],
+
+      // ── WP10B — resolve the wire dialect once and build ONE transport adapter as
+      // the single serialization sink for this connection. Fails closed to legacy,
+      // so every existing client is unaffected until it opts into v2.
+      const dialect = resolveTrailieTransportDialect(req);
+      const transport = createTrailieTransportAdapter({
+        dialect,
+        mode: 'stream',
+        emit: (payload) => writeSseEvent(res, payload),
       });
 
+      // ── Stage 14.2/14.2A — early revision events (authenticated streaming ONLY) ──
+      // The early-event machinery keeps its flag/tool-first GENERATION gating and its
+      // once/timing bookkeeping; the transport adapter decides whether each canonical
+      // event is serialized for this dialect (v2) or suppressed (legacy terminal-only).
+      const genConfig = getItineraryGenerationConfig();
+      const earlyEvents = createEarlyEventEmitter({
+        emit: (payload) => routeEarlyEventToTransport(transport, payload),
+        enabled: genConfig.earlyItineraryEvents && genConfig.isToolFirst,
+      });
+      // §5 — if the connection is already gone, abort BEFORE Phase A: zero provider calls.
+      if (signal?.aborted || res.writableEnded) { cleanup(); return; }
+
+      let revisionOne = null;
+      let revisionOneSnapshot = null;
+
+      // §5 — `response_started` at TURN ADMISSION (v2), or the initial `thinking`
+      // carrying the destination display metadata (legacy). ONE canonical call; the
+      // adapter renders it for the dialect.
+      transport.responseStarted({
+        responseId: responseIdentity.responseId,
+        requiresStructuredItinerary: null, // resolved later; itinerary_ready is authoritative
+        display: { parkName: req.body.metadata?.parkName || null, parkNames: [] },
+      });
+
+      const preparedContext = await prepareChatContext(req.body, '[AI Stream]', { req });
       let {
         provider,
         responseMode,
@@ -2689,218 +2751,100 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
         trailieContext,
         userRequestedItinerary,
         activeTripContext,
-      } = await prepareChatContext(req.body, '[AI Stream]', { req });
+      } = preparedContext;
 
       if (preflightResult.blockers.length > 0) {
         const blockerMsg = preflightResult.blockers.map((b) => `- ${b}`).join('\n');
-        writeSseEvent(res, {
-          type: 'done',
+        transport.responseFinalized({
           content: `📍 **Can't plan this trip yet:**\n${blockerMsg}\n\nAdjust your dates or destination and try again.`,
           provider: 'system',
         });
         res.end();
         return;
       }
+      // Canonical Trailie; availability gating applies only at the deployment boundary.
+      if (!isTrailieRuntimeEnabled()) {
+        transport.error({
+          code: 'trailie_runtime_disabled',
+          message: 'Trailie AI runtime unavailable',
+        });
+        res.end();
+        return;
+      }
 
-      const personalizedRecommendations = req.body.metadata?.personalizedRecommendations === true;
-      const skipUserContext = req.body.metadata?.skipUserContext === true;
-      const userContext = skipUserContext ? '' : await buildUserContext(req.user);
-      enhancedSystemPrompt = appendUserContextToPrompt(
-        enhancedSystemPrompt,
-        userContext,
-        personalizedRecommendations
-      );
-
-      const dataSources = [];
-      if (npsFacts) dataSources.push('nps');
-      if (weatherFacts) dataSources.push('weather');
-      if (webSearchFacts) dataSources.push('web');
-      writeSseEvent(res, {
-        type: 'thinking',
-        sources: dataSources,
+      const v2Binder = createTrailieStreamEventBinder({
+        transport,
+        responseIdentity,
+        parkName: resolvedMetadata.parkName || null,
+        parkCode: resolvedMetadata.parkCode || null,
+        provider: 'openai',
+        getDisplay: () => ({
+          parkName: resolvedMetadata.parkName || null,
+          parkNames: parkNames || [],
+          parkImages: [],
+        }),
+      });
+      await persistCommittedTripMutation({
+        message: latestUserText(req.body.messages),
+        preparedContext,
+      });
+      const { result: v2Result, content: v2Content } = await runTrailieFromPreparedContext({
+        preparedContext,
+        messages: req.body.messages,
+        signal,
+        emitCanonicalEvent: v2Binder.emitCanonicalEvent,
+        // WP-TU Phase 4 Task 10E — the ONE identity this turn already has;
+        // never a second mint downstream.
+        responseId: responseIdentity.responseId,
+      });
+      const v2Telemetry = summarizeTrailieTelemetry(v2Result);
+      console.log('[AI Stream][Trailie]', JSON.stringify(v2Telemetry));
+      // Plan continuity for authenticated-unsaved conversations: remember the
+      // accepted server-authored plan so the NEXT turn can refine instead of
+      // regenerating, whether or not the traveler ever presses Save.
+      if (v2Result.status === 'complete' && v2Result.canonicalPlan && req.user?._id) {
+        rememberConversationPlan({
+          userId: req.user._id,
+          responseId: responseIdentity.responseId,
+          content: v2Content,
+          canonicalPlan: v2Result.canonicalPlan,
+        }).catch((err) => console.warn('[AI Stream] conversation-plan remember failed:', err.message));
+      }
+      v2Binder.ensureDisplayContent(v2Content);
+      const streamed = v2Binder.getStreamedContent();
+      const contentUnchanged = streamed.length > 0 && streamed === v2Content;
+      if (contentUnchanged) transport.contentStreamEnded();
+      transport.responseFinalized({
+        contentUnchanged,
+        content: v2Content,
+        responseId: responseIdentity.responseId,
+        responseVersion: responseIdentity.responseVersion,
+        provider: 'openai',
+        model: v2Telemetry.model || null,
+        hasItinerary: !!v2Result.canonicalPlan,
+        itinerary: v2Result.canonicalPlan || null,
+        itineraryData: v2Result.canonicalPlan || null,
+        canonicalPlan: v2Result.canonicalPlan || null,
+        itineraryHash: v2Result.itineraryHash || null,
+        travelLogistics: v2Result.travelLogistics ?? null,
+        responseArtifacts: v2Result.responseArtifacts ?? null,
+        planningState: planningStateWithTravelerJob(preparedContext, v2Result),
+        intent: v2Result.intent ?? null,
+        presentation: v2Result.presentation ?? null,
+        // WP-TU Phase 3 Task 7B — additive only; see the non-stream /chat call site.
+        activeTripPresentation: v2Result.activeTripPresentation ?? null,
+        // WP-TU Phase 4 Task 10 — same additive-field pattern as
+        // activeTripPresentation (Task 7B) immediately above.
+        targetTripId: v2Result.targetTripId ?? null,
+        // WP-TU Phase 4 Task 10D — see the non-stream /chat call site; guest
+        // paths deliberately excluded (never populated for them).
+        targetPlanMutation: v2Result.targetPlanMutation ?? null,
+        trailieV2: v2Telemetry,
         parkName: resolvedMetadata.parkName || null,
         parkNames: parkNames || [],
-        parkImages: attachParkImages ? parkImages : [],
       });
-
-      const streamResult = await streamRawLLMToSse(res, {
-        anthropic,
-        openai,
-        provider,
-        model,
-        temperature,
-        maxTokens,
-        top_p,
-        enhancedSystemPrompt,
-        augmentedMessages,
-        signal,
-      });
-
-      if (signal.aborted || streamResult?.aborted) {
-        res.end();
-        return;
-      }
-
-      if (!streamResult?.fullContent) {
-        res.end();
-        return;
-      }
-
-      writeSseEvent(res, { type: 'stream_end' });
-
-      let response = {
-        content: streamResult.fullContent,
-        provider: streamResult.provider,
-        model: streamResult.model,
-        usage: streamResult.usage,
-      };
-
-      const processed = await processAssistantResponse({
-        response,
-        lastMsg,
-        npsFacts,
-        weatherFacts,
-        webSearchFacts,
-        astroFacts,
-        feeFreeFacts,
-        noParkDetected,
-        constraints,
-        conflicts,
-        hypothetical,
-        provider: response.provider,
-        model: response.model,
-        maxTokens,
-        temperature,
-        top_p,
-        enhancedSystemPrompt,
-        augmentedMessages,
-        req,
-        parksForLinks: allExtractedParks,
-        trailieContext,
-        responseMode,
-        options: {
-          ...STREAM_POST_PROCESS_OPTIONS,
-          enableRegeneration: userRequestedItinerary,
-          userRequestedItinerary,
-          logPrefix: '[AI Stream]',
-        },
-      });
-
-      response.content = processed.cleanContent;
-
-      const auditTrail = buildAuditTrail({
-        provider: response.provider,
-        model: response.model,
-        responseMode,
-        confidence: processed.confidence,
-        planScore: processed.planScore,
-        correctionsApplied: processed.correctionsApplied,
-        npsFacts,
-        weatherFacts,
-        webSearchFacts,
-        astroFacts,
-        feeFreeFacts,
-      });
-
-      void saveStreamItineraryToTrip(req, processed.itineraryData, {
-        reviewMeta: processed.reviewMeta,
-        auditTrail,
-        parkName: req.body.metadata?.parkName || resolvedMetadata.parkName,
-        parkCode: req.body.metadata?.parkCode || resolvedMetadata.parkCode,
-      });
-
-      const displayMeta = await finalizeParkImagesAndMetadata({
-        validatedContent: response.content,
-        resolvedMetadata,
-        parkNamesFromUser: parkNames,
-        parkImages,
-        alreadyShownImages,
-        attachParkImages,
-        openEndedDiscovery,
-        logPrefix: '[AI Stream]',
-      });
-
-      const { cleanContent: strippedStreamContent } = extractItineraryJSON(streamResult.fullContent);
-      const contentUnchanged = computeContentUnchanged(processed, strippedStreamContent);
-
-      writeSseEvent(
-        res,
-        maybeAttachDebugTrailieContext(
-          {
-            type: 'done',
-            contentUnchanged,
-            ...(contentUnchanged ? {} : { content: response.content }),
-            provider: response.provider,
-            model: response.model,
-            hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts || astroFacts),
-            hasWebSearch: !!webSearchFacts,
-            parkName: displayMeta.parkName,
-            parkNames: displayMeta.parkNames,
-            hasItinerary: !!processed.itineraryData,
-            itineraryData: processed.itineraryData || null,
-            confidence: processed.confidence,
-            planScore: processed.planScore,
-            intent: intent?.primaryIntent || null,
-            parkImages: displayMeta.parkImages,
-            activeTripContext: buildClientActiveTripContext({
-              activeTripContext,
-              assistantContent: response.content,
-              resolvedMetadata,
-              openEndedDiscovery,
-              hasItinerary: !!processed.itineraryData,
-            }),
-            showDayByDayPlanCta: shouldShowDayByDayPlanCta({
-              openEndedDiscovery,
-              userRequestedItinerary,
-              hasItinerary: !!processed.itineraryData,
-              discoveryRefinement,
-              dayByDayPlanIntake: Boolean(resolvedMetadata.dayByDayPlanIntake),
-              lastUserMessage: lastMsg,
-              namedParkCount: allExtractedParks.length,
-            }),
-          },
-          trailieContext
-        )
-      );
       res.end();
-
-      const requestEndTime = Date.now();
-      extractParksMentioned(response.content || '')
-        .then((parksMentioned) => {
-          logAIRequest({
-            endpoint: 'chat-stream',
-            userId: req.user?.id || null,
-            provider: response.provider,
-            model: response.model,
-            durationMs: requestEndTime - requestStartTime,
-            promptHash: crypto.createHash('sha256').update(enhancedSystemPrompt).digest('hex').slice(0, 12),
-            blocks: {
-              npsFacts: !!npsFacts,
-              weatherFacts: !!weatherFacts,
-              webSearch: !!webSearchFacts,
-              feeFree: !!(feeFreeFacts && feeFreeFacts.hasOverlap),
-              constraints: constraints.hasConstraints,
-              preflight: { blockers: preflightResult.blockers.length, warnings: preflightResult.warnings.length },
-              conflicts: conflicts.length,
-              hypothetical: hypothetical.isHypothetical,
-              intent: intent?.primaryIntent || null,
-              userContext: !!req.user,
-            },
-            park: resolvedMetadata.parkCode
-              ? { code: resolvedMetadata.parkCode, name: resolvedMetadata.parkName }
-              : null,
-            messageCount: augmentedMessages.length,
-            promptTokenEstimate: Math.round(enhancedSystemPrompt.length / 4),
-            tokens: response.usage || null,
-            response: {
-              length: response.content?.length || 0,
-              hasItinerary: !!processed.itineraryData,
-              parksMentioned,
-            },
-            error: null,
-          });
-        })
-        .catch(() => {});
+      return;
     } finally {
       cleanup();
     }
@@ -2918,9 +2862,51 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
 });
 
 
-// Anonymous streaming chat — SSE for guests (same 5-message limit as chat-anonymous)
+/**
+ * Stage 14.8A.2 §11 — bounded refusal payload for a guest turn that was never
+ * admitted, so the browser can always clear its optimistic pending state.
+ *
+ * Exhaustion keeps the existing conversion UX. Every other refusal is a short
+ * code. Nothing here exposes provider credentials, raw provider errors, stack
+ * traces, or internal session identifiers.
+ */
+function respondGuestTurnRefused(res, { refusal, anonymousId, lastUserMessageContent }) {
+  if (refusal.code === GUEST_ROUTE_CODES.EXHAUSTED) {
+    const guestChatUrl = buildGuestChatPublicUrl(anonymousId);
+    const conversionContent = buildAnonymousConversionMessage({
+      anonymousId,
+      lastUserMessageContent,
+    });
+
+    return res.json({
+      data: {
+        content: conversionContent,
+        provider: 'system',
+        model: 'conversion',
+        isConversionMessage: true,
+        anonymousId,
+        messageCount: refusal.completedGuestTurns,
+        canSendMore: false,
+        remainingAllowance: 0,
+        guestChatUrl,
+      },
+    });
+  }
+
+  const status = refusal.code === GUEST_ROUTE_CODES.IN_PROGRESS ? 409 : 410;
+  return res.status(status).json({
+    error: refusal.code,
+    anonymousId,
+    messageCount: refusal.completedGuestTurns,
+    canSendMore: refusal.canSendMore,
+    remainingAllowance: refusal.remainingAllowance,
+  });
+}
+
+// Anonymous streaming chat — SSE for guests (five COMPLETED turns, Stage 14.8A.2)
 router.post('/chat-anonymous-stream', async (req, res) => {
   let anonymousId;
+  let guestTurn = null;
   const requestStartTime = Date.now();
   try {
     console.log('[AI] Anonymous stream request received:', {
@@ -2939,6 +2925,7 @@ router.post('/chat-anonymous-stream', async (req, res) => {
       systemPrompt,
       metadata = {},
       anonymousId: clientAnonymousId,
+      clientTurnId,
     } = req.body;
 
     if (!provider || provider === 'auto') {
@@ -2946,23 +2933,11 @@ router.post('/chat-anonymous-stream', async (req, res) => {
       console.log(`[AI] Anonymous stream auto-routed to provider: ${provider}`);
     }
 
-    let ipAddress;
-    let userAgent;
-    let browserFingerprint;
-
-    if (clientAnonymousId) {
-      anonymousId = clientAnonymousId;
-      const requestData = generateAnonymousIdFromRequest(req);
-      ipAddress = requestData.ipAddress;
-      userAgent = requestData.userAgent;
-      browserFingerprint = requestData.browserFingerprint;
-    } else {
-      const requestData = generateAnonymousIdFromRequest(req);
-      anonymousId = requestData.anonymousId;
-      ipAddress = requestData.ipAddress;
-      userAgent = requestData.userAgent;
-      browserFingerprint = requestData.browserFingerprint;
-    }
+    // Session authority is the bounded V2 bearer ID only. IP, UA, and header
+    // fingerprint remain operational metadata and never select guest state.
+    const requestIdentity = resolveAnonymousRequestIdentity(req, clientAnonymousId);
+    anonymousId = requestIdentity.anonymousId;
+    const { ipAddress, userAgent, browserFingerprint } = requestIdentity;
 
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({ error: 'Messages array is required' });
@@ -2975,58 +2950,110 @@ router.post('/chat-anonymous-stream', async (req, res) => {
       parkName: metadata.parkName || 'General Planning',
       parkCode: metadata.parkCode,
       formData: metadata.formData || {},
+      entryContext: hasSemanticTrailieEntryContext(metadata.entryContext)
+        ? normalizeTrailieEntryContext(metadata.entryContext).context
+        : undefined,
     };
 
-    let session = await AnonymousSession.findOrCreateSession(anonymousId, sessionData);
+    const { selectGuestConversation, validateConversationId } = require('../utils/guestConversationScope');
+    const conversationId = validateConversationId(metadata.guestConversationId);
+    const guestSession = await AnonymousSession.findOrCreateSession(anonymousId, sessionData);
+    if (conversationId && guestSession.conversationConversions?.[conversationId]) {
+      return res.status(409).json({ error: 'This conversation has already been saved. Open your saved trip to continue.' });
+    }
+    const session = conversationId ? {
+      ...guestSession.toObject(), ...selectGuestConversation(guestSession, conversationId),
+      entryContext: null, formData: metadata.formData || {}, parkName: metadata.parkName,
+    } : guestSession;
+    const incomingEntryContext = normalizeTrailieEntryContext(metadata.entryContext).context;
+    const freshGuestEntry = !conversationId && shouldStartFreshGuestEntry({ incoming: incomingEntryContext, persisted: session.entryContext });
+    if (freshGuestEntry) {
+      // Keep the authoritative turn ledger (quota) but start a clean semantic
+      // conversation so an unrelated destination/plan cannot cross a CTA.
+      session.messages = [];
+      session.messageCount = 0;
+      session.planningState = undefined;
+    }
+    if (hasSemanticTrailieEntryContext(incomingEntryContext)) {
+      session.entryContext = incomingEntryContext;
+      metadata.entryContext = incomingEntryContext;
+      if (!conversationId) await session.save();
+    } else if (session.entryContext) {
+      metadata.entryContext = session.entryContext;
+    }
+    if (!freshGuestEntry && session.planningState && !metadata.planningState) {
+      metadata.planningState = session.planningState;
+    }
 
     const lastUserMessage = messages[messages.length - 1];
-    if (lastUserMessage && lastUserMessage.role === 'user') {
-      session = await session.addMessage({
+
+    // Stage 14.8A.2 §5 — atomic admission. This creates exactly ONE pending
+    // logical turn and consumes ZERO quota; the user message is held on the
+    // turn record, not appended to completed history. The allowance, the
+    // one-pending-turn rule, and clientTurnId de-duplication are verified in a
+    // single conditional update, so two tabs cannot both be admitted and the
+    // sixth attempt is blocked BEFORE any provider reservation, construction,
+    // dispatch, or external network access.
+    guestTurn = await openGuestTurn({
+      anonymousId: session.anonymousId,
+      clientTurnId,
+      userMessage: {
         role: 'user',
-        content: lastUserMessage.content,
-        timestamp: new Date(),
-      });
-      session = await AnonymousSession.findOne({ anonymousId });
-    }
+        content: lastUserMessage?.role === 'user' ? lastUserMessage.content : '',
+        ...(conversationId ? { conversationId } : {}),
+      },
+      trusted: !!req.isTrustedMcp,
+    });
 
-    if (!req.isTrustedMcp && !session.canSendMessage()) {
-      const lastUserMessageContent = lastUserMessage?.content || '';
-      const guestChatUrl = buildGuestChatPublicUrl(session.anonymousId);
-      const conversionContent = buildAnonymousConversionMessage({
+    if (!guestTurn.admitted) {
+      return respondGuestTurnRefused(res, {
+        refusal: guestTurn.refusal,
         anonymousId: session.anonymousId,
-        lastUserMessageContent,
-      });
-
-      const userMessageCount = session.messages.filter((msg) => msg.role === 'user').length;
-
-      return res.json({
-        data: {
-          content: conversionContent,
-          provider: 'system',
-          model: 'conversion',
-          isConversionMessage: true,
-          anonymousId: session.anonymousId,
-          messageCount: userMessageCount,
-          canSendMore: false,
-          guestChatUrl,
-        },
+        lastUserMessageContent: lastUserMessage?.content || '',
       });
     }
 
-    const { signal, cleanup } = attachClientDisconnectAbort(req);
+    const { signal, cleanup } = attachClientDisconnectAbort(req, res);
     try {
       setSseHeaders(res);
-      writeSseEvent(res, {
-        type: 'thinking',
-        sources: [],
-        parkName: metadata.parkName || null,
-        parkNames: [],
+
+      // ── WP10D — resolve the wire dialect once and build ONE stream-mode transport
+      // adapter as the single serialization sink for this guest connection. Fails
+      // closed to legacy, so every existing anonymous client is unaffected until it
+      // opts into v2. Anonymous gains NO authenticated revision/persistence or typed
+      // early events — this replaces transport ownership only, not the guest lifecycle.
+      const dialect = resolveTrailieTransportDialect(req);
+      const transport = createTrailieTransportAdapter({
+        dialect,
+        mode: 'stream',
+        emit: (payload) => writeSseEvent(res, payload),
+      });
+
+      // Guest turns still mint a response identity so v2 itinerary_ready can
+      // publish a Stage-14 revision-1 envelope the client can validate/reveal.
+      const responseIdentity = createTurnResponseIdentity({
+        priorResponseVersion: readPriorResponseVersion({ metadata }),
+      });
+
+      // The initial `thinking` carrying the destination display metadata (legacy),
+      // or `response_started` at admission (v2). ONE canonical call; the adapter
+      // renders it for the dialect.
+      transport.responseStarted({
+        responseId: responseIdentity.responseId,
+        display: { parkName: metadata.parkName || null, parkNames: [] },
       });
 
       const ctx = await prepareChatContext(
         { messages, provider, model, temperature, top_p, maxTokens, systemPrompt, metadata },
         '[AI Anon Stream]',
-        { isAnonymous: true, isTrustedMcp: !!req.isTrustedMcp, req }
+        {
+          isAnonymous: true,
+          isTrustedMcp: !!req.isTrustedMcp,
+          req,
+          // Read AFTER the fresh-entry reset above, so a plan from a previous
+          // guest conversation can never leak across a CTA entry.
+          persistedConversationPlan: latestCanonicalPlanFromMessages(session.messages),
+        }
       );
 
       let {
@@ -3072,211 +3099,177 @@ router.post('/chat-anonymous-stream', async (req, res) => {
       maxTokens = ctxMaxTokens;
 
       if (anonPreflightResult.blockers.length > 0) {
+        // Stage 14.8A.2 §7 — a preflight blocker is an input rejection, not a
+        // completed logical turn: no provider ran and no assistant response was
+        // generated. The reservation is released so the guest can immediately
+        // correct the request, and quota is unchanged.
         const blockerMsg = anonPreflightResult.blockers.map((b) => `- ${b}`).join('\n');
-        const userMessageCount = session.messages.filter((msg) => msg.role === 'user').length;
-        writeSseEvent(res, {
-          type: 'done',
+        await guestTurn.fail(GUEST_TURN_FAILURE_CODES.PREFLIGHT_BLOCKED);
+        const quota = await readGuestQuota(session.anonymousId);
+        transport.responseFinalized({
           content: `📍 **Can't plan this trip yet:**\n${blockerMsg}\n\nAdjust your dates or destination and try again.`,
           provider: 'system',
           anonymousId: session.anonymousId,
-          messageCount: userMessageCount,
-          canSendMore: session.canSendMessage(),
+          messageCount: quota.completedGuestTurns,
+          canSendMore: quota.remainingAllowance > 0,
+          remainingAllowance: quota.remainingAllowance,
         });
         res.end();
         return;
       }
 
-      const dataSources = [];
-      if (npsFacts) dataSources.push('nps');
-      if (weatherFacts) dataSources.push('weather');
-      if (webSearchFacts) dataSources.push('web');
-      writeSseEvent(res, {
-        type: 'thinking',
-        sources: dataSources,
+      // Canonical Trailie; availability gating applies only at the deployment boundary.
+      if (!isTrailieRuntimeEnabled()) {
+        await guestTurn.fail(GUEST_TURN_FAILURE_CODES.BACKEND_EXCEPTION);
+        transport.error({
+          code: 'trailie_runtime_disabled',
+          message: 'Trailie AI runtime unavailable',
+        });
+        res.end();
+        return;
+      }
+
+      const v2Binder = createTrailieStreamEventBinder({
+        transport,
+        responseIdentity,
+        parkName: resolvedMetadata.parkName || null,
+        parkCode: resolvedMetadata.parkCode || null,
+        provider: 'openai',
+        getDisplay: () => ({
+          parkName: resolvedMetadata.parkName || null,
+          parkNames: anonParkNames || [],
+          parkImages: [],
+        }),
+      });
+      await persistCommittedTripMutation({
+        message: latestUserText(messages),
+        preparedContext: ctx,
+        session: conversationId ? null : session,
+      });
+      const { result: v2Result, content: v2Content } = await runTrailieFromPreparedContext({
+        preparedContext: ctx,
+        messages,
+        signal,
+        emitCanonicalEvent: v2Binder.emitCanonicalEvent,
+      });
+      const v2Telemetry = summarizeTrailieTelemetry(v2Result);
+      console.log('[AI Anon Stream][Trailie]', JSON.stringify(v2Telemetry));
+      v2Binder.ensureDisplayContent(v2Content);
+
+      if (signal?.aborted) {
+        await guestTurn.fail(GUEST_TURN_FAILURE_CODES.CLIENT_DISCONNECTED);
+        res.end();
+        return;
+      }
+
+      // Phase 9C.1D.5B.2 — an intentional semantic terminal (named experience
+      // unavailable, drive-cap infeasible, evidence incomplete, unresolved plan
+      // target) is a completed ANSWER, not a provider failure: it takes the
+      // normal atomic completion below so it persists and restores on reload.
+      const semanticTerminal = v2Result.status !== 'complete' && isCompletedSemanticTerminal(v2Result, v2Content);
+      if (v2Result.status !== 'complete' && !semanticTerminal) {
+        await guestTurn.fail(GUEST_TURN_FAILURE_CODES.PROVIDER_FAILURE);
+        const quota = await readGuestQuota(session.anonymousId);
+        const streamedFail = v2Binder.getStreamedContent();
+        const failUnchanged = streamedFail.length > 0 && streamedFail === v2Content;
+        if (failUnchanged) transport.contentStreamEnded();
+        finalizeTrailieNonCompleteResponse({
+          transport,
+          v2Result,
+          terminalPayload: {
+            contentUnchanged: failUnchanged,
+            content: v2Content,
+            provider: 'trailie-v2',
+            anonymousId: session.anonymousId,
+            messageCount: quota.completedGuestTurns,
+            canSendMore: quota.remainingAllowance > 0,
+            remainingAllowance: quota.remainingAllowance,
+            trailieV2: v2Telemetry,
+            planningState: planningStateWithTravelerJob(ctx, v2Result),
+          },
+        });
+        res.end();
+        return;
+      }
+
+      // A semantic terminal dispatched no model: record it as the runtime's own answer.
+      const v2Provider = semanticTerminal ? 'trailie-v2' : 'openai';
+      const v2Model = semanticTerminal ? null : (v2Telemetry.model || null);
+      const v2Completion = await guestTurn.complete({
+        role: 'assistant',
+        content: v2Content,
+        provider: v2Provider,
+        model: v2Model,
+        responseTime: Date.now() - requestStartTime,
+        travelLogistics: v2Result.travelLogistics ?? null,
+        canonicalPlan: v2Result.canonicalPlan || null,
+        responseArtifacts: v2Result.responseArtifacts ?? null,
+        intent: v2Result.intent ?? null,
+        presentation: v2Result.presentation ?? null,
+        // WP-TU Phase 3 Task 8B — persist the same additive field Task 7B
+        // already put on the live response, so it survives a cold reload.
+        activeTripPresentation: v2Result.activeTripPresentation ?? null,
+        // WP-TU Phase 4 Task 10 — same additive-field pattern as
+        // activeTripPresentation (Task 7B) immediately above.
+        targetTripId: v2Result.targetTripId ?? null,
+        itineraryHash: v2Result.itineraryHash || null,
+        responseId: responseIdentity.responseId,
+        responseVersion: responseIdentity.responseVersion,
         parkName: resolvedMetadata.parkName || null,
         parkNames: anonParkNames || [],
-        parkImages: anonAttachParkImages ? parkImages : [],
+      }, {
+        planningState: planningStateWithTravelerJob(ctx, v2Result),
       });
-
-      const streamResult = await streamRawLLMToSse(res, {
-        anthropic,
-        openai,
-        provider,
-        model,
-        temperature,
-        maxTokens,
-        top_p,
-        enhancedSystemPrompt,
-        augmentedMessages,
-        signal,
+      const streamed = v2Binder.getStreamedContent();
+      const contentUnchanged = streamed.length > 0 && streamed === v2Content;
+      if (contentUnchanged) transport.contentStreamEnded();
+      transport.responseFinalized({
+        contentUnchanged,
+        content: v2Content,
+        responseId: responseIdentity.responseId,
+        responseVersion: responseIdentity.responseVersion,
+        provider: v2Provider,
+        model: v2Model,
+        anonymousId: session.anonymousId,
+        messageCount: v2Completion.completedGuestTurns,
+        canSendMore: v2Completion.remainingAllowance > 0,
+        remainingAllowance: v2Completion.remainingAllowance,
+        hasItinerary: !!v2Result.canonicalPlan,
+        itinerary: v2Result.canonicalPlan || null,
+        itineraryData: v2Result.canonicalPlan || null,
+        canonicalPlan: v2Result.canonicalPlan || null,
+        itineraryHash: v2Result.itineraryHash || null,
+        travelLogistics: v2Result.travelLogistics ?? null,
+        responseArtifacts: v2Result.responseArtifacts ?? null,
+        planningState: planningStateWithTravelerJob(ctx, v2Result),
+        // WP-TU Phase 3 Task 7B — additive only; see the non-stream /chat call site.
+        activeTripPresentation: v2Result.activeTripPresentation ?? null,
+        // WP-TU Phase 4 Task 10 — same additive-field pattern as
+        // activeTripPresentation (Task 7B) immediately above.
+        targetTripId: v2Result.targetTripId ?? null,
+        intent: v2Result.intent ?? null,
+        presentation: v2Result.presentation ?? null,
+        trailieV2: v2Telemetry,
+        intent: v2Result.intent ?? null,
+        presentation: v2Result.presentation ?? null,
+        trailieV2: v2Telemetry,
+        parkName: resolvedMetadata.parkName || null,
+        parkNames: anonParkNames || [],
       });
-
-      if (signal.aborted || streamResult?.aborted) {
-        res.end();
-        return;
-      }
-
-      if (!streamResult?.fullContent) {
-        res.end();
-        return;
-      }
-
-      writeSseEvent(res, { type: 'stream_end' });
-
-      let response = {
-        content: streamResult.fullContent,
-        provider: streamResult.provider,
-        model: streamResult.model,
-        usage: streamResult.usage,
-      };
-
-      const processed = await processAssistantResponse({
-        response,
-        lastMsg,
-        npsFacts,
-        weatherFacts,
-        webSearchFacts,
-        astroFacts,
-        feeFreeFacts,
-        noParkDetected: anonNoParkDetected,
-        constraints: anonConstraints,
-        conflicts: anonConflicts,
-        hypothetical: anonHypothetical,
-        provider: response.provider,
-        model: response.model,
-        maxTokens,
-        temperature,
-        top_p,
-        enhancedSystemPrompt,
-        augmentedMessages,
-        req,
-        parksForLinks: allExtractedParks,
-        trailieContext: anonTrailieContext,
-        responseMode: anonResponseMode,
-        options: {
-          ...STREAM_POST_PROCESS_OPTIONS,
-          enableRegeneration: anonUserRequestedItinerary,
-          appendAnonymousWebUpsell: true,
-          isTrustedMcp: !!req.isTrustedMcp,
-          userRequestedItinerary: anonUserRequestedItinerary,
-          logPrefix: '[AI Anon Stream]',
-        },
-      });
-
-      response.content = processed.cleanContent;
-
-      const userMessageCount = session.messages.filter((msg) => msg.role === 'user').length;
-
-      const anonDisplayMeta = await finalizeParkImagesAndMetadata({
-        validatedContent: response.content,
-        resolvedMetadata,
-        parkNamesFromUser: anonParkNames,
-        parkImages,
-        alreadyShownImages: anonAlreadyShownImages,
-        attachParkImages: anonAttachParkImages,
-        openEndedDiscovery: anonOpenEndedDiscovery,
-        logPrefix: '[AI Anon Stream]',
-      });
-
-      const { cleanContent: strippedStreamContent } = extractItineraryJSON(streamResult.fullContent);
-      const contentUnchanged = computeContentUnchanged(processed, strippedStreamContent);
-
-      writeSseEvent(
-        res,
-        maybeAttachDebugTrailieContext(
-          {
-            type: 'done',
-            contentUnchanged,
-            ...(contentUnchanged ? {} : { content: response.content }),
-            provider: response.provider,
-            model: response.model,
-            hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts || astroFacts),
-            hasWebSearch: !!webSearchFacts,
-            parkName: anonDisplayMeta.parkName,
-            parkNames: anonDisplayMeta.parkNames,
-            hasItinerary: !!processed.itineraryData,
-            itineraryData: processed.itineraryData || null,
-            confidence: processed.confidence,
-            planScore: processed.planScore,
-            intent: anonIntent?.primaryIntent || null,
-            parkImages: anonDisplayMeta.parkImages,
-            anonymousId: session.anonymousId,
-            messageCount: userMessageCount,
-            canSendMore: session.canSendMessage(),
-            activeTripContext: buildClientActiveTripContext({
-              activeTripContext: anonActiveTripContext,
-              assistantContent: response.content,
-              resolvedMetadata,
-              openEndedDiscovery: anonOpenEndedDiscovery,
-              hasItinerary: !!processed.itineraryData,
-            }),
-            showDayByDayPlanCta: shouldShowDayByDayPlanCta({
-              openEndedDiscovery: anonOpenEndedDiscovery,
-              userRequestedItinerary: anonUserRequestedItinerary,
-              hasItinerary: !!processed.itineraryData,
-              discoveryRefinement: anonDiscoveryRefinement,
-              dayByDayPlanIntake: Boolean(resolvedMetadata.dayByDayPlanIntake),
-              lastUserMessage: lastMsg,
-              namedParkCount: allExtractedParks.length,
-            }),
-          },
-          anonTrailieContext
-        )
-      );
       res.end();
-
-      const anonRequestEndTime = Date.now();
-      void session
-        .addMessage({
-          role: 'assistant',
-          content: response.content,
-          provider: response.provider,
-          model: response.model,
-          responseTime: Date.now() - session.lastActivity,
-        })
-        .catch((err) => console.error('[AI Anon Stream] Session save error:', err.message));
-
-      extractParksMentioned(response.content || '')
-        .then((anonParksMentioned) => {
-          logAIRequest({
-            endpoint: 'chat-anonymous-stream',
-          userId: null,
-          provider: response.provider,
-          model: response.model,
-          durationMs: anonRequestEndTime - requestStartTime,
-          promptHash: crypto.createHash('sha256').update(enhancedSystemPrompt).digest('hex').slice(0, 12),
-          blocks: {
-            npsFacts: !!npsFacts,
-            weatherFacts: !!weatherFacts,
-            webSearch: !!webSearchFacts,
-            feeFree: !!(feeFreeFacts && feeFreeFacts.hasOverlap),
-            candidateParks: anonCandidateParksBlock,
-            constraints: anonConstraints.hasConstraints,
-            preflight: { blockers: anonPreflightResult.blockers.length, warnings: anonPreflightResult.warnings.length },
-            conflicts: anonConflicts.length,
-            hypothetical: anonHypothetical.isHypothetical,
-            intent: anonIntent?.primaryIntent || null,
-            userContext: false,
-          },
-          park: resolvedMetadata.parkCode ? { code: resolvedMetadata.parkCode, name: resolvedMetadata.parkName } : null,
-          cityDetected: anonUserCity?.name || null,
-          messageCount: augmentedMessages.length,
-          promptTokenEstimate: Math.round(enhancedSystemPrompt.length / 4),
-          tokens: response.usage || null,
-          response: {
-            length: response.content?.length || 0,
-            hasItinerary: !!processed.itineraryData,
-            mentionsFeeFree: /fee.free|free\s+entrance/i.test(response.content || ''),
-            parksMentioned: anonParksMentioned,
-          },
-          error: null,
-        });
-        })
-        .catch(() => {});
+      return;
     } finally {
       cleanup();
     }
   } catch (error) {
+    // Stage 14.8A.2 §7 — any exception after admission releases the pending
+    // reservation without consuming quota.
+    if (guestTurn?.admitted) {
+      await guestTurn
+        .fail(classifyGuestTurnFailure(error))
+        .catch((err) => console.error('[AI Anon Stream] Turn release error:', err.message));
+    }
+
     logAIRequest({
       endpoint: 'chat-anonymous-stream',
       userId: null,
@@ -3287,19 +3280,33 @@ router.post('/chat-anonymous-stream', async (req, res) => {
     });
 
     if (res.headersSent) {
-      res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+      res.write(`data: ${JSON.stringify({ type: 'error', code: GUEST_ROUTE_CODES.FAILED })}\n\n`);
       return res.end();
     }
 
     console.error('[AI Anon Stream] Error:', error.message);
-    return res.status(500).json({ error: 'Failed to start anonymous AI stream', details: error.message });
+    return res.status(500).json({ error: GUEST_ROUTE_CODES.FAILED });
+  } finally {
+    // Stage 14.8A.2 §7 — the safety net for every remaining exit. A no-op once
+    // the turn completed or failed; otherwise the reservation is released so no
+    // pending turn can outlive its request and block the guest.
+    if (guestTurn?.admitted) {
+      await guestTurn
+        .settle(GUEST_TURN_FAILURE_CODES.BACKEND_EXCEPTION)
+        .catch((err) => console.error('[AI Anon Stream] Turn settle error:', err.message));
+    }
   }
 });
 
-// Anonymous chat endpoint (no auth required)
+// Anonymous chat endpoint (no auth required) — five COMPLETED turns (Stage 14.8A.2)
 router.post('/chat-anonymous', async (req, res) => {
   let anonymousId; // Declared outside try so catch block can access it
+  let guestTurn = null;
   const requestStartTime = Date.now();
+  // Phase 6B.2 — same disconnect-cancellation seam the streaming routes use
+  // (sseStream.js's attachClientDisconnectAbort), extended to the
+  // non-stream routes: previously no signal was constructed here at all.
+  const { signal, cleanup } = attachClientDisconnectAbort(req, res);
   try {
     console.log('[AI] Anonymous chat request received:', {
       provider: req.body.provider,
@@ -3318,7 +3325,8 @@ router.post('/chat-anonymous', async (req, res) => {
       maxTokens = 8000,
       systemPrompt,
       metadata = {}, // { parkCode, parkName, lat, lon }
-      anonymousId: clientAnonymousId // Use client-provided anonymousId if available
+      anonymousId: clientAnonymousId, // Use client-provided anonymousId if available
+      clientTurnId
     } = req.body;
 
     // Auto-route provider if not explicitly set
@@ -3327,27 +3335,14 @@ router.post('/chat-anonymous', async (req, res) => {
       console.log(`[AI] Anonymous auto-routed to provider: ${provider}`);
     }
 
-    // Use client-provided anonymousId if available, otherwise generate new one
-    // This ensures session persistence across requests
-    let ipAddress, userAgent, browserFingerprint;
-
-    if (clientAnonymousId) {
-      // Client provided an anonymousId - use it and get IP/UA for session data
-      anonymousId = clientAnonymousId;
-      const requestData = generateAnonymousIdFromRequest(req);
-      ipAddress = requestData.ipAddress;
-      userAgent = requestData.userAgent;
-      browserFingerprint = requestData.browserFingerprint;
-      console.log('[AI] Using client-provided anonymousId:', anonymousId);
-    } else {
-      // No client anonymousId - generate new one (first request)
-      const requestData = generateAnonymousIdFromRequest(req);
-      anonymousId = requestData.anonymousId;
-      ipAddress = requestData.ipAddress;
-      userAgent = requestData.userAgent;
-      browserFingerprint = requestData.browserFingerprint;
-      console.log('[AI] Generated new anonymousId:', anonymousId);
-    }
+    const requestIdentity = resolveAnonymousRequestIdentity(req, clientAnonymousId);
+    anonymousId = requestIdentity.anonymousId;
+    const { ipAddress, userAgent, browserFingerprint } = requestIdentity;
+    console.log(
+      requestIdentity.acceptedClientId
+        ? '[AI] Using valid client guest session ID'
+        : '[AI] Minted new guest session ID'
+    );
 
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({ error: 'Messages array is required' });
@@ -3360,53 +3355,88 @@ router.post('/chat-anonymous', async (req, res) => {
       browserFingerprint,
       parkName: metadata.parkName || 'General Planning',
       parkCode: metadata.parkCode,
-      formData: metadata.formData || {}
+      formData: metadata.formData || {},
+      entryContext: hasSemanticTrailieEntryContext(metadata.entryContext)
+        ? normalizeTrailieEntryContext(metadata.entryContext).context
+        : undefined,
     };
 
-    let session = await AnonymousSession.findOrCreateSession(anonymousId, sessionData);
+    const { selectGuestConversation, validateConversationId } = require('../utils/guestConversationScope');
+    const conversationId = validateConversationId(metadata.guestConversationId);
+    const guestSession = await AnonymousSession.findOrCreateSession(anonymousId, sessionData);
+    if (conversationId && guestSession.conversationConversions?.[conversationId]) {
+      return res.status(409).json({ error: 'This conversation has already been saved. Open your saved trip to continue.' });
+    }
+    const session = conversationId ? {
+      ...guestSession.toObject(), ...selectGuestConversation(guestSession, conversationId),
+      entryContext: null, formData: metadata.formData || {}, parkName: metadata.parkName,
+    } : guestSession;
+    const incomingEntryContext = normalizeTrailieEntryContext(metadata.entryContext).context;
+    const freshGuestEntry = !conversationId && shouldStartFreshGuestEntry({ incoming: incomingEntryContext, persisted: session.entryContext });
+    if (freshGuestEntry) {
+      session.messages = [];
+      session.messageCount = 0;
+      session.planningState = undefined;
+    }
+    if (hasSemanticTrailieEntryContext(incomingEntryContext)) {
+      session.entryContext = incomingEntryContext;
+      metadata.entryContext = incomingEntryContext;
+      if (!conversationId) await session.save();
+    } else if (session.entryContext) {
+      metadata.entryContext = session.entryContext;
+    }
+    if (!freshGuestEntry && session.planningState && !metadata.planningState) {
+      metadata.planningState = session.planningState;
+    }
 
-    // Add user message to session first
     const lastUserMessage = messages[messages.length - 1];
-    if (lastUserMessage && lastUserMessage.role === 'user') {
-      // Save the session after adding message to ensure message count is updated
-      session = await session.addMessage({
+
+    // Stage 14.8A.2 §5 — atomic admission, identical contract to the streaming
+    // route: exactly one pending logical turn, zero quota consumed, and the
+    // sixth attempt blocked BEFORE any provider reservation, construction,
+    // dispatch, or external network access.
+    guestTurn = await openGuestTurn({
+      anonymousId: session.anonymousId,
+      clientTurnId,
+      userMessage: {
         role: 'user',
-        content: lastUserMessage.content,
-        timestamp: new Date()
-      });
-      // Reload session from database to get updated message count
-      session = await AnonymousSession.findOne({ anonymousId });
-    }
+        content: lastUserMessage?.role === 'user' ? lastUserMessage.content : '',
+        ...(conversationId ? { conversationId } : {}),
+      },
+      trusted: !!req.isTrustedMcp,
+    });
 
-    // Check if user can send more messages BEFORE processing the AI request
-    if (!req.isTrustedMcp && !session.canSendMessage()) {
-      const lastUserMessageContent = lastUserMessage?.content || '';
-      const guestChatUrl = buildGuestChatPublicUrl(session.anonymousId);
-      const conversionContent = buildAnonymousConversionMessage({
+    if (!guestTurn.admitted) {
+      return respondGuestTurnRefused(res, {
+        refusal: guestTurn.refusal,
         anonymousId: session.anonymousId,
-        lastUserMessageContent,
-      });
-
-      const userMessageCount = session.messages.filter(msg => msg.role === 'user').length;
-
-      return res.json({
-        data: {
-          content: conversionContent,
-          provider: 'system',
-          model: 'conversion',
-          isConversionMessage: true,
-          anonymousId: session.anonymousId,
-          messageCount: userMessageCount,
-          canSendMore: false,
-          guestChatUrl,
-        }
+        lastUserMessageContent: lastUserMessage?.content || '',
       });
     }
+
+    // WP10E — non-stream terminal transport for guests. Terminal mode emits no
+    // intermediate events and exactly one HTTP body: legacy `{ data: … }` is
+    // preserved verbatim; the v2 terminal shape appears only when a client
+    // explicitly negotiates it. Anonymous gains NO authenticated revision/
+    // persistence/recovery — this replaces the terminal serializer only. The
+    // guest-refusal / provider-httpStatus / catch-block error paths are HTTP
+    // request failures (WP10C boundary), NOT canonical terminals, so they stay
+    // as raw status responses and never route through the adapter.
+    const transport = createTrailieTransportAdapter({
+      dialect: resolveTrailieTransportDialect(req),
+      mode: 'terminal',
+      emit: (body) => res.json(body),
+    });
 
     const ctx = await prepareChatContext(
       { messages, provider, model, temperature, top_p, maxTokens, systemPrompt, metadata },
       '[AI Anon]',
-      { isAnonymous: true, isTrustedMcp: !!req.isTrustedMcp, req }
+      {
+        isAnonymous: true,
+        isTrustedMcp: !!req.isTrustedMcp,
+        req,
+        persistedConversationPlan: latestCanonicalPlanFromMessages(session.messages),
+      }
     );
 
     let {
@@ -3452,252 +3482,127 @@ router.post('/chat-anonymous', async (req, res) => {
     maxTokens = ctxMaxTokens;
 
     if (anonPreflightResult.blockers.length > 0) {
+      // Stage 14.8A.2 §7 — input rejection, not a completed logical turn.
       const blockerMsg = anonPreflightResult.blockers.map((b) => `- ${b}`).join('\n');
-      return res.json({
-        data: {
-          content: `📍 **Can't plan this trip yet:**\n${blockerMsg}\n\nAdjust your dates or destination and try again.`,
-          provider: 'system',
-          anonymousId: session.anonymousId,
-          messageCount: session.messages.filter((m) => m.role === 'user').length,
-          canSendMore: session.canSendMessage(),
-        },
+      await guestTurn.fail(GUEST_TURN_FAILURE_CODES.PREFLIGHT_BLOCKED);
+      const quota = await readGuestQuota(session.anonymousId);
+      transport.responseFinalized({
+        content: `📍 **Can't plan this trip yet:**\n${blockerMsg}\n\nAdjust your dates or destination and try again.`,
+        provider: 'system',
+        anonymousId: session.anonymousId,
+        messageCount: quota.completedGuestTurns,
+        canSendMore: quota.remainingAllowance > 0,
+        remainingAllowance: quota.remainingAllowance,
+      });
+      return;
+    }
+
+    // Canonical Trailie; availability gating applies only at the deployment boundary.
+    if (!isTrailieRuntimeEnabled()) {
+      await guestTurn.fail(GUEST_TURN_FAILURE_CODES.BACKEND_EXCEPTION);
+      return res.status(503).json({
+        success: false,
+        error: 'Trailie AI runtime unavailable',
+        code: 'trailie_runtime_disabled',
       });
     }
 
-    console.log('[AI] Augmented messages for anonymous user:', {
-      hasSystemFacts: !!(npsFacts || weatherFacts),
-      totalMessageCount: augmentedMessages.length,
-      provider,
-      messageCount: session.messageCount,
-      hasConstraints: anonConstraints.hasConstraints
+    await persistCommittedTripMutation({
+      message: latestUserText(messages),
+      preparedContext: ctx,
+      session: conversationId ? null : session,
     });
-
-    let response;
-
-    // Fallback: resolve 'auto' or unknown providers to claude
-    if (provider !== 'claude' && provider !== 'openai') {
-      provider = anthropic ? 'claude' : 'openai';
-    }
-
-    if (provider === 'claude') {
-      if (!anthropic) {
-        return res.status(500).json({ error: 'Claude API key not configured' });
-      }
-
-      const useItineraryTool = anonResponseMode === 'architect' && anonUserRequestedItinerary;
-
-      try {
-        response = await callClaudeWithFallback({
-          anthropic,
-          modelsToTry: CLAUDE_FALLBACK_MODELS,
-          maxTokens,
-          temperature,
-          system: enhancedSystemPrompt,
-          messages: augmentedMessages,
-          tools: useItineraryTool ? [CREATE_ITINERARY_TOOL] : undefined,
-          toolChoice: useItineraryTool ? { type: 'auto' } : undefined,
-          logPrefix: '[Chat Anon]',
-        });
-      } catch (claudeErr) {
-        console.error('[Chat] All Claude models failed for anonymous user');
-        return res.status(400).json({
-          error: 'No Claude models available with your API key',
-          details: claudeErr.message || 'Unknown error',
-          availableModels: CLAUDE_FALLBACK_MODELS,
-        });
-      }
-
-    } else if (provider === 'openai') {
-      // OpenAI API
-      if (!openai) {
-        return res.status(500).json({ error: 'OpenAI API key not configured' });
-      }
-
-      const openaiMessages = augmentedMessages.map((m) => ({ role: m.role, content: m.content }));
-      let openaiResponse = null;
-      let openaiModelUsed = model || OPENAI_PRIMARY_MODEL;
-      let lastOpenAiError = null;
-
-      for (const modelId of OPENAI_FALLBACK_MODELS) {
-        try {
-          openaiResponse = await openai.chat.completions.create({
-            model: modelId,
-            messages: [{ role: 'system', content: enhancedSystemPrompt }, ...openaiMessages],
-            max_completion_tokens: maxTokens,
-            temperature,
-            top_p,
-          });
-          openaiModelUsed = modelId;
-          break;
-        } catch (err) {
-          lastOpenAiError = err;
-          if (err.status === 404 || err.code === 'model_not_found') continue;
-          throw err;
-        }
-      }
-
-      if (!openaiResponse) {
-        return res.status(400).json({
-          error: 'No OpenAI models available',
-          details: lastOpenAiError?.message,
-        });
-      }
-
-      response = {
-        content: openaiResponse.choices[0].message.content,
-        provider: 'openai',
-        model: openaiModelUsed,
-        usage: {
-          inputTokens: openaiResponse.usage.prompt_tokens,
-          outputTokens: openaiResponse.usage.completion_tokens,
-        },
-      };
-
-    } else {
-      return res.status(400).json({ error: 'Invalid provider. Use "claude" or "openai"' });
-    }
-
-    const processed = await processAssistantResponse({
-      response,
-      lastMsg,
-      npsFacts,
-      weatherFacts,
-      webSearchFacts,
-      astroFacts,
-      feeFreeFacts,
-      noParkDetected: anonNoParkDetected,
-      constraints: anonConstraints,
-      conflicts: anonConflicts,
-      hypothetical: anonHypothetical,
-      provider: response.provider,
-      model: response.model,
-      maxTokens,
-      temperature,
-      top_p,
-      enhancedSystemPrompt,
-      augmentedMessages,
-      req,
-      parksForLinks: allExtractedParks,
-      trailieContext: anonTrailieContext,
-      responseMode: anonResponseMode,
-      options: {
-        enableConflictRetry: true,
-        enableRegeneration: true,
-        appendAnonymousWebUpsell: true,
-        isTrustedMcp: !!req.isTrustedMcp,
-        userRequestedItinerary: anonUserRequestedItinerary,
-        logPrefix: '[AI Anon]',
-      },
+    const { result: v2Result, content: v2Content } = await runTrailieFromPreparedContext({
+      preparedContext: ctx,
+      messages,
+      signal,
     });
+    const v2Telemetry = summarizeTrailieTelemetry(v2Result);
+    console.log('[AI Anon][Trailie]', JSON.stringify(v2Telemetry));
 
-    const anonItineraryData = processed.itineraryData;
-    const anonConfidence = processed.confidence;
-    const anonPlanScore = processed.planScore;
-
-    response.content = processed.cleanContent;
-    response.provider = response.provider || provider;
-    response.model = response.model || model;
-
-    // Add AI response to session
-    await session.addMessage({
-      role: 'assistant',
-      content: response.content,
-      provider: response.provider,
-      model: response.model,
-      responseTime: Date.now() - session.lastActivity
-    });
-
-    const userMessageCount = session.messages.filter(msg => msg.role === 'user').length;
-
-    const anonDisplayMeta = await finalizeParkImagesAndMetadata({
-      validatedContent: response.content,
-      resolvedMetadata,
-      parkNamesFromUser: anonParkNames,
-      parkImages,
-      alreadyShownImages: anonAlreadyShownImages,
-      attachParkImages: anonAttachParkImages,
-      openEndedDiscovery: anonOpenEndedDiscovery,
-      logPrefix: '[AI Anon]',
-    });
-
-    // Structured logging — fire and forget
-    const anonRequestEndTime = Date.now();
-    const anonParksMentioned = await extractParksMentioned(response.content || '');
-    logAIRequest({
-      endpoint: 'chat-anonymous',
-      userId: null,
-      provider: response.provider,
-      model: response.model,
-      durationMs: anonRequestEndTime - requestStartTime,
-      promptHash: crypto.createHash('sha256').update(enhancedSystemPrompt).digest('hex').slice(0, 12),
-      blocks: {
-        npsFacts: !!npsFacts,
-        weatherFacts: !!weatherFacts,
-        webSearch: !!webSearchFacts,
-        feeFree: !!(feeFreeFacts && feeFreeFacts.hasOverlap),
-        candidateParks: anonCandidateParksBlock,
-        constraints: anonConstraints.hasConstraints,
-        preflight: { blockers: anonPreflightResult.blockers.length, warnings: anonPreflightResult.warnings.length },
-        conflicts: anonConflicts.length,
-        hypothetical: anonHypothetical.isHypothetical,
-        intent: anonIntent?.primaryIntent || null,
-        userContext: false,
-      },
-      park: resolvedMetadata.parkCode ? { code: resolvedMetadata.parkCode, name: resolvedMetadata.parkName } : null,
-      cityDetected: anonUserCity?.name || null,
-      messageCount: augmentedMessages.length,
-      promptTokenEstimate: Math.round(enhancedSystemPrompt.length / 4),
-      tokens: response.usage || null,
-      response: {
-        length: response.content?.length || 0,
-        hasItinerary: !!anonItineraryData,
-        mentionsFeeFree: /fee.free|free\s+entrance/i.test(response.content || ''),
-        parksMentioned: anonParksMentioned,
-      },
-      error: null,
-    });
-
-    res.json({
-      data: maybeAttachDebugTrailieContext(
-        {
-          content: response.content,
-          provider: response.provider,
-          model: response.model,
-          usage: response.usage,
+    // Phase 9C.1D.5B.2 — an intentional semantic terminal (named experience
+    // unavailable, drive-cap infeasible, evidence incomplete, unresolved plan
+    // target) is a completed ANSWER, not a provider failure: it takes the
+    // normal atomic completion below so it persists and restores on reload.
+    const semanticTerminal = v2Result.status !== 'complete' && isCompletedSemanticTerminal(v2Result, v2Content);
+    if (v2Result.status !== 'complete' && !semanticTerminal) {
+      await guestTurn.fail(GUEST_TURN_FAILURE_CODES.PROVIDER_FAILURE);
+      const quota = await readGuestQuota(session.anonymousId);
+      finalizeTrailieNonCompleteResponse({
+        transport,
+        v2Result,
+        terminalPayload: {
+          content: v2Content,
+          provider: 'trailie-v2',
           anonymousId: session.anonymousId,
-          messageCount: userMessageCount,
-          canSendMore: session.canSendMessage(),
-          hasLiveData: !!(npsFacts || weatherFacts || astroFacts),
-          parkName: anonDisplayMeta.parkName,
-          parkNames: anonDisplayMeta.parkNames,
-          hasItinerary: !!anonItineraryData,
-          itinerary: anonItineraryData || null,
-          confidence: anonConfidence,
-          planScore: anonPlanScore,
-          intent: anonIntent?.primaryIntent || null,
-          parkImages: anonDisplayMeta.parkImages,
-          activeTripContext: buildClientActiveTripContext({
-            activeTripContext: anonActiveTripContext,
-            assistantContent: response.content,
-            resolvedMetadata,
-            openEndedDiscovery: anonOpenEndedDiscovery,
-            hasItinerary: !!anonItineraryData,
-          }),
-          showDayByDayPlanCta: shouldShowDayByDayPlanCta({
-            openEndedDiscovery: anonOpenEndedDiscovery,
-            userRequestedItinerary: anonUserRequestedItinerary,
-            hasItinerary: !!anonItineraryData,
-            discoveryRefinement: anonDiscoveryRefinement,
-            dayByDayPlanIntake: Boolean(resolvedMetadata.dayByDayPlanIntake),
-            lastUserMessage: lastMsg,
-            namedParkCount: allExtractedParks.length,
-          }),
+          messageCount: quota.completedGuestTurns,
+          canSendMore: quota.remainingAllowance > 0,
+          remainingAllowance: quota.remainingAllowance,
+          trailieV2: v2Telemetry,
+          planningState: planningStateWithTravelerJob(ctx, v2Result),
         },
-        anonTrailieContext
-      ),
-    });
+      });
+      return;
+    }
 
+    // A semantic terminal dispatched no model: record it as the runtime's own answer.
+    const v2Provider = semanticTerminal ? 'trailie-v2' : 'openai';
+    const v2Model = semanticTerminal ? null : (v2Telemetry.model || null);
+    const v2Completion = await guestTurn.complete({
+      role: 'assistant',
+      content: v2Content,
+      provider: v2Provider,
+      model: v2Model,
+      responseTime: Date.now() - requestStartTime,
+      travelLogistics: v2Result.travelLogistics ?? null,
+      canonicalPlan: v2Result.canonicalPlan || null,
+      responseArtifacts: v2Result.responseArtifacts ?? null,
+      intent: v2Result.intent ?? null,
+      presentation: v2Result.presentation ?? null,
+      // WP-TU Phase 3 Task 8B — persist the same additive field Task 7B
+      // already put on the live response, so it survives a cold reload.
+      activeTripPresentation: v2Result.activeTripPresentation ?? null,
+      // WP-TU Phase 4 Task 10 — same additive-field pattern as
+      // activeTripPresentation (Task 7B) immediately above.
+      targetTripId: v2Result.targetTripId ?? null,
+      itineraryHash: v2Result.itineraryHash || null,
+      parkName: resolvedMetadata.parkName || null,
+      parkNames: anonParkNames || [],
+    }, {
+      planningState: planningStateWithTravelerJob(ctx, v2Result),
+    });
+    transport.responseFinalized({
+      content: v2Content,
+      provider: v2Provider,
+      model: v2Model,
+      anonymousId: session.anonymousId,
+      messageCount: v2Completion.completedGuestTurns,
+      canSendMore: v2Completion.remainingAllowance > 0,
+      remainingAllowance: v2Completion.remainingAllowance,
+      hasItinerary: !!v2Result.canonicalPlan,
+      itinerary: v2Result.canonicalPlan || null,
+      itineraryHash: v2Result.itineraryHash || null,
+      travelLogistics: v2Result.travelLogistics ?? null,
+      responseArtifacts: v2Result.responseArtifacts ?? null,
+      planningState: planningStateWithTravelerJob(ctx, v2Result),
+      // WP-TU Phase 3 Task 7B — additive only; see the non-stream /chat call site.
+      activeTripPresentation: v2Result.activeTripPresentation ?? null,
+      // WP-TU Phase 4 Task 10 — same additive-field pattern as
+      // activeTripPresentation (Task 7B) immediately above.
+      targetTripId: v2Result.targetTripId ?? null,
+      intent: v2Result.intent ?? null,
+      presentation: v2Result.presentation ?? null,
+      trailieV2: v2Telemetry,
+    });
+    return;
   } catch (error) {
+    // Stage 14.8A.2 §7 — release the pending reservation; quota is unchanged.
+    if (guestTurn?.admitted) {
+      await guestTurn
+        .fail(classifyGuestTurnFailure(error))
+        .catch((err) => console.error('[AI Anon] Turn release error:', err.message));
+    }
+
     // Structured error logging
     logAIRequest({
       endpoint: 'chat-anonymous',
@@ -3708,57 +3613,55 @@ router.post('/chat-anonymous', async (req, res) => {
       error: error.message,
     });
 
-    // Log detailed error information
+    // Detail stays server-side only. Stage 14.8A.2 §11 — the guest response
+    // must never carry provider credentials, raw provider errors, stack traces,
+    // or internal session identifiers.
     console.error('Anonymous AI API Error:', {
       message: error.message,
       status: error.status,
       statusCode: error.statusCode,
       type: error.type,
       code: error.code,
-      response: error.response?.data,
       provider: req.body.provider || 'unknown',
-      anonymousId: anonymousId || 'unknown'
     });
 
-    // Check if it's a model-related error
-    if (error.message && (error.message.includes('model') || error.message.includes('not found') || error.message.includes('not_found'))) {
-      return res.status(400).json({
-        error: 'Invalid or unavailable model',
-        details: error.message,
-        suggestion: 'Try using the /api/ai/test-models endpoint to see available models'
-      });
-    }
+    const failureCode = classifyGuestTurnFailure(error);
+    const status =
+      error.status === 429 || error.statusCode === 429 || /rate limit/i.test(error.message || '')
+        ? 429
+        : failureCode === GUEST_TURN_FAILURE_CODES.PROVIDER_CONFIGURATION
+          ? 503
+          : 500;
 
-    // Check if it's an authentication error
-    if (error.status === 401 || error.statusCode === 401 || error.message.includes('authentication') || error.message.includes('Invalid API key')) {
-      return res.status(401).json({
-        error: 'API key authentication failed',
-        details: error.message || 'Please check your API key configuration',
-        suggestion: 'Verify your API keys are correctly set in environment variables'
-      });
-    }
-
-    // Check if it's a rate limit error
-    if (error.status === 429 || error.statusCode === 429 || error.message.includes('rate limit')) {
-      return res.status(429).json({
-        error: 'Rate limit exceeded',
-        details: error.message,
-        suggestion: 'Please wait a moment before trying again'
-      });
-    }
-
-    res.status(500).json({
-      error: 'Failed to get AI response',
-      details: error.message || 'Unknown error occurred',
-      errorType: error.type || 'unknown',
-      suggestion: 'Please try again in a moment or switch providers'
+    res.status(status).json({
+      error: GUEST_ROUTE_CODES.FAILED,
+      failureCode,
+      canSendMore: true,
     });
+  } finally {
+    // Stage 14.8A.2 §7 — safety net for every remaining exit path.
+    if (guestTurn?.admitted) {
+      await guestTurn
+        .settle(GUEST_TURN_FAILURE_CODES.BACKEND_EXCEPTION)
+        .catch((err) => console.error('[AI Anon] Turn settle error:', err.message));
+    }
+    cleanup();
   }
 });
 
 // Get anonymous session status
+router.use(require('./guestHistoryRecovery'));
+
 router.get('/session-status/:anonymousId', async (req, res) => {
   try {
+    if (!isValidGuestSessionId(req.params.anonymousId)) {
+      return res.status(404).json({
+        error: 'Session not found',
+        canSendMore: false,
+        messageCount: 0
+      });
+    }
+
     const session = await AnonymousSession.findOne({
       anonymousId: req.params.anonymousId
     });
@@ -3771,31 +3674,44 @@ router.get('/session-status/:anonymousId', async (req, res) => {
       });
     }
 
-    const userMessageCount = session.messages.filter(msg => msg.role === 'user').length;
-    const chatMessages = session.messages
-      .filter((msg) => msg.role === 'user' || msg.role === 'assistant')
-      .map((msg) => ({
-        role: msg.role,
-        content: msg.content,
-        timestamp: msg.timestamp,
-        provider: msg.provider || null,
-        model: msg.model || null,
-      }));
+    // Stage 14.8A.2 §8/§9 — a refresh is also the recovery point for a pending
+    // turn whose process died: the stale reservation is released before the
+    // status is reported, so the browser is never told a turn is still running
+    // when nothing is executing. Completed turns are untouched.
+    await releaseStalePendingTurns({ anonymousId: session.anonymousId });
+    const quota = await readGuestQuota(session.anonymousId);
+
+    // Completed history stays in `messages`. Retryable failed turns are
+    // projected as truthful transcript only — never as accepted canonical state.
+    const { selectGuestConversation, validateConversationId } = require('../utils/guestConversationScope');
+    const conversationId = validateConversationId(req.query.conversationId);
+    const scoped = selectGuestConversation(session, conversationId);
+    const chatMessages = projectGuestConversationForStatus({
+      messages: scoped.messages,
+      turns: scoped.turns,
+    });
 
     res.json({
-      canSendMore: session.canSendMessage(),
-      messageCount: userMessageCount,
-      isConverted: session.isConverted,
+      canSendMore: quota.remainingAllowance > 0,
+      messageCount: quota.completedGuestTurns,
+      completedGuestTurns: quota.completedGuestTurns,
+      remainingAllowance: quota.remainingAllowance,
+      hasPendingTurn: quota.hasPendingTurn,
+      isConverted: conversationId ? !!session.conversationConversions?.[conversationId] : session.isConverted,
       lastActivity: session.lastActivity,
-      parkName: session.parkName,
-      parkCode: session.parkCode || null,
-      formData: session.formData || {},
+      parkName: conversationId ? null : session.parkName,
+      parkCode: conversationId ? null : session.parkCode || null,
+      formData: conversationId ? {} : session.formData || {},
+      planningState: scoped.planningState || null,
+      entryContext: conversationId ? null : session.entryContext || null,
       messages: chatMessages,
-      guestChatUrl: buildGuestChatPublicUrl(session.anonymousId),
+      authoritativeMessages: scoped.messages,
+      historyHash: require('../utils/guestHistoryRecovery').historyHash(scoped.messages),
+      guestChatUrl: buildGuestChatPublicUrl(session.anonymousId, conversationId),
     });
   } catch (error) {
     console.error('Error checking session status:', error);
-    res.status(500).json({
+    res.status(error.status || 500).json({
       error: 'Failed to check session status',
       canSendMore: false,
       messageCount: 0
@@ -3958,9 +3874,9 @@ router.post('/realtime-session', optionalAuth, async (req, res) => {
       try {
         const enhancedParkService = require('../services/enhancedParkService');
         const [parkResult, alertsResult, weatherResult] = await Promise.allSettled([
-          npsService.getParkByCode(parkCode),
-          npsService.getParkAlerts(parkCode),
-          npsService.getParkByCode(parkCode).then(p =>
+          getNpsService().getParkByCode(parkCode),
+          getNpsService().getParkAlerts(parkCode),
+          getNpsService().getParkByCode(parkCode).then(p =>
             p?.latitude && p?.longitude ? enhancedParkService.getWeatherData(p) : null
           ),
         ]);
@@ -4042,7 +3958,7 @@ router.post('/realtime-session', optionalAuth, async (req, res) => {
     const userLng = parseFloat(req.body?.lng);
     if (!isNaN(userLat) && !isNaN(userLng) && Math.abs(userLat) <= 90 && Math.abs(userLng) <= 180) {
       try {
-        const allParks = await npsService.getAllParks();
+        const allParks = await getNpsService().getAllParks();
         if (allParks && allParks.length > 0) {
           // Calculate distance (Haversine) and find nearest parks
           function haversine(lat1, lon1, lat2, lon2) {
@@ -4211,9 +4127,9 @@ router.post('/voice-tool', async (req, res) => {
         if (!parkCode) return res.status(400).json({ error: 'Missing park_code' });
 
         const [parkResult, alertsResult, weatherResult] = await Promise.allSettled([
-          npsService.getParkByCode(parkCode),
-          npsService.getParkAlerts(parkCode),
-          npsService.getParkByCode(parkCode).then(p =>
+          getNpsService().getParkByCode(parkCode),
+          getNpsService().getParkAlerts(parkCode),
+          getNpsService().getParkByCode(parkCode).then(p =>
             p?.latitude && p?.longitude ? enhancedParkService.getWeatherData(p) : null
           ),
         ]);
@@ -4284,9 +4200,9 @@ router.post('/voice-tool', async (req, res) => {
         const results = await Promise.allSettled(
           parkCodes.map(async (code) => {
             const [park, alerts, weather] = await Promise.allSettled([
-              npsService.getParkByCode(code),
-              npsService.getParkAlerts(code),
-              npsService.getParkByCode(code).then(p =>
+              getNpsService().getParkByCode(code),
+              getNpsService().getParkAlerts(code),
+              getNpsService().getParkByCode(code).then(p =>
                 p?.latitude && p?.longitude ? enhancedParkService.getWeatherData(p) : null
               ),
             ]);
@@ -4323,7 +4239,7 @@ router.post('/voice-tool', async (req, res) => {
         defaultEnd.setDate(defaultEnd.getDate() + 7);
         const dateEnd = args?.date_end || defaultEnd.toISOString().slice(0, 10);
 
-        const events = await npsService.getAllEvents({
+        const events = await getNpsService().getAllEvents({
           parkCode,
           dateStart,
           dateEnd,
@@ -4354,20 +4270,18 @@ router.post('/voice-tool', async (req, res) => {
   }
 });
 
-// Structured itinerary planner — fast deterministic path for MCP plan_trip
+// MCP compatibility transport over the same canonical planning pipeline.
 router.post('/plan-itinerary', async (req, res) => {
   const requestStart = Date.now();
   try {
     const body = req.body || {};
-    let anonymousId = body.anonymousId;
-    if (!anonymousId) {
-      anonymousId = generateAnonymousIdFromRequest(req).anonymousId;
-    }
+    const requestIdentity = resolveAnonymousRequestIdentity(req, body.anonymousId);
+    const anonymousId = requestIdentity.anonymousId;
 
     const session = await AnonymousSession.findOrCreateSession(anonymousId, {
-      ipAddress: req.ip || 'unknown',
-      userAgent: req.get('user-agent') || 'mcp',
-      browserFingerprint: 'mcp-plan-itinerary',
+      ipAddress: requestIdentity.ipAddress,
+      userAgent: requestIdentity.userAgent || 'mcp',
+      browserFingerprint: requestIdentity.browserFingerprint,
     });
 
     const priorItinerary = session.formData?.lastItinerary || null;
@@ -4377,36 +4291,73 @@ router.post('/plan-itinerary', async (req, res) => {
       metadata: {
         ...(body.metadata || {}),
         priorItinerary,
+        planningState: session.planningState || null,
         skipUserContext: true,
         source: body.metadata?.source || 'mcp',
       },
     };
 
-    const result = await executePlanItineraryRequest({ ...req, body: enrichedBody });
-
-    session.formData = {
-      ...(session.formData || {}),
-      lastItinerary: {
-        parkCode: result.parkCode,
-        parkName: result.parkName,
-        days: result.itinerary?.days || [],
-        criticalNotices: result.criticalNotices || [],
-        unverified: result.unverified || [],
+    // Stage 14.8A.2 §3/§6 — the MCP planner shares the AnonymousSession store,
+    // so it uses the same logical-turn ledger. It is trusted (not allowance-
+    // limited), but its history write is still completion-coupled and atomic:
+    // a planner failure leaves no orphan user message behind.
+    const mcpTurn = await openGuestTurn({
+      anonymousId: session.anonymousId,
+      clientTurnId: body.clientTurnId,
+      userMessage: {
+        role: 'user',
+        content: enrichedBody.messages?.slice(-1)[0]?.content || 'Plan itinerary',
       },
-      parkCode: result.parkCode,
-    };
-    session.parkCode = result.parkCode;
-    session.parkName = result.parkName;
-    session.lastActivity = new Date();
-    await session.save();
+      trusted: true,
+    });
 
-    const userMessage = enrichedBody.messages?.slice(-1)[0]?.content || 'Plan itinerary';
-    await session.addMessage({ role: 'user', content: userMessage });
-    await session.addMessage({
+    let result;
+    try {
+      if (!isTrailieRuntimeEnabled()) throw Object.assign(new Error('Trailie AI runtime unavailable'), { statusCode: 503, code: 'trailie_runtime_disabled' });
+      const preparedContext = await prepareChatContext(enrichedBody, '[AI MCP]', {
+        isAnonymous: true, isTrustedMcp: true, req,
+        persistedConversationPlan: latestCanonicalPlanFromMessages(session.messages),
+      });
+      await persistCommittedTripMutation({ message: latestUserText(enrichedBody.messages), preparedContext, session });
+      result = await executePlanItineraryRequest({ ...req, body: enrichedBody }, { preparedContext });
+    } catch (planError) {
+      await mcpTurn.fail(classifyGuestTurnFailure(planError));
+      throw planError;
+    }
+
+    // Targeted field update rather than saving the document loaded before
+    // admission — the in-flight turn record must never be clobbered by a stale
+    // in-memory copy of `turns`.
+    await AnonymousSession.updateOne(
+      { anonymousId: session.anonymousId },
+      {
+        $set: {
+          formData: {
+            ...(session.formData || {}),
+            lastItinerary: result.itinerary ? {
+              parkCode: result.parkCode,
+              parkName: result.parkName,
+              days: result.itinerary?.days || [],
+              criticalNotices: result.criticalNotices || [],
+              unverified: result.unverified || [],
+            } : session.formData?.lastItinerary || null,
+            parkCode: result.parkCode,
+          },
+          parkCode: result.parkCode,
+          parkName: result.parkName,
+          lastActivity: new Date(),
+        },
+      }
+    );
+
+    await mcpTurn.complete({
       role: 'assistant',
       content: result.content,
+      canonicalPlan: result.canonicalPlan,
+      itineraryHash: result.itineraryHash,
       responseTime: Date.now() - requestStart,
-    });
+    }, { planningState: result.planningState });
+    await mcpTurn.settle(GUEST_TURN_FAILURE_CODES.EMPTY_TERMINAL_RESPONSE);
 
     return res.json({
       success: true,
@@ -4440,3 +4391,15 @@ router.post('/plan-itinerary', async (req, res) => {
 });
 
 module.exports = router;
+// Exposed for route-contract tests — the shared orchestration seam that plumbs
+// canonical evidence from prepareChatContext into the reviewer.
+module.exports.processPreparedTrailieResponse = processPreparedTrailieResponse;
+// Stage 9 — exposed for request-path review-separation tests.
+module.exports.buildCanonicalOutbound = buildCanonicalOutbound;
+module.exports.scheduleShadowReview = scheduleShadowReview;
+// WP12 — exposed for prep-skip / flag-off contract tests only.
+module.exports.prepareChatContext = prepareChatContext;
+module.exports.finalizeTrailieNonCompleteResponse = finalizeTrailieNonCompleteResponse;
+
+// Temporary compatibility export; canonical routes use the unversioned function.
+module.exports.finalizeV2NonCompleteResponse = finalizeTrailieNonCompleteResponse;

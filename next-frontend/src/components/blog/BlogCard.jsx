@@ -11,15 +11,13 @@ const BlogCard = memo(({ post }) => {
   return (
     <Link
       href={`/blog/${post.slug}`}
-      className="group rounded-2xl overflow-hidden backdrop-blur hover:-translate-y-1 transition-all duration-300 block"
+      className="group public-discovery-link border-b pb-4 transition-colors block"
       style={{
-        backgroundColor: 'var(--surface)',
-        borderWidth: '1px',
         borderColor: 'var(--border)'
       }}
     >
       {/* Image */}
-      <div className="relative h-48 overflow-hidden">
+      <div className="relative h-48 rounded-xl overflow-hidden">
         <OptimizedImage
           src={post.imageUrl || post.featuredImage}
           alt={post.title}
@@ -29,7 +27,7 @@ const BlogCard = memo(({ post }) => {
       </div>
 
       {/* Content */}
-      <div className="p-5">
+      <div className="pt-5">
         {/* Category Tag */}
         <div className="flex items-center gap-2 mb-3">
           <Tag className="h-3 w-3" style={{ color: 'var(--text-tertiary)' }} />

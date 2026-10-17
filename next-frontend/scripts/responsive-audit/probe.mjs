@@ -1,0 +1,5 @@
+import {chromium} from '@playwright/test';import fs from 'node:fs';
+const b=await chromium.launch({headless:true});const p=await b.newPage();await p.goto('http://127.0.0.1:3000/trailie-demo',{waitUntil:'domcontentloaded'});await p.waitForTimeout(1200);
+const f=JSON.parse(fs.readFileSync('src/data/trailieDemoPlayback.json'));await p.evaluate(scenarios=>{let c=JSON.parse(localStorage.getItem('trailie_demo_scenario_cache'));localStorage.setItem('trailie_demo_scenario_cache',JSON.stringify({...c,scenarios}));},Object.fromEntries(f.scenarios.map(s=>[s.id,s.turns.map(t=>({...t,content:t.prose,canonicalPlan:t.plan}))])));
+console.log('beforeReload',await p.evaluate(()=>localStorage.getItem('trailie_demo_scenario_cache')?.slice(0,120)));
+await p.reload({waitUntil:'domcontentloaded'});await p.waitForTimeout(2000);console.log('afterReload',await p.evaluate(()=>({cache:localStorage.getItem('trailie_demo_scenario_cache')?.slice(0,120),text:document.querySelector('main')?.innerText.slice(0,1600)})));await b.close();

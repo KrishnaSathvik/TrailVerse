@@ -298,7 +298,7 @@ class SmartPrefetchService {
     
     for (const park of parksWithWeather) {
       if (this.userBehavior.viewedParks.has(park.code)) {
-        await weatherService.prefetchWeatherData(park.lat, park.lon);
+        await weatherService.prefetchWeatherData(park.code);
       }
     }
   }

@@ -1,6 +1,5 @@
 const BlogPost = require('../models/BlogPost');
 const User = require('../models/User');
-const Subscriber = require('../models/Subscriber');
 const emailService = require('../services/resendEmailService');
 const { getScheduledPostsInfo } = require('../services/schedulerService');
 const { clearCache } = require('../middleware/cache');
@@ -562,31 +561,8 @@ async function sendBlogNotifications(post) {
     }
 
     console.log(`✅ Blog notifications sent to ${sentCount} of ${users.length} registered users`);
-
-    // Also notify confirmed newsletter subscribers (skip those already emailed as registered users)
-    try {
-      const subscribers = await Subscriber.find({ confirmed: true }).select('email firstName unsubscribeToken');
-      const newSubscribers = subscribers.filter(s => !sentEmails.has(s.email.toLowerCase()));
-
-      if (newSubscribers.length > 0) {
-        console.log(`📧 Sending blog notification to ${newSubscribers.length} newsletter subscribers`);
-
-        for (const sub of newSubscribers) {
-          try {
-            await emailService.sendBlogNotification(
-              { email: sub.email, firstName: sub.firstName, name: sub.firstName },
-              post
-            );
-          } catch (err) {
-            console.error(`Failed to send blog notification to subscriber ${sub.email}:`, err.message);
-          }
-        }
-
-        console.log(`✅ Blog notifications sent to ${newSubscribers.length} newsletter subscribers`);
-      }
-    } catch (subError) {
-      console.error('Error sending to newsletter subscribers:', subError);
-    }
+    // Where Next? subscribers are not a blog-alert audience. Do not fan out
+    // to Subscriber rows here — that list is owned by the newsletter product.
   } catch (error) {
     console.error('Error sending blog notifications:', error);
   }

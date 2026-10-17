@@ -1,23 +1,28 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import {
-  X, Mountain, Check, Mail, Lock, User, Eye, EyeOff, LogIn, Sparkles
+  X, Check, Mail, Lock, User, Eye, EyeOff
 } from '@components/icons';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import Button from '../common/Button';
 import { getSignupPrompt } from '@/lib/planAiSignupPrompts';
+import TrailieAvatar from './TrailieAvatar';
 
 export default function SaveTripModal({
   isOpen,
   onClose,
   parkName,
   anonymousId,
+  conversationId = null,
   formData,
   messages,
   reason = 'save-itinerary',
+  initialMode = 'signup',
+  surface = null,
 }) {
   const { signup, login } = useAuth();
   const { showToast } = useToast();
@@ -36,14 +41,51 @@ export default function SaveTripModal({
 
   const [loginData, setLoginData] = useState({ email: '', password: '' });
 
-  if (!isOpen) return null;
+  const dialogRef = useRef(null);
+  useEffect(() => {
+    if (!isOpen) return;
+    setMode(initialMode === 'login' ? 'login' : 'signup');
+    setSignupSuccess(false);
+    setErrors({});
+  }, [isOpen, initialMode]);
+  useEffect(() => {
+    if (!isOpen) return;
+    const previousFocus = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    dialogRef.current?.focus();
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') { event.preventDefault(); onClose(); }
+      if (event.key !== 'Tab') return;
+      const controls = [...dialogRef.current.querySelectorAll('button, input, a[href], [tabindex="0"]')]
+        .filter(element => !element.disabled && element.getClientRects().length);
+      const first = controls[0], last = controls.at(-1);
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === dialogRef.current)) {
+        event.preventDefault(); last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault(); first?.focus();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', onKeyDown);
+      previousFocus?.focus();
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen || typeof document === 'undefined') return null;
+
 
   const storeChatContext = () => {
     const chatContext = {
       anonymousId,
+      conversationId,
       parkName,
       formData,
       messages,
+      // The workspace the guest asked to open; migration lands there directly.
+      surface,
       timestamp: Date.now(),
     };
     localStorage.setItem('returnToChat', JSON.stringify(chatContext));
@@ -68,6 +110,7 @@ export default function SaveTripModal({
     if (!validateSignup()) return;
     setIsLoading(true);
     try {
+      storeChatContext();
       await signup(signupData.firstName, signupData.lastName, signupData.email, signupData.password);
       setSignupSuccess(true);
       setLoginData(prev => ({ ...prev, email: signupData.email }));
@@ -94,10 +137,10 @@ export default function SaveTripModal({
     try {
       storeChatContext();
       await login(loginData.email, loginData.password);
-      showToast('Welcome back! Your trip is saved.', 'success');
+      showToast('Welcome back!', 'success');
       onClose();
     } catch (err) {
-      const msg = err.response?.data?.error || 'Login failed. Check your credentials.';
+      const msg = err.response?.data?.error || err.message || 'Login failed. Check your credentials.';
       showToast(msg, 'error');
     } finally {
       setIsLoading(false);
@@ -130,13 +173,18 @@ export default function SaveTripModal({
     onClose();
   };
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
       onClick={handleClose}
     >
       <div
-        className="relative w-full max-w-lg overflow-hidden rounded-3xl shadow-2xl"
+        ref={dialogRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="save-trip-form-title"
+        className="trailie-account-dialog relative flex max-h-[calc(100dvh-2rem)] w-full min-w-0 max-w-lg flex-col overflow-y-auto rounded-[1.75rem]"
         style={{
           backgroundColor: 'var(--bg-primary)',
           borderWidth: '1px',
@@ -147,25 +195,24 @@ export default function SaveTripModal({
       >
         {/* Header */}
         <div
-          className="border-b px-5 py-4 sm:px-6"
+          className="shrink-0 px-5 pt-6 sm:px-8 sm:pt-8"
           style={{
             borderColor: 'var(--border)',
-            background: 'linear-gradient(180deg, rgba(67, 160, 106, 0.05) 0%, rgba(255,255,255,0) 100%)'
+            backgroundColor: 'var(--bg-primary)'
           }}
         >
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <div
-                className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]"
+                className="inline-flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.18em]"
                 style={{
-                  backgroundColor: 'rgba(67, 160, 106, 0.12)',
                   color: 'var(--accent-green)'
                 }}
               >
-                <Mountain className="h-3.5 w-3.5" />
-                {prompt.badge || 'Save Trip'}
+                <TrailieAvatar className="!h-10 !w-10" />
+                Trailie
               </div>
-              <h2 className="mt-4 text-2xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+              <h2 id="save-trip-form-title" className="mt-4 text-2xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
                 {prompt.title}
               </h2>
               <p className="mt-1 text-sm leading-6" style={{ color: 'var(--text-secondary)' }}>
@@ -188,19 +235,12 @@ export default function SaveTripModal({
             </button>
           </div>
 
-          <ul className="mt-4 space-y-1.5">
-            {prompt.benefits.map((prop) => (
-              <li key={prop} className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                <Check className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'var(--accent-green)' }} />
-                {prop}
-              </li>
-            ))}
-          </ul>
+
         </div>
 
         {/* Scrollable body */}
         <div
-          className="max-h-[calc(90vh-280px)] overflow-y-auto px-5 py-5 sm:px-6"
+          className="min-w-0 px-5 py-6 sm:px-8 sm:pb-8"
           style={{ backgroundColor: 'var(--bg-primary)' }}
         >
           {/* Tab toggle */}
@@ -258,17 +298,20 @@ export default function SaveTripModal({
           )}
 
           {mode === 'signup' && !signupSuccess ? (
-            <form onSubmit={handleSignup} className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+            <form onSubmit={handleSignup} className="space-y-5">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
+                  <label htmlFor="trip-signup-first-name" className="mb-2 block text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">First name</label>
                   <div className="relative">
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: 'var(--text-tertiary)' }} />
                     <input
+                      id="trip-signup-first-name"
+                      autoComplete="given-name"
                       type="text"
                       value={signupData.firstName}
                       onChange={e => handleSignupChange('firstName', e.target.value)}
                       placeholder="First name"
-                      className="w-full pl-11 pr-3 py-3 rounded-xl text-sm outline-none transition"
+                      className="min-w-0 w-full pl-11 pr-3 py-3 rounded-xl text-sm outline-none transition"
                       style={{
                         backgroundColor: 'var(--surface-hover)',
                         border: `1px solid ${errors.firstName ? '#ef4444' : 'var(--border)'}`,
@@ -279,14 +322,17 @@ export default function SaveTripModal({
                   {errors.firstName && <p className="mt-1 text-xs text-red-400">{errors.firstName}</p>}
                 </div>
                 <div>
+                  <label htmlFor="trip-signup-last-name" className="mb-2 block text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">Last name</label>
                   <div className="relative">
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: 'var(--text-tertiary)' }} />
                     <input
+                      id="trip-signup-last-name"
+                      autoComplete="family-name"
                       type="text"
                       value={signupData.lastName}
                       onChange={e => handleSignupChange('lastName', e.target.value)}
                       placeholder="Last name"
-                      className="w-full pl-11 pr-3 py-3 rounded-xl text-sm outline-none transition"
+                      className="min-w-0 w-full pl-11 pr-3 py-3 rounded-xl text-sm outline-none transition"
                       style={{
                         backgroundColor: 'var(--surface-hover)',
                         border: `1px solid ${errors.lastName ? '#ef4444' : 'var(--border)'}`,
@@ -299,14 +345,17 @@ export default function SaveTripModal({
               </div>
 
               <div>
+                <label htmlFor="trip-signup-email" className="mb-2 block text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">Email address</label>
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: 'var(--text-tertiary)' }} />
                   <input
+                    id="trip-signup-email"
+                    autoComplete="email"
                     type="email"
                     value={signupData.email}
                     onChange={e => handleSignupChange('email', e.target.value)}
                     placeholder="Email address"
-                    className="w-full pl-11 pr-3 py-3 rounded-xl text-sm outline-none transition"
+                    className="min-w-0 w-full pl-11 pr-3 py-3 rounded-xl text-sm outline-none transition"
                     style={{
                       backgroundColor: 'var(--surface-hover)',
                       border: `1px solid ${errors.email ? '#ef4444' : 'var(--border)'}`,
@@ -318,14 +367,17 @@ export default function SaveTripModal({
               </div>
 
               <div>
+                <label htmlFor="trip-signup-password" className="mb-2 block text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">Password</label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: 'var(--text-tertiary)' }} />
                   <input
+                    id="trip-signup-password"
+                    autoComplete="new-password"
                     type={showPassword ? 'text' : 'password'}
                     value={signupData.password}
                     onChange={e => handleSignupChange('password', e.target.value)}
                     placeholder="Password (8+ characters)"
-                    className="w-full pl-11 pr-10 py-3 rounded-xl text-sm outline-none transition"
+                    className="min-w-0 w-full pl-11 pr-10 py-3 rounded-xl text-sm outline-none transition"
                     style={{
                       backgroundColor: 'var(--surface-hover)',
                       border: `1px solid ${errors.password ? '#ef4444' : 'var(--border)'}`,
@@ -334,6 +386,7 @@ export default function SaveTripModal({
                   />
                   <button
                     type="button"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2"
                     style={{ color: 'var(--text-tertiary)' }}
@@ -345,14 +398,17 @@ export default function SaveTripModal({
               </div>
 
               <div>
+                <label htmlFor="trip-signup-confirm-password" className="mb-2 block text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">Confirm password</label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: 'var(--text-tertiary)' }} />
                   <input
+                    id="trip-signup-confirm-password"
+                    autoComplete="new-password"
                     type={showPassword ? 'text' : 'password'}
                     value={signupData.confirmPassword}
                     onChange={e => handleSignupChange('confirmPassword', e.target.value)}
                     placeholder="Confirm password"
-                    className="w-full pl-11 pr-3 py-3 rounded-xl text-sm outline-none transition"
+                    className="min-w-0 w-full pl-11 pr-3 py-3 rounded-xl text-sm outline-none transition"
                     style={{
                       backgroundColor: 'var(--surface-hover)',
                       border: `1px solid ${errors.confirmPassword ? '#ef4444' : 'var(--border)'}`,
@@ -397,8 +453,7 @@ export default function SaveTripModal({
                 disabled={isLoading}
                 loading={isLoading}
                 variant="primary"
-                size="md"
-                icon={Sparkles}
+                size="lg"
                 className="w-full"
               >
                 {isLoading ? 'Creating account...' : prompt.primaryCta}
@@ -406,23 +461,26 @@ export default function SaveTripModal({
 
               <p className="text-center text-xs" style={{ color: 'var(--text-tertiary)' }}>
                 Already have an account?{' '}
-                <button onClick={switchToLogin} className="font-semibold" style={{ color: 'var(--accent-green)' }}>
+                <button type="button" onClick={switchToLogin} className="font-semibold" style={{ color: 'var(--accent-green)' }}>
                   Sign in
                 </button>
               </p>
             </form>
           ) : mode === 'login' || signupSuccess ? (
-            <form onSubmit={handleLogin} className="space-y-3">
+            <form onSubmit={handleLogin} className="space-y-5">
               <div>
+                <label htmlFor="trip-login-email" className="mb-2 block text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">Email address</label>
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: 'var(--text-tertiary)' }} />
                   <input
+                    id="trip-login-email"
+                    autoComplete="email"
                     type="email"
                     value={loginData.email}
                     onChange={e => handleLoginChange('email', e.target.value)}
                     placeholder="Email address"
                     autoFocus={!signupSuccess}
-                    className="w-full pl-11 pr-3 py-3 rounded-xl text-sm outline-none transition"
+                    className="min-w-0 w-full pl-11 pr-3 py-3 rounded-xl text-sm outline-none transition"
                     style={{
                       backgroundColor: 'var(--surface-hover)',
                       border: `1px solid ${errors.email ? '#ef4444' : 'var(--border)'}`,
@@ -434,14 +492,17 @@ export default function SaveTripModal({
               </div>
 
               <div>
+                <label htmlFor="trip-login-password" className="mb-2 block text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">Password</label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: 'var(--text-tertiary)' }} />
                   <input
+                    id="trip-login-password"
+                    autoComplete="current-password"
                     type={showPassword ? 'text' : 'password'}
                     value={loginData.password}
                     onChange={e => handleLoginChange('password', e.target.value)}
                     placeholder="Password"
-                    className="w-full pl-11 pr-10 py-3 rounded-xl text-sm outline-none transition"
+                    className="min-w-0 w-full pl-11 pr-10 py-3 rounded-xl text-sm outline-none transition"
                     style={{
                       backgroundColor: 'var(--surface-hover)',
                       border: `1px solid ${errors.password ? '#ef4444' : 'var(--border)'}`,
@@ -450,6 +511,7 @@ export default function SaveTripModal({
                   />
                   <button
                     type="button"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2"
                     style={{ color: 'var(--text-tertiary)' }}
@@ -465,15 +527,14 @@ export default function SaveTripModal({
                 disabled={isLoading}
                 loading={isLoading}
                 variant="primary"
-                size="md"
-                icon={LogIn}
+                size="lg"
                 className="w-full"
               >
-                {isLoading ? 'Signing in...' : `${prompt.secondaryCta} & Save`}
+                {isLoading ? 'Signing in...' : prompt.loginCta || `${prompt.secondaryCta} & Save`}
               </Button>
 
               <div className="flex items-center justify-between text-xs">
-                <button onClick={switchToSignup} className="font-semibold" style={{ color: 'var(--accent-green)' }}>
+                <button type="button" onClick={switchToSignup} className="font-semibold" style={{ color: 'var(--accent-green)' }}>
                   Create account
                 </button>
                 <Link href="/forgot-password" target="_blank" style={{ color: 'var(--text-tertiary)' }}>
@@ -484,6 +545,7 @@ export default function SaveTripModal({
           ) : null}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

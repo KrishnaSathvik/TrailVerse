@@ -1,0 +1,11 @@
+import { expect, it } from 'vitest';
+import { verifiedTransferLabel } from '../tripPresentation';
+const road = { status:'verified', travelMode:'driving', durationSeconds:896, source:{evidenceId:'google-route',provider:'google_maps'} };
+const access = (status, requiredMode=null) => ({status,requiredMode,sources:['https://www.nps.gov/access']});
+it('unknown access preserves road duration without granting private driving',()=>expect(verifiedTransferLabel(road)).toBe('15 min by road'));
+it('explicit access permission permits drive wording',()=>expect(verifiedTransferLabel({...road,operationalAccess:access('allowed')})).toBe('15 min drive'));
+it('a required shuttle never borrows the road duration',()=>expect(verifiedTransferLabel({...road,operationalAccess:access('required_alternative','shuttle')})).toBe('Shuttle required · timing not verified'));
+it('verified alternative duration is shown in the correct mode',()=>expect(verifiedTransferLabel({...road,travelMode:'shuttle',durationSeconds:1200,operationalAccess:access('required_alternative','shuttle')})).toBe('20 min shuttle'));
+it('a restricted transfer cannot advertise driving despite a Google route',()=>expect(verifiedTransferLabel({...road,operationalAccess:access('restricted')})).toBe('Access restricted · confirm transportation'));
+it('permission without source cannot promote by-road to drive',()=>expect(verifiedTransferLabel({...road,operationalAccess:{status:'allowed'}})).toBe('15 min by road'));
+it('required ferry without a duration remains actionable, without a number',()=>expect(verifiedTransferLabel({status:'unverified',operationalAccess:access('required_alternative','ferry')})).toBe('Ferry required · timing not verified'));

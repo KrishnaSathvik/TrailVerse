@@ -1,0 +1,75 @@
+{
+  "source": {
+    "capture": "trailie-core-final-funded-1.jsonl",
+    "row": 3
+  },
+  "prompt": "No scary exposed hikes.",
+  "response": "I couldn't complete this request. Please try again.",
+  "attempts": [
+    {
+      "stage": "prose_constraint_safety",
+      "reasonCodes": [
+        "exposure_constraint_contradiction"
+      ]
+    },
+    {
+      "stage": "prose_output_incomplete",
+      "reasonCodes": [
+        "output_incomplete"
+      ]
+    },
+    {
+      "stage": "prose_constraint_safety",
+      "reasonCodes": [
+        "exposure_constraint_contradiction"
+      ]
+    }
+  ],
+  "outputs": [],
+  "priorPlan": null,
+  "acceptedPlan": null,
+  "constraints": {
+    "planningState": {
+      "preferences": {
+        "interests": [],
+        "fitness": null,
+        "pace": null,
+        "riskTolerance": null,
+        "avoidExposure": true,
+        "maxDailyDriveMinutes": null,
+        "minimizeDriving": null
+      },
+      "mobility": {
+        "maxWalkMilesPerSegment": null,
+        "maxWalkMinutesPerSegment": null,
+        "walkingTolerance": null,
+        "requiresFrequentBreaks": null,
+        "wheelchair": null,
+        "stroller": null,
+        "avoidStairs": null
+      },
+      "activityPreferences": {
+        "hiking": null,
+        "photography": null,
+        "photographyTiming": null,
+        "wildlife": null
+      },
+      "travelers": {
+        "count": null,
+        "travelParty": null,
+        "hasChildren": false,
+        "childrenCount": 0,
+        "pets": null,
+        "accessibilityNeeds": [],
+        "hasOlderTravelers": null
+      },
+      "time": {
+        "availableHours": null
+      }
+    }
+  },
+  "capturedProse": [
+    "Got it\u2014no scary exposed hikes. I\u2019ll steer your Zion plan toward low-exposure walks, such as the paved Pa\u2019rus Trail along the Virgin River, and leave cliff-edge hikes out. [NPS: Pa\u2019rus Trail](https://www.nps.gov/thingstodo/hike-pa-rus-trail.htm)\n\nOne date check before I build the four days: did you mean **September 12\u201317, 2027**? The 2026 dates we have have passed.",
+    "Absolutely\u2014**no scary exposed hikes.** I\u2019d keep your four Zion sightseeing days gentle, with river walks and viewpoints rather than cliff-edge routes.\n\nThese are deliberately relaxed days. I\u2019d rather revisit a comfortable place than add a hike whose exposure I can\u2019t verify. Times below are suggested time on site, not verified trail-completion times.\n\n### Day 1 \u2014 Pa\u2019rus: river scenery and Zion\u2019s story\n**Pa\u2019rus Trail \u2014 2 hours.** Take an unhurried out-and-back from the Zion Canyon Visitor Center, enjoying the Virgin River, Watchman views, and trailside exhibits about wildlife, geology, and human history. The entire trail is **1.6 miles each way**, but you needn\u2019t complete it. Keep the **Pa\u2019rus\u2013Diversion Dam** viewpoint part of this outing rather than treating it as another hike. [NPS trail details](https://www.nps.gov/thingstodo/hike-pa-rus-trail.htm)\n\n### Day 2 \u2014 Temple of Sinawava and evening light\n- **Temple of Sinawava \u2014 90 minutes.** Make this your main easy walking outing, with time to linger over the canyon scenery. This recommendation is for the Temple area\u2014not an extension into a different trail or river hike.\n- **Pa\u2019rus Trail \u2014 60 minutes near sunset.** Return specifically for evening Watchman views rather than another full trail walk. NPS identifies Pa\u2019rus as a sunset outing. [NPS](https://www.nps.gov/thingstodo/hike-pa-rus-trail.htm)\n\n### Day 3 \u2014 Lava Point\u2019s different perspective\n**Lava Point Overlook \u2014 90 minutes.** Give this a separate, slow-paced scenic day: enjoy the overlook, landscape viewing, and a picnic rather than adding an unverified rim hike. It\u2019s listed as easy and low-exposure, but **road access and opening status need checking before committing to the journey**. [NPS overlook information](https://www.nps.gov/places/lava-point-overlook.htm)\n\n### Day 4 \u2014 A comfortable canyon finale\n- **Temple of Sinawava \u2014 75 minutes.** Revisit for another gentle walk and a final look at the canyon.\n- **Pa\u2019rus Trail \u2014 90 minutes.** Finish with the river scenery and exhibits you most enjoyed or passed earlier. This is an intentional repeat, not a supposedly different hike under another name.\n\n**For your exposure preference:** I\u2019ve left out Big Bend and Canyon Junction as separate outings because I couldn\u2019t verify their exposure. \u201cLow exposure\u201d also isn\u2019t a guarantee that every spot will feel comfortable\u2014stay on established routes and turn back whenever terrain feels wrong.\n\nCurrent access isn\u2019t confirmed for these places, so check NPS road, trail, and shuttle information before setting the order. This gives you **four gentle sightseeing days**, not four packed days of different hikes."
+  ]
+}

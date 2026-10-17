@@ -39,18 +39,13 @@ export default function DiscoverPageClient({ initialCatalog }) {
 
   return (
     <div className="pb-24">
-      <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
+      <div className="public-shell">
         <header
           className="border-b py-5 sm:py-8 mb-6 sm:mb-8"
           style={{ borderColor: 'var(--border)' }}
         >
           <div
-            className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-3 sm:mb-4 backdrop-blur"
-            style={{
-              backgroundColor: 'var(--surface)',
-              borderWidth: '1px',
-              borderColor: 'var(--border)',
-            }}
+            className="public-eyebrow"
           >
             <Compass className="h-4 w-4" style={{ color: 'var(--text-secondary)' }} />
             <span
@@ -61,12 +56,12 @@ export default function DiscoverPageClient({ initialCatalog }) {
             </span>
           </div>
           <h1
-            className="text-3xl sm:text-4xl font-bold mb-2"
+            className="public-page-title mb-4"
             style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}
           >
             {BROWSE_HUB_HEADLINE}
           </h1>
-          <p className="text-base max-w-2xl" style={{ color: 'var(--text-secondary)' }}>
+          <p className="public-page-intro" style={{ color: 'var(--text-secondary)' }}>
             {BROWSE_HUB_DESCRIPTION}
           </p>
         </header>

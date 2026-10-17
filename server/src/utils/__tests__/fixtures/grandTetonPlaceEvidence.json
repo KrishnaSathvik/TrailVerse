@@ -1,0 +1,2451 @@
+{
+  "_provenance": "VERBATIM evidence items from the Phase 4N live frozen Grand Teton bundle (artifacts/trailie-phase4n-live-coverage-boundary/frozen-bundle.json). Real npsEvidenceProvider output — never hand-shaped.",
+  "evidence": [
+    {
+      "_id": {},
+      "evidenceId": "ev:0c6aeae10278d64c7dc18d9f0c6ff5a7afa29ad875506efdcf4173b7077fea34",
+      "logicalKey": "lek:acfc33421bcdd88b6db42b7a79c6131277ab7e629ac5790c02f6a88cbcbefaf1",
+      "canonicalKey": "evk:0c6aeae10278d64c7dc18d9f0c6ff5a7afa29ad875506efdcf4173b7077fea34",
+      "schemaVersion": 1,
+      "entityId": "nps:park:grte",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "thingstodo:da61b8b4-d8fb-4ff6-8851-266f2c7d6434",
+        "text": "Grassy Lake Road: Grassy Lake Road is a dirt road connecting Flagg Ranch to Ashton, Idaho.",
+        "normalizedValue": {
+          "entityId": "nps:park:grte:thingstodo:DA61B8B4-D8FB-4FF6-8851-266F2C7D6434",
+          "destinationId": "nps:park:grte",
+          "name": "Grassy Lake Road",
+          "category": "thingstodo",
+          "activityTypes": [
+            "scenic driving"
+          ],
+          "difficulty": null,
+          "duration": "1-4 Hours",
+          "walkingDistanceMiles": null,
+          "exposureLevel": null,
+          "accessibility": "Use caution on this dirt road. High clearance vehicles are recommended, and the road is closed for grizzly bear migration until June 1. Sections of the road may open later depending on conditions.",
+          "operationalFacts": [
+            {
+              "subject": {
+                "entityId": "nps:park:grte:place:DA61B8B4-D8FB-4FF6-8851-266F2C7D6434",
+                "name": "Grassy Lake Road",
+                "parkCode": "grte"
+              },
+              "type": "vehicle_restriction",
+              "requirement": "High clearance vehicles access",
+              "plannerRule": "Grassy Lake Road requires High clearance vehicles access. Do not present it as an ordinary stop for a traveller who has not said they have one.",
+              "confidence": "official_text",
+              "provenance": {
+                "authority": "official_owner",
+                "field": "longDescription",
+                "sourceUrl": "https://www.nps.gov/thingstodo/grassylakeroad.htm",
+                "excerpt": "High clearance vehicles"
+              },
+              "observedAt": "2026-08-31T01:32:03.522Z",
+              "subjects": [
+                "Grassy Lake Road"
+              ]
+            },
+            {
+              "subject": {
+                "entityId": "nps:park:grte:place:DA61B8B4-D8FB-4FF6-8851-266F2C7D6434",
+                "name": "Grassy Lake Road",
+                "parkCode": "grte"
+              },
+              "type": "vehicle_restriction",
+              "requirement": "access over dirt road",
+              "plannerRule": "Grassy Lake Road is reached over dirt road. Say so plainly if you include it.",
+              "confidence": "official_text",
+              "provenance": {
+                "authority": "official_owner",
+                "field": "longDescription",
+                "sourceUrl": "https://www.nps.gov/thingstodo/grassylakeroad.htm",
+                "excerpt": "dirt road"
+              },
+              "observedAt": "2026-08-31T01:32:03.522Z",
+              "subjects": [
+                "Grassy Lake Road"
+              ]
+            }
+          ],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [
+            "scenic driving"
+          ],
+          "sunsetSuitability": "possible",
+          "coordinates": {
+            "latitude": 0,
+            "longitude": 0
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/thingstodo/grassylakeroad.htm",
+          "observedAt": "2026-08-31T01:32:03.522Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:grte",
+        "objectId": null,
+        "qualifiers": [
+          "named_activity_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2",
+          "source_ingestion_complete"
+        ],
+        "polarity": "positive"
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:grte"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US",
+        "route": null
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "DA61B8B4-D8FB-4FF6-8851-266F2C7D6434",
+        "url": "https://www.nps.gov/thingstodo/grassylakeroad.htm",
+        "title": "Grassy Lake Road",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observation": {
+        "observedAt": "2026-08-31T01:32:03.522Z",
+        "fetchedAt": "2026-08-31T01:32:03.754Z",
+        "expiresAt": "2026-09-30T01:32:03.522Z",
+        "staleUntil": "2026-12-29T01:32:03.522Z",
+        "retrievalMode": "live",
+        "httpEtag": null,
+        "httpLastModified": null
+      },
+      "quality": {
+        "authorityClass": "official_owner",
+        "freshnessStatus": "fresh",
+        "scopeMatch": "exact",
+        "relationshipConfidence": null,
+        "corroboratingEvidenceIds": [],
+        "conflictingEvidenceIds": [],
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v4",
+        "rawPayloadHash": null,
+        "contentHash": "3c53e3df42759e01ab6cc45215c5cd3eb5486b0bf7f14db9afe220156ad39808"
+      },
+      "retention": {
+        "class": "public_stable_1y",
+        "licenseClass": "government_public",
+        "storeClaimText": true,
+        "deleteAfter": null
+      },
+      "absenceProof": null,
+      "isCurrent": true,
+      "supersedesEvidenceId": null,
+      "createdAt": "2026-08-31T01:32:03.759Z",
+      "updatedAt": "2026-08-31T01:32:03.759Z",
+      "__v": 0
+    },
+    {
+      "_id": {},
+      "evidenceId": "ev:0e30e769b283a294a74238581eb80106c0fe8f16891c3ed3cf71065ed8fd2fa2",
+      "logicalKey": "lek:4797773e7fd74411c3015dcc1e6c199c231274681de092bf11807f0f6fc3c558",
+      "canonicalKey": "evk:0e30e769b283a294a74238581eb80106c0fe8f16891c3ed3cf71065ed8fd2fa2",
+      "schemaVersion": 1,
+      "entityId": "nps:park:grte",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "place:c67f291d-f11a-49fc-9f4e-1a34567bfe88",
+        "text": "Cascade Canyon Turnout",
+        "normalizedValue": {
+          "entityId": "nps:park:grte:place:C67F291D-F11A-49FC-9F4E-1A34567BFE88",
+          "destinationId": "nps:park:grte",
+          "name": "Cascade Canyon Turnout",
+          "category": "place",
+          "activityTypes": [],
+          "difficulty": null,
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "exposureLevel": null,
+          "accessibility": null,
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 43.7731547023,
+            "longitude": -110.71210488
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/places/000/cascade-canyon-turnout.htm",
+          "observedAt": "2026-08-31T01:32:03.522Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:grte",
+        "objectId": null,
+        "qualifiers": [
+          "named_place_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2",
+          "source_ingestion_complete"
+        ],
+        "polarity": "positive"
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:grte"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US",
+        "route": null
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "C67F291D-F11A-49FC-9F4E-1A34567BFE88",
+        "url": "https://www.nps.gov/places/000/cascade-canyon-turnout.htm",
+        "title": "Cascade Canyon Turnout",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observation": {
+        "observedAt": "2026-08-31T01:32:03.522Z",
+        "fetchedAt": "2026-08-31T01:32:04.193Z",
+        "expiresAt": "2026-09-30T01:32:03.522Z",
+        "staleUntil": "2026-12-29T01:32:03.522Z",
+        "retrievalMode": "live",
+        "httpEtag": null,
+        "httpLastModified": null
+      },
+      "quality": {
+        "authorityClass": "official_owner",
+        "freshnessStatus": "fresh",
+        "scopeMatch": "exact",
+        "relationshipConfidence": null,
+        "corroboratingEvidenceIds": [],
+        "conflictingEvidenceIds": [],
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v4",
+        "rawPayloadHash": null,
+        "contentHash": "ea44604ce42275952c618297cf1f5ba7be9f95dd995f1410b9aa325098a4567b"
+      },
+      "retention": {
+        "class": "public_stable_1y",
+        "licenseClass": "government_public",
+        "storeClaimText": true,
+        "deleteAfter": null
+      },
+      "absenceProof": null,
+      "isCurrent": true,
+      "supersedesEvidenceId": null,
+      "createdAt": "2026-08-31T01:32:04.194Z",
+      "updatedAt": "2026-08-31T01:32:04.194Z",
+      "__v": 0
+    },
+    {
+      "_id": {},
+      "evidenceId": "ev:0e7ce0c421bfab1d00a2ffbecc5ae39e98b581e3c8aee5f916bf84543086c3db",
+      "logicalKey": "lek:8837ec424351acf6e8f2df1674797fe9d9b2e055b321110b8a38e81b01280b55",
+      "canonicalKey": "evk:0e7ce0c421bfab1d00a2ffbecc5ae39e98b581e3c8aee5f916bf84543086c3db",
+      "schemaVersion": 1,
+      "entityId": "nps:park:grte",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "place:724bf527-297d-4631-b8de-532425fb4977",
+        "text": "Colter Bay Convenience Store",
+        "normalizedValue": {
+          "entityId": "nps:park:grte:place:724BF527-297D-4631-B8DE-532425FB4977",
+          "destinationId": "nps:park:grte",
+          "name": "Colter Bay Convenience Store",
+          "category": "place",
+          "activityTypes": [],
+          "difficulty": null,
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "exposureLevel": null,
+          "accessibility": null,
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 43.911188,
+            "longitude": -110.630125
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/places/000/colter-bay-convenience-store.htm",
+          "observedAt": "2026-08-31T01:32:03.522Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:grte",
+        "objectId": null,
+        "qualifiers": [
+          "named_place_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2",
+          "source_ingestion_complete"
+        ],
+        "polarity": "positive"
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:grte"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US",
+        "route": null
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "724BF527-297D-4631-B8DE-532425FB4977",
+        "url": "https://www.nps.gov/places/000/colter-bay-convenience-store.htm",
+        "title": "Colter Bay Convenience Store",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observation": {
+        "observedAt": "2026-08-31T01:32:03.522Z",
+        "fetchedAt": "2026-08-31T01:32:04.273Z",
+        "expiresAt": "2026-09-30T01:32:03.522Z",
+        "staleUntil": "2026-12-29T01:32:03.522Z",
+        "retrievalMode": "live",
+        "httpEtag": null,
+        "httpLastModified": null
+      },
+      "quality": {
+        "authorityClass": "official_owner",
+        "freshnessStatus": "fresh",
+        "scopeMatch": "exact",
+        "relationshipConfidence": null,
+        "corroboratingEvidenceIds": [],
+        "conflictingEvidenceIds": [],
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v4",
+        "rawPayloadHash": null,
+        "contentHash": "debdb90e472654cdfcb916b8744aa730d090b76d3f6c59f7c0ae69614011be57"
+      },
+      "retention": {
+        "class": "public_stable_1y",
+        "licenseClass": "government_public",
+        "storeClaimText": true,
+        "deleteAfter": null
+      },
+      "absenceProof": null,
+      "isCurrent": true,
+      "supersedesEvidenceId": null,
+      "createdAt": "2026-08-31T01:32:04.274Z",
+      "updatedAt": "2026-08-31T01:32:04.274Z",
+      "__v": 0
+    },
+    {
+      "_id": {},
+      "evidenceId": "ev:0f6e3f90a2300ae422a6618f58ce9ea43679d79b281e78e9506090cbb3744af9",
+      "logicalKey": "lek:fcda8c6feff0449cf21b6e9ef8b14ccee118e67829c69a6496b7287e40374b74",
+      "canonicalKey": "evk:0f6e3f90a2300ae422a6618f58ce9ea43679d79b281e78e9506090cbb3744af9",
+      "schemaVersion": 1,
+      "entityId": "nps:park:grte",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "thingstodo:d0585fac-a08a-45ec-b7ca-1a4e2687de67",
+        "text": "Jenny Lake Loop: Hike around Jenny Lake for spectacular views of Cascade Canyon and the Teton Range.",
+        "normalizedValue": {
+          "entityId": "nps:park:grte:thingstodo:D0585FAC-A08A-45EC-B7CA-1A4E2687DE67",
+          "destinationId": "nps:park:grte",
+          "name": "Jenny Lake Loop",
+          "category": "thingstodo",
+          "activityTypes": [
+            "hiking",
+            "hike"
+          ],
+          "difficulty": null,
+          "duration": "3-5 Hours",
+          "walkingDistanceMiles": null,
+          "exposureLevel": null,
+          "accessibility": "The Jenny Lake Loop is a 7.1 mi (11.4 km) loop hike with 1,040 ft (320 m) of elevation gain with an average slope of 6%. The trail is dirt, narrow in sections, and features obstacles such as roots, exposed rock, and slight elevation change.",
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 0,
+            "longitude": 0
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/thingstodo/jennylakeloop.htm",
+          "observedAt": "2026-08-31T01:32:03.522Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:grte",
+        "objectId": null,
+        "qualifiers": [
+          "named_activity_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2",
+          "source_ingestion_complete"
+        ],
+        "polarity": "positive"
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:grte"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US",
+        "route": null
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "D0585FAC-A08A-45EC-B7CA-1A4E2687DE67",
+        "url": "https://www.nps.gov/thingstodo/jennylakeloop.htm",
+        "title": "Jenny Lake Loop",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observation": {
+        "observedAt": "2026-08-31T01:32:03.522Z",
+        "fetchedAt": "2026-08-31T01:32:03.959Z",
+        "expiresAt": "2026-09-30T01:32:03.522Z",
+        "staleUntil": "2026-12-29T01:32:03.522Z",
+        "retrievalMode": "live",
+        "httpEtag": null,
+        "httpLastModified": null
+      },
+      "quality": {
+        "authorityClass": "official_owner",
+        "freshnessStatus": "fresh",
+        "scopeMatch": "exact",
+        "relationshipConfidence": null,
+        "corroboratingEvidenceIds": [],
+        "conflictingEvidenceIds": [],
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v4",
+        "rawPayloadHash": null,
+        "contentHash": "47cbd22e95f6e0411019d2d851603bed46365773d3ffd6d188b02c3ef6fd67fb"
+      },
+      "retention": {
+        "class": "public_stable_1y",
+        "licenseClass": "government_public",
+        "storeClaimText": true,
+        "deleteAfter": null
+      },
+      "absenceProof": null,
+      "isCurrent": true,
+      "supersedesEvidenceId": null,
+      "createdAt": "2026-08-31T01:32:03.961Z",
+      "updatedAt": "2026-08-31T01:32:03.961Z",
+      "__v": 0
+    },
+    {
+      "_id": {},
+      "evidenceId": "ev:17a321a725c338bb1a4089f1e3a0d6435282be34e5c4fd9689a5643e7a39e4de",
+      "logicalKey": "lek:e0356e644015870c0690592b5a670ea5f7175ef8d66d5273b322b3dea8425545",
+      "canonicalKey": "evk:17a321a725c338bb1a4089f1e3a0d6435282be34e5c4fd9689a5643e7a39e4de",
+      "schemaVersion": 1,
+      "entityId": "nps:park:grte",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "thingstodo:e707861f-187f-416b-9d14-76e25cca228b",
+        "text": "Chapel of the Transfiguration: Visit the historic Chapel of the Transfiguration.",
+        "normalizedValue": {
+          "entityId": "nps:park:grte:thingstodo:E707861F-187F-416B-9D14-76E25CCA228B",
+          "destinationId": "nps:park:grte",
+          "name": "Chapel of the Transfiguration",
+          "category": "thingstodo",
+          "activityTypes": [
+            "self-guided tours - walking"
+          ],
+          "difficulty": null,
+          "duration": "5-60 Minutes",
+          "walkingDistanceMiles": null,
+          "exposureLevel": null,
+          "accessibility": "Parking is available at the Chapel of the Transfiguration. The surrounding paths are paved and level.",
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 0,
+            "longitude": 0
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/thingstodo/chapeltransfiguration.htm",
+          "observedAt": "2026-08-31T01:32:03.522Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:grte",
+        "objectId": null,
+        "qualifiers": [
+          "named_activity_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2",
+          "source_ingestion_complete"
+        ],
+        "polarity": "positive"
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:grte"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US",
+        "route": null
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "E707861F-187F-416B-9D14-76E25CCA228B",
+        "url": "https://www.nps.gov/thingstodo/chapeltransfiguration.htm",
+        "title": "Chapel of the Transfiguration",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observation": {
+        "observedAt": "2026-08-31T01:32:03.522Z",
+        "fetchedAt": "2026-08-31T01:32:03.788Z",
+        "expiresAt": "2026-09-30T01:32:03.522Z",
+        "staleUntil": "2026-12-29T01:32:03.522Z",
+        "retrievalMode": "live",
+        "httpEtag": null,
+        "httpLastModified": null
+      },
+      "quality": {
+        "authorityClass": "official_owner",
+        "freshnessStatus": "fresh",
+        "scopeMatch": "exact",
+        "relationshipConfidence": null,
+        "corroboratingEvidenceIds": [],
+        "conflictingEvidenceIds": [],
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v4",
+        "rawPayloadHash": null,
+        "contentHash": "dd438baac4a5eec737dc74bd85d4d77e33f51138ba9546c5c725deede1ec8406"
+      },
+      "retention": {
+        "class": "public_stable_1y",
+        "licenseClass": "government_public",
+        "storeClaimText": true,
+        "deleteAfter": null
+      },
+      "absenceProof": null,
+      "isCurrent": true,
+      "supersedesEvidenceId": null,
+      "createdAt": "2026-08-31T01:32:03.792Z",
+      "updatedAt": "2026-08-31T01:32:03.792Z",
+      "__v": 0
+    },
+    {
+      "_id": {},
+      "evidenceId": "ev:1e3eaed1e93d89b8076ceb563dddc405ffcdeec068a5a03ff4660c3e09ba2323",
+      "logicalKey": "lek:4666a561e39750b62b5220f8d243c1cdfd29eb022de1bf36acd80de2cdf50d86",
+      "canonicalKey": "evk:1e3eaed1e93d89b8076ceb563dddc405ffcdeec068a5a03ff4660c3e09ba2323",
+      "schemaVersion": 1,
+      "entityId": "nps:park:grte",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "place:4db89cd0-0d54-49a0-beae-d187c50eedf7",
+        "text": "Chapel of the Transfiguration",
+        "normalizedValue": {
+          "entityId": "nps:park:grte:place:4DB89CD0-0D54-49A0-BEAE-D187C50EEDF7",
+          "destinationId": "nps:park:grte",
+          "name": "Chapel of the Transfiguration",
+          "category": "place",
+          "activityTypes": [],
+          "difficulty": null,
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "exposureLevel": null,
+          "accessibility": null,
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 43.6601703,
+            "longitude": -110.715391599
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/places/000/chapel-of-the-transfiguration.htm",
+          "observedAt": "2026-08-31T01:32:03.522Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:grte",
+        "objectId": null,
+        "qualifiers": [
+          "named_place_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2",
+          "source_ingestion_complete"
+        ],
+        "polarity": "positive"
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:grte"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US",
+        "route": null
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "4DB89CD0-0D54-49A0-BEAE-D187C50EEDF7",
+        "url": "https://www.nps.gov/places/000/chapel-of-the-transfiguration.htm",
+        "title": "Chapel of the Transfiguration",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observation": {
+        "observedAt": "2026-08-31T01:32:03.522Z",
+        "fetchedAt": "2026-08-31T01:32:04.226Z",
+        "expiresAt": "2026-09-30T01:32:03.522Z",
+        "staleUntil": "2026-12-29T01:32:03.522Z",
+        "retrievalMode": "live",
+        "httpEtag": null,
+        "httpLastModified": null
+      },
+      "quality": {
+        "authorityClass": "official_owner",
+        "freshnessStatus": "fresh",
+        "scopeMatch": "exact",
+        "relationshipConfidence": null,
+        "corroboratingEvidenceIds": [],
+        "conflictingEvidenceIds": [],
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v4",
+        "rawPayloadHash": null,
+        "contentHash": "3a27410c91ebf01fc8558bd5311548006c6f63590594758107a0d963c162a4b3"
+      },
+      "retention": {
+        "class": "public_stable_1y",
+        "licenseClass": "government_public",
+        "storeClaimText": true,
+        "deleteAfter": null
+      },
+      "absenceProof": null,
+      "isCurrent": true,
+      "supersedesEvidenceId": null,
+      "createdAt": "2026-08-31T01:32:04.227Z",
+      "updatedAt": "2026-08-31T01:32:04.227Z",
+      "__v": 0
+    },
+    {
+      "_id": {},
+      "evidenceId": "ev:2c7be5791d64217ba81a8b828e461220209a46d9816f43c471490b58a8e85575",
+      "logicalKey": "lek:6a8ddac7da6c1568c84595146c6e5dc097bbaaa9b56973e892afe56f1007ce1f",
+      "canonicalKey": "evk:2c7be5791d64217ba81a8b828e461220209a46d9816f43c471490b58a8e85575",
+      "schemaVersion": 1,
+      "entityId": "nps:park:grte",
+      "topic": "alerts_closures",
+      "evidenceType": "live_state",
+      "claim": {
+        "identity": "alerts:alerts-closures:3e0d0431-d76e-4d10-8290-deab7fa80b87",
+        "text": "Construction in the South End of the Park: Construction projects underway. Moose-Wilson Road between Murie Ranch and LS Rockefeller Preserve open with delays of 45 minutes in both directions. No roadside parking on Moose-Wilson Road. Expected to close 9/7. Taggart Trail detour in place. Menor's Ferry Road closed weekdays. Mormon Row area open with some construction activity.",
+        "normalizedValue": {
+          "title": "Construction in the South End of the Park",
+          "category": "Caution"
+        },
+        "unit": null,
+        "status": "active",
+        "subjectId": "nps:park:grte",
+        "objectId": null,
+        "qualifiers": [],
+        "polarity": "positive"
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:grte"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US",
+        "route": null
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "3E0D0431-D76E-4D10-8290-DEAB7FA80B87:alerts_closures",
+        "url": "https://www.nps.gov/grte/index.htm",
+        "title": "Construction in the South End of the Park",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observation": {
+        "observedAt": "2026-08-31T01:32:00.369Z",
+        "fetchedAt": "2026-08-31T01:32:00.371Z",
+        "expiresAt": "2026-08-31T01:47:00.369Z",
+        "staleUntil": "2026-08-31T02:17:00.369Z",
+        "retrievalMode": "live",
+        "httpEtag": null,
+        "httpLastModified": null
+      },
+      "quality": {
+        "authorityClass": "official_owner",
+        "freshnessStatus": "fresh",
+        "scopeMatch": "exact",
+        "relationshipConfidence": null,
+        "corroboratingEvidenceIds": [],
+        "conflictingEvidenceIds": [],
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-evidence-v2",
+        "rawPayloadHash": null,
+        "contentHash": "5102f9d538067231b9f73404e42c9f2efb52b40d82b1866bb0afe26aec166d49"
+      },
+      "retention": {
+        "class": "public_dynamic_90d",
+        "licenseClass": "government_public",
+        "storeClaimText": true,
+        "deleteAfter": null
+      },
+      "absenceProof": null,
+      "isCurrent": true,
+      "supersedesEvidenceId": null,
+      "createdAt": "2026-08-31T01:32:00.396Z",
+      "updatedAt": "2026-08-31T01:32:00.396Z",
+      "__v": 0
+    },
+    {
+      "_id": {},
+      "evidenceId": "ev:31c95d359a18088803e49a22d0e07b67fc9adc9b41c9aa3f91290686ecc49dc1",
+      "logicalKey": "lek:497fa32224122a4a6ba73e3865c36b8fffb699298193d04c7fb7fb94a818f466",
+      "canonicalKey": "evk:31c95d359a18088803e49a22d0e07b67fc9adc9b41c9aa3f91290686ecc49dc1",
+      "schemaVersion": 1,
+      "entityId": "nps:park:grte",
+      "topic": "alerts_closures",
+      "evidenceType": "live_state",
+      "claim": {
+        "identity": "alerts:alerts-closures:8e55aeee-c63f-44f9-aa7f-3b027cb4210f",
+        "text": "Death Canyon Trailhead Construction Closure: Death Canyon Road and Trailhead are closed to all use. Start hikes at alternative trailheads such as Granite Canyon, LSR Preserve, and Taggart Lake.",
+        "normalizedValue": {
+          "title": "Death Canyon Trailhead Construction Closure",
+          "category": "Park Closure"
+        },
+        "unit": null,
+        "status": "active",
+        "subjectId": "nps:park:grte",
+        "objectId": null,
+        "qualifiers": [],
+        "polarity": "positive"
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:grte"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US",
+        "route": null
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "8E55AEEE-C63F-44F9-AA7F-3B027CB4210F:alerts_closures",
+        "url": "https://www.nps.gov/grte/index.htm",
+        "title": "Death Canyon Trailhead Construction Closure",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observation": {
+        "observedAt": "2026-08-31T01:32:00.369Z",
+        "fetchedAt": "2026-08-31T01:32:00.483Z",
+        "expiresAt": "2026-08-31T01:47:00.369Z",
+        "staleUntil": "2026-08-31T02:17:00.369Z",
+        "retrievalMode": "live",
+        "httpEtag": null,
+        "httpLastModified": null
+      },
+      "quality": {
+        "authorityClass": "official_owner",
+        "freshnessStatus": "fresh",
+        "scopeMatch": "exact",
+        "relationshipConfidence": null,
+        "corroboratingEvidenceIds": [],
+        "conflictingEvidenceIds": [],
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-evidence-v2",
+        "rawPayloadHash": null,
+        "contentHash": "2bca807be4bcb310b31ad2046428de1007f91d1ed1e1322451e0642a5afe5dd6"
+      },
+      "retention": {
+        "class": "public_dynamic_90d",
+        "licenseClass": "government_public",
+        "storeClaimText": true,
+        "deleteAfter": null
+      },
+      "absenceProof": null,
+      "isCurrent": true,
+      "supersedesEvidenceId": null,
+      "createdAt": "2026-08-31T01:32:00.485Z",
+      "updatedAt": "2026-08-31T01:32:00.485Z",
+      "__v": 0
+    },
+    {
+      "_id": {},
+      "evidenceId": "ev:4db5f4cb5221cc9a3c74ce6532778279c9dd54af134973f2811d87e8d8e2bebf",
+      "logicalKey": "lek:971eb1a62db553698ba7ae1734523b2aaa353ac3e73ab748517ed2ff5cac3cd9",
+      "canonicalKey": "evk:4db5f4cb5221cc9a3c74ce6532778279c9dd54af134973f2811d87e8d8e2bebf",
+      "schemaVersion": 1,
+      "entityId": "nps:park:grte",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "thingstodo:65cbb755-47ce-4070-b7bc-0b5ef0fc55c6",
+        "text": "Taggart Lake: Get spectacular views of the Teton Range on this easy hike to Taggart Lake.",
+        "normalizedValue": {
+          "entityId": "nps:park:grte:thingstodo:65CBB755-47CE-4070-B7BC-0B5EF0FC55C6",
+          "destinationId": "nps:park:grte",
+          "name": "Taggart Lake",
+          "category": "thingstodo",
+          "activityTypes": [
+            "hiking",
+            "hike"
+          ],
+          "difficulty": "easy",
+          "duration": "1-2 Hours",
+          "walkingDistanceMiles": null,
+          "exposureLevel": null,
+          "accessibility": "Taggart Lake is a 3 mi (4.8 km) roundtrip hike with 360 ft (110 m) of elevation gain and an average slope of 6%. The trail gains and loses elevation and includes rocks and steps. ",
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 0,
+            "longitude": 0
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/thingstodo/taggartlake.htm",
+          "observedAt": "2026-08-31T01:32:03.522Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:grte",
+        "objectId": null,
+        "qualifiers": [
+          "named_activity_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2",
+          "source_ingestion_complete"
+        ],
+        "polarity": "positive"
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:grte"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US",
+        "route": null
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "65CBB755-47CE-4070-B7BC-0B5EF0FC55C6",
+        "url": "https://www.nps.gov/thingstodo/taggartlake.htm",
+        "title": "Taggart Lake",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observation": {
+        "observedAt": "2026-08-31T01:32:03.522Z",
+        "fetchedAt": "2026-08-31T01:32:03.745Z",
+        "expiresAt": "2026-09-30T01:32:03.522Z",
+        "staleUntil": "2026-12-29T01:32:03.522Z",
+        "retrievalMode": "live",
+        "httpEtag": null,
+        "httpLastModified": null
+      },
+      "quality": {
+        "authorityClass": "official_owner",
+        "freshnessStatus": "fresh",
+        "scopeMatch": "exact",
+        "relationshipConfidence": null,
+        "corroboratingEvidenceIds": [],
+        "conflictingEvidenceIds": [],
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v4",
+        "rawPayloadHash": null,
+        "contentHash": "73937d883fb5db17c62e5a4871f9a6d6ffbe9dc298855739200c21115a677028"
+      },
+      "retention": {
+        "class": "public_stable_1y",
+        "licenseClass": "government_public",
+        "storeClaimText": true,
+        "deleteAfter": null
+      },
+      "absenceProof": null,
+      "isCurrent": true,
+      "supersedesEvidenceId": null,
+      "createdAt": "2026-08-31T01:32:03.748Z",
+      "updatedAt": "2026-08-31T01:32:03.748Z",
+      "__v": 0
+    },
+    {
+      "_id": {},
+      "evidenceId": "ev:5c9e9b6407be4cd8e20c58e78a8e23df6511b4768cb0d2058228d68c2e2d0174",
+      "logicalKey": "lek:db87ac007ee20b2da5b85e0249fdbd8ab691540e80f2106dd6c7fb6804f7964c",
+      "canonicalKey": "evk:5c9e9b6407be4cd8e20c58e78a8e23df6511b4768cb0d2058228d68c2e2d0174",
+      "schemaVersion": 1,
+      "entityId": "nps:park:grte",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "place:5b0ee00b-538c-4cea-8f9a-344c5c840604",
+        "text": "Arizona Island Picnic Area",
+        "normalizedValue": {
+          "entityId": "nps:park:grte:place:5B0EE00B-538C-4CEA-8F9A-344C5C840604",
+          "destinationId": "nps:park:grte",
+          "name": "Arizona Island Picnic Area",
+          "category": "picnic",
+          "activityTypes": [
+            "picnic"
+          ],
+          "difficulty": null,
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "exposureLevel": "low",
+          "accessibility": null,
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 43.9673361498,
+            "longitude": -110.639644782
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/places/000/arizona-island-picnic-area.htm",
+          "observedAt": "2026-08-31T01:32:03.522Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:grte",
+        "objectId": null,
+        "qualifiers": [
+          "named_place_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2",
+          "source_ingestion_complete"
+        ],
+        "polarity": "positive"
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:grte"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US",
+        "route": null
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "5B0EE00B-538C-4CEA-8F9A-344C5C840604",
+        "url": "https://www.nps.gov/places/000/arizona-island-picnic-area.htm",
+        "title": "Arizona Island Picnic Area",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observation": {
+        "observedAt": "2026-08-31T01:32:03.522Z",
+        "fetchedAt": "2026-08-31T01:32:04.142Z",
+        "expiresAt": "2026-09-30T01:32:03.522Z",
+        "staleUntil": "2026-12-29T01:32:03.522Z",
+        "retrievalMode": "live",
+        "httpEtag": null,
+        "httpLastModified": null
+      },
+      "quality": {
+        "authorityClass": "official_owner",
+        "freshnessStatus": "fresh",
+        "scopeMatch": "exact",
+        "relationshipConfidence": null,
+        "corroboratingEvidenceIds": [],
+        "conflictingEvidenceIds": [],
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v4",
+        "rawPayloadHash": null,
+        "contentHash": "f624a2eea029eae31e4d6ac86f9fdc9728324511406bebf815d11864a35d2b42"
+      },
+      "retention": {
+        "class": "public_stable_1y",
+        "licenseClass": "government_public",
+        "storeClaimText": true,
+        "deleteAfter": null
+      },
+      "absenceProof": null,
+      "isCurrent": true,
+      "supersedesEvidenceId": null,
+      "createdAt": "2026-08-31T01:32:04.143Z",
+      "updatedAt": "2026-08-31T01:32:04.143Z",
+      "__v": 0
+    },
+    {
+      "_id": {},
+      "evidenceId": "ev:6f4dd76f96794f757445b0da98ff619d165e2ca928e676a3c9e838bc2b4ab7fa",
+      "logicalKey": "lek:f766326b3d556b779e727f49d677b639d8ea84388c965b03cc775dcaeea99fda",
+      "canonicalKey": "evk:6f4dd76f96794f757445b0da98ff619d165e2ca928e676a3c9e838bc2b4ab7fa",
+      "schemaVersion": 1,
+      "entityId": "nps:park:grte",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "thingstodo:3604914f-0d84-46ec-9276-faa4efc55ba9",
+        "text": "Bearpaw and Trapper Lakes: Hike along the shore of Leigh Lake for panoramic views of Mount Moran.",
+        "normalizedValue": {
+          "entityId": "nps:park:grte:thingstodo:3604914F-0D84-46EC-9276-FAA4EFC55BA9",
+          "destinationId": "nps:park:grte",
+          "name": "Bearpaw and Trapper Lakes",
+          "category": "thingstodo",
+          "activityTypes": [
+            "hiking",
+            "hike"
+          ],
+          "difficulty": "hard",
+          "duration": "4-6 Hours",
+          "walkingDistanceMiles": null,
+          "exposureLevel": null,
+          "accessibility": "The Bearpaw and Trapper Lakes Trail is a moderate, 9.2 mi (14.8 km) RT out and back trail with 460 ft (140 m) of elevation gain and an average slope of 4%. While the trail is long, there is little elevation change. Once past the intial 5-6 stairs at the Leigh Lake Trailhead, the trail has numerous small ups and downs and feature obstacbles, such as exposed roots and rocks.",
+          "operationalFacts": [
+            {
+              "subject": {
+                "entityId": "nps:park:grte:place:3604914F-0D84-46EC-9276-FAA4EFC55BA9",
+                "name": "Bearpaw and Trapper Lakes",
+                "parkCode": "grte"
+              },
+              "type": "reservation_required",
+              "requirement": "a permit",
+              "plannerRule": "Bearpaw and Trapper Lakes requires a permit. If you include it, state the permit requirement in the same breath.",
+              "confidence": "official_text",
+              "provenance": {
+                "authority": "official_owner",
+                "field": "reservationDescription",
+                "sourceUrl": "https://www.nps.gov/thingstodo/bearpaw-trapper.htm",
+                "excerpt": "Permits are required"
+              },
+              "observedAt": "2026-08-31T01:32:03.522Z",
+              "subjects": [
+                "Bearpaw and Trapper Lakes"
+              ]
+            }
+          ],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 43.78895902592638,
+            "longitude": -110.73154286440595
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/thingstodo/bearpaw-trapper.htm",
+          "observedAt": "2026-08-31T01:32:03.522Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:grte",
+        "objectId": null,
+        "qualifiers": [
+          "named_activity_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2",
+          "source_ingestion_complete"
+        ],
+        "polarity": "positive"
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:grte"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US",
+        "route": null
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "3604914F-0D84-46EC-9276-FAA4EFC55BA9",
+        "url": "https://www.nps.gov/thingstodo/bearpaw-trapper.htm",
+        "title": "Bearpaw and Trapper Lakes",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observation": {
+        "observedAt": "2026-08-31T01:32:03.522Z",
+        "fetchedAt": "2026-08-31T01:32:03.910Z",
+        "expiresAt": "2026-09-30T01:32:03.522Z",
+        "staleUntil": "2026-12-29T01:32:03.522Z",
+        "retrievalMode": "live",
+        "httpEtag": null,
+        "httpLastModified": null
+      },
+      "quality": {
+        "authorityClass": "official_owner",
+        "freshnessStatus": "fresh",
+        "scopeMatch": "exact",
+        "relationshipConfidence": null,
+        "corroboratingEvidenceIds": [],
+        "conflictingEvidenceIds": [],
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v4",
+        "rawPayloadHash": null,
+        "contentHash": "d58566a11b18b1cf7286d81e77193fe5d6945d2c49bcaa10e8170ad800da4331"
+      },
+      "retention": {
+        "class": "public_stable_1y",
+        "licenseClass": "government_public",
+        "storeClaimText": true,
+        "deleteAfter": null
+      },
+      "absenceProof": null,
+      "isCurrent": true,
+      "supersedesEvidenceId": null,
+      "createdAt": "2026-08-31T01:32:03.912Z",
+      "updatedAt": "2026-08-31T01:32:03.912Z",
+      "__v": 0
+    },
+    {
+      "_id": {},
+      "evidenceId": "ev:82b7b6fbf6cd349f34031dbd4df56795681eb6f80292f7c676aa3d0d6a7737c0",
+      "logicalKey": "lek:88972a9840903e916aef5591e793f379800e2fa192bc0538b1b7e2a276715677",
+      "canonicalKey": "evk:82b7b6fbf6cd349f34031dbd4df56795681eb6f80292f7c676aa3d0d6a7737c0",
+      "schemaVersion": 1,
+      "entityId": "nps:park:grte",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "place:843806ac-5270-4bbb-96ac-5ecb9f47521b",
+        "text": "Snake River Overlook",
+        "normalizedValue": {
+          "entityId": "nps:park:grte:place:843806AC-5270-4BBB-96AC-5ECB9F47521B",
+          "destinationId": "nps:park:grte",
+          "name": "Snake River Overlook",
+          "category": "place",
+          "activityTypes": [
+            "viewpoint"
+          ],
+          "difficulty": null,
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "exposureLevel": null,
+          "accessibility": null,
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [
+            "viewpoint"
+          ],
+          "sunsetSuitability": "possible",
+          "coordinates": {
+            "latitude": 43.7537410494,
+            "longitude": -110.623759983
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/places/000/snake-river-overlook.htm",
+          "observedAt": "2026-08-31T01:32:03.522Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:grte",
+        "objectId": null,
+        "qualifiers": [
+          "named_place_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2",
+          "source_ingestion_complete"
+        ],
+        "polarity": "positive"
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:grte"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US",
+        "route": null
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "843806AC-5270-4BBB-96AC-5ECB9F47521B",
+        "url": "https://www.nps.gov/places/000/snake-river-overlook.htm",
+        "title": "Snake River Overlook",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observation": {
+        "observedAt": "2026-08-31T01:32:03.522Z",
+        "fetchedAt": "2026-08-31T01:32:05.523Z",
+        "expiresAt": "2026-09-30T01:32:03.522Z",
+        "staleUntil": "2026-12-29T01:32:03.522Z",
+        "retrievalMode": "live",
+        "httpEtag": null,
+        "httpLastModified": null
+      },
+      "quality": {
+        "authorityClass": "official_owner",
+        "freshnessStatus": "fresh",
+        "scopeMatch": "exact",
+        "relationshipConfidence": null,
+        "corroboratingEvidenceIds": [],
+        "conflictingEvidenceIds": [],
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v4",
+        "rawPayloadHash": null,
+        "contentHash": "48ef86c9584ca6d331cce64d34074b4531c9dd0e452cdb2fdd4b0d05e4bcf60c"
+      },
+      "retention": {
+        "class": "public_stable_1y",
+        "licenseClass": "government_public",
+        "storeClaimText": true,
+        "deleteAfter": null
+      },
+      "absenceProof": null,
+      "isCurrent": true,
+      "supersedesEvidenceId": null,
+      "createdAt": "2026-08-31T01:32:05.524Z",
+      "updatedAt": "2026-08-31T01:32:05.524Z",
+      "__v": 0
+    },
+    {
+      "_id": {},
+      "evidenceId": "ev:a09892d3104d9bd3e5bfdac528baab85b0ab3a158ad4c09d081a712a43d55560",
+      "logicalKey": "lek:0b80c2db5ad93afc422f98403754aae59c63f032635ca8afdf69a5b29603ed43",
+      "canonicalKey": "evk:a09892d3104d9bd3e5bfdac528baab85b0ab3a158ad4c09d081a712a43d55560",
+      "schemaVersion": 1,
+      "entityId": "nps:park:grte",
+      "topic": "visitor_services",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "visitor-centers:cda20774-fcfd-4d22-8f9f-19710f6efff8",
+        "text": "Jenny Lake Visitor Center: Harrison Crandall built this cabin in 1921 near the Cathedral Group Turnout as his studio. Today, the visitor center highlights the relationship between art, inspiration, and action in Grand Teton. Rangers are available at the front desk, in the plaza, and on trails for trip planning, park information, and education. Attend one of the many ranger programs offered here or shop at the Grand Teton Association bookstore. The nearby Jenny Lake Ranger Station offers backcountry and boat permits.",
+        "normalizedValue": {
+          "name": "Jenny Lake Visitor Center",
+          "category": "visitor_center",
+          "activityTypes": [
+            "visitor_center",
+            "exhibits",
+            "orientation"
+          ],
+          "difficulty": "easy",
+          "exposureLevel": "low",
+          "currentStatus": "unknown",
+          "authority": "official_owner"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:grte",
+        "objectId": null,
+        "qualifiers": [],
+        "polarity": "positive"
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:grte"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US",
+        "route": null
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "CDA20774-FCFD-4D22-8F9F-19710F6EFFF8",
+        "url": "https://www.nps.gov/grte/index.htm",
+        "title": "Jenny Lake Visitor Center",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observation": {
+        "observedAt": "2026-08-31T01:32:00.386Z",
+        "fetchedAt": "2026-08-31T01:32:00.421Z",
+        "expiresAt": "2026-09-01T01:32:00.386Z",
+        "staleUntil": "2026-09-08T01:32:00.386Z",
+        "retrievalMode": "live",
+        "httpEtag": null,
+        "httpLastModified": null
+      },
+      "quality": {
+        "authorityClass": "official_owner",
+        "freshnessStatus": "fresh",
+        "scopeMatch": "exact",
+        "relationshipConfidence": null,
+        "corroboratingEvidenceIds": [],
+        "conflictingEvidenceIds": [],
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-evidence-v2",
+        "rawPayloadHash": null,
+        "contentHash": "eb1c296a5730efa35cff9197dee469ae5f785f7fe3a24e5aacad1f9ca58549c6"
+      },
+      "retention": {
+        "class": "public_dynamic_90d",
+        "licenseClass": "government_public",
+        "storeClaimText": true,
+        "deleteAfter": null
+      },
+      "absenceProof": null,
+      "isCurrent": true,
+      "supersedesEvidenceId": null,
+      "createdAt": "2026-08-31T01:32:00.454Z",
+      "updatedAt": "2026-08-31T01:32:00.454Z",
+      "__v": 0
+    },
+    {
+      "_id": {},
+      "evidenceId": "ev:a6d1812be2eb6729f49e32fc613f8ac2f61ad02e60dbbbc7d255a7cd222bbc66",
+      "logicalKey": "lek:dfe8689135b5d16eb98eb5085afc6f348fad91cb474832823d8e968b9c1b7200",
+      "canonicalKey": "evk:a6d1812be2eb6729f49e32fc613f8ac2f61ad02e60dbbbc7d255a7cd222bbc66",
+      "schemaVersion": 1,
+      "entityId": "nps:park:grte",
+      "topic": "alerts_closures",
+      "evidenceType": "live_state",
+      "claim": {
+        "identity": "alerts:alerts-closures:b0b0df1c-919d-4a00-bedf-bdf358197c3b",
+        "text": "Construction on North Park Road: Construction underway on North Park Road between Leeks Marina and Lizard Creek Campground. 15-min delays both directions 6am-9pm / 1-hour delays both directions 9pm-6am. The section of road is about 7 miles north of Colter Bay and 11.5 miles south of Yellowstone.",
+        "normalizedValue": {
+          "title": "Construction on North Park Road",
+          "category": "Caution"
+        },
+        "unit": null,
+        "status": "active",
+        "subjectId": "nps:park:grte",
+        "objectId": null,
+        "qualifiers": [],
+        "polarity": "positive"
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:grte"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US",
+        "route": null
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "B0B0DF1C-919D-4A00-BEDF-BDF358197C3B:alerts_closures",
+        "url": "https://www.nps.gov/grte/index.htm",
+        "title": "Construction on North Park Road",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observation": {
+        "observedAt": "2026-08-31T01:32:00.369Z",
+        "fetchedAt": "2026-08-31T01:32:00.465Z",
+        "expiresAt": "2026-08-31T01:47:00.369Z",
+        "staleUntil": "2026-08-31T02:17:00.369Z",
+        "retrievalMode": "live",
+        "httpEtag": null,
+        "httpLastModified": null
+      },
+      "quality": {
+        "authorityClass": "official_owner",
+        "freshnessStatus": "fresh",
+        "scopeMatch": "exact",
+        "relationshipConfidence": null,
+        "corroboratingEvidenceIds": [],
+        "conflictingEvidenceIds": [],
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-evidence-v2",
+        "rawPayloadHash": null,
+        "contentHash": "f9fff32be7e702f11ea088766eb9de36fb77cf86737c808271dc0c15dcea1b32"
+      },
+      "retention": {
+        "class": "public_dynamic_90d",
+        "licenseClass": "government_public",
+        "storeClaimText": true,
+        "deleteAfter": null
+      },
+      "absenceProof": null,
+      "isCurrent": true,
+      "supersedesEvidenceId": null,
+      "createdAt": "2026-08-31T01:32:00.468Z",
+      "updatedAt": "2026-08-31T01:32:00.468Z",
+      "__v": 0
+    },
+    {
+      "_id": {},
+      "evidenceId": "ev:ab3bb475f819b20ba8953be4987998ce3a445ef0e4684e08875832960077e57a",
+      "logicalKey": "lek:e0ca4b95a14a101e223697be05112be31f45a950d58a958acfac10205b18ca0d",
+      "canonicalKey": "evk:ab3bb475f819b20ba8953be4987998ce3a445ef0e4684e08875832960077e57a",
+      "schemaVersion": 1,
+      "entityId": "nps:park:grte",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "place:e0629850-c56c-4b1d-9168-1efd9ab2a840",
+        "text": "Blacktail Ponds Overlook",
+        "normalizedValue": {
+          "entityId": "nps:park:grte:place:E0629850-C56C-4B1D-9168-1EFD9AB2A840",
+          "destinationId": "nps:park:grte",
+          "name": "Blacktail Ponds Overlook",
+          "category": "place",
+          "activityTypes": [
+            "viewpoint"
+          ],
+          "difficulty": null,
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "exposureLevel": null,
+          "accessibility": null,
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [
+            "viewpoint"
+          ],
+          "sunsetSuitability": "possible",
+          "coordinates": {
+            "latitude": 43.6670490495,
+            "longitude": -110.696943983
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/places/000/blacktail-ponds-overlook.htm",
+          "observedAt": "2026-08-31T01:32:03.522Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:grte",
+        "objectId": null,
+        "qualifiers": [
+          "named_place_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2",
+          "source_ingestion_complete"
+        ],
+        "polarity": "positive"
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:grte"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US",
+        "route": null
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "E0629850-C56C-4B1D-9168-1EFD9AB2A840",
+        "url": "https://www.nps.gov/places/000/blacktail-ponds-overlook.htm",
+        "title": "Blacktail Ponds Overlook",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observation": {
+        "observedAt": "2026-08-31T01:32:03.522Z",
+        "fetchedAt": "2026-08-31T01:32:04.185Z",
+        "expiresAt": "2026-09-30T01:32:03.522Z",
+        "staleUntil": "2026-12-29T01:32:03.522Z",
+        "retrievalMode": "live",
+        "httpEtag": null,
+        "httpLastModified": null
+      },
+      "quality": {
+        "authorityClass": "official_owner",
+        "freshnessStatus": "fresh",
+        "scopeMatch": "exact",
+        "relationshipConfidence": null,
+        "corroboratingEvidenceIds": [],
+        "conflictingEvidenceIds": [],
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v4",
+        "rawPayloadHash": null,
+        "contentHash": "561c7807ab1d7df8109fd6012ade38e8dd50fc192cd6324d2d9549b4050da43f"
+      },
+      "retention": {
+        "class": "public_stable_1y",
+        "licenseClass": "government_public",
+        "storeClaimText": true,
+        "deleteAfter": null
+      },
+      "absenceProof": null,
+      "isCurrent": true,
+      "supersedesEvidenceId": null,
+      "createdAt": "2026-08-31T01:32:04.186Z",
+      "updatedAt": "2026-08-31T01:32:04.186Z",
+      "__v": 0
+    },
+    {
+      "_id": {},
+      "evidenceId": "ev:adeb642fa02c6acabf49e8aacf889901bd8dd2c7ecef3a976855a97266209522",
+      "logicalKey": "lek:007232843eb8d7a9d280daaebe8ce438c4796e1a0b1197c95b38050c8a20af2f",
+      "canonicalKey": "evk:adeb642fa02c6acabf49e8aacf889901bd8dd2c7ecef3a976855a97266209522",
+      "schemaVersion": 1,
+      "entityId": "nps:park:grte",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "place:94cc3768-7b7a-4784-9802-d31cfbb745af",
+        "text": "Colter Bay Cabins",
+        "normalizedValue": {
+          "entityId": "nps:park:grte:place:94CC3768-7B7A-4784-9802-D31CFBB745AF",
+          "destinationId": "nps:park:grte",
+          "name": "Colter Bay Cabins",
+          "category": "place",
+          "activityTypes": [],
+          "difficulty": null,
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "exposureLevel": null,
+          "accessibility": null,
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 43.905159,
+            "longitude": -110.63904
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/places/000/colter-bay-cabins.htm",
+          "observedAt": "2026-08-31T01:32:03.522Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:grte",
+        "objectId": null,
+        "qualifiers": [
+          "named_place_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2",
+          "source_ingestion_complete"
+        ],
+        "polarity": "positive"
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:grte"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US",
+        "route": null
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "94CC3768-7B7A-4784-9802-D31CFBB745AF",
+        "url": "https://www.nps.gov/places/000/colter-bay-cabins.htm",
+        "title": "Colter Bay Cabins",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observation": {
+        "observedAt": "2026-08-31T01:32:03.522Z",
+        "fetchedAt": "2026-08-31T01:32:04.266Z",
+        "expiresAt": "2026-09-30T01:32:03.522Z",
+        "staleUntil": "2026-12-29T01:32:03.522Z",
+        "retrievalMode": "live",
+        "httpEtag": null,
+        "httpLastModified": null
+      },
+      "quality": {
+        "authorityClass": "official_owner",
+        "freshnessStatus": "fresh",
+        "scopeMatch": "exact",
+        "relationshipConfidence": null,
+        "corroboratingEvidenceIds": [],
+        "conflictingEvidenceIds": [],
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v4",
+        "rawPayloadHash": null,
+        "contentHash": "9056f5b54391937abda66276cced78473e9cad97cc10db1d5879a3f9f9f0051b"
+      },
+      "retention": {
+        "class": "public_stable_1y",
+        "licenseClass": "government_public",
+        "storeClaimText": true,
+        "deleteAfter": null
+      },
+      "absenceProof": null,
+      "isCurrent": true,
+      "supersedesEvidenceId": null,
+      "createdAt": "2026-08-31T01:32:04.267Z",
+      "updatedAt": "2026-08-31T01:32:04.267Z",
+      "__v": 0
+    },
+    {
+      "_id": {},
+      "evidenceId": "ev:cd42bc88f1c80e355937670abad65a2eb8d2146c6361d9fff66a7023aff06d2f",
+      "logicalKey": "lek:49c3b2e30942b0642e05a07ba88fbc1f898136843f9a6b1be27b05f276dc9c81",
+      "canonicalKey": "evk:cd42bc88f1c80e355937670abad65a2eb8d2146c6361d9fff66a7023aff06d2f",
+      "schemaVersion": 1,
+      "entityId": "nps:park:grte",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "place:e0438106-15db-4bf8-95d6-434bedc4527d",
+        "text": "Death Canyon Trailhead",
+        "normalizedValue": {
+          "entityId": "nps:park:grte:place:E0438106-15DB-4BF8-95D6-434BEDC4527D",
+          "destinationId": "nps:park:grte",
+          "name": "Death Canyon Trailhead",
+          "category": "place",
+          "activityTypes": [],
+          "difficulty": null,
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "exposureLevel": null,
+          "accessibility": null,
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 43.6559751499,
+            "longitude": -110.781271784
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/places/000/death-canyon-trailhead.htm",
+          "observedAt": "2026-08-31T01:32:03.522Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:grte",
+        "objectId": null,
+        "qualifiers": [
+          "named_place_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2",
+          "source_ingestion_complete"
+        ],
+        "polarity": "positive"
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:grte"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US",
+        "route": null
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "E0438106-15DB-4BF8-95D6-434BEDC4527D",
+        "url": "https://www.nps.gov/places/000/death-canyon-trailhead.htm",
+        "title": "Death Canyon Trailhead",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observation": {
+        "observedAt": "2026-08-31T01:32:03.522Z",
+        "fetchedAt": "2026-08-31T01:32:04.350Z",
+        "expiresAt": "2026-09-30T01:32:03.522Z",
+        "staleUntil": "2026-12-29T01:32:03.522Z",
+        "retrievalMode": "live",
+        "httpEtag": null,
+        "httpLastModified": null
+      },
+      "quality": {
+        "authorityClass": "official_owner",
+        "freshnessStatus": "fresh",
+        "scopeMatch": "exact",
+        "relationshipConfidence": null,
+        "corroboratingEvidenceIds": [],
+        "conflictingEvidenceIds": [],
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v4",
+        "rawPayloadHash": null,
+        "contentHash": "68fa43e58d8caa2494bc221f6aefa463c14f860634abe3c91a7aff7d799d835b"
+      },
+      "retention": {
+        "class": "public_stable_1y",
+        "licenseClass": "government_public",
+        "storeClaimText": true,
+        "deleteAfter": null
+      },
+      "absenceProof": null,
+      "isCurrent": true,
+      "supersedesEvidenceId": null,
+      "createdAt": "2026-08-31T01:32:04.351Z",
+      "updatedAt": "2026-08-31T01:32:04.351Z",
+      "__v": 0
+    },
+    {
+      "_id": {},
+      "evidenceId": "ev:d1d41972543d270854d8499b912eba46c37c625ccc7545c6b84a37c0e28a91c2",
+      "logicalKey": "lek:f9659b9a2a400cf5f1679b154e6b64ae5c81f9a04add068ec835bb88bd6b0c6a",
+      "canonicalKey": "evk:d1d41972543d270854d8499b912eba46c37c625ccc7545c6b84a37c0e28a91c2",
+      "schemaVersion": 1,
+      "entityId": "nps:park:grte",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "thingstodo:0414ebc3-b09e-4870-b57a-24eae3b4ee23",
+        "text": "Oxbow Bend: Visit Oxbow Bend for iconic views of the Teton Range.",
+        "normalizedValue": {
+          "entityId": "nps:park:grte:thingstodo:0414EBC3-B09E-4870-B57A-24EAE3B4EE23",
+          "destinationId": "nps:park:grte",
+          "name": "Oxbow Bend",
+          "category": "thingstodo",
+          "activityTypes": [
+            "wildlife watching"
+          ],
+          "difficulty": null,
+          "duration": "5-60 Minutes",
+          "walkingDistanceMiles": null,
+          "exposureLevel": null,
+          "accessibility": "Oxbow Bend is a paved pullout along the snake river. Views can be seen from pullout.",
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 0,
+            "longitude": 0
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/thingstodo/oxbowbend.htm",
+          "observedAt": "2026-08-31T01:32:03.522Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:grte",
+        "objectId": null,
+        "qualifiers": [
+          "named_activity_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2",
+          "source_ingestion_complete"
+        ],
+        "polarity": "positive"
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:grte"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US",
+        "route": null
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "0414EBC3-B09E-4870-B57A-24EAE3B4EE23",
+        "url": "https://www.nps.gov/thingstodo/oxbowbend.htm",
+        "title": "Oxbow Bend",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observation": {
+        "observedAt": "2026-08-31T01:32:03.522Z",
+        "fetchedAt": "2026-08-31T01:32:04.059Z",
+        "expiresAt": "2026-09-30T01:32:03.522Z",
+        "staleUntil": "2026-12-29T01:32:03.522Z",
+        "retrievalMode": "live",
+        "httpEtag": null,
+        "httpLastModified": null
+      },
+      "quality": {
+        "authorityClass": "official_owner",
+        "freshnessStatus": "fresh",
+        "scopeMatch": "exact",
+        "relationshipConfidence": null,
+        "corroboratingEvidenceIds": [],
+        "conflictingEvidenceIds": [],
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v4",
+        "rawPayloadHash": null,
+        "contentHash": "518c7072f4f72bf39048ced851c9f6aa45cc5b084bc4b1bc1a7f9822f7832314"
+      },
+      "retention": {
+        "class": "public_stable_1y",
+        "licenseClass": "government_public",
+        "storeClaimText": true,
+        "deleteAfter": null
+      },
+      "absenceProof": null,
+      "isCurrent": true,
+      "supersedesEvidenceId": null,
+      "createdAt": "2026-08-31T01:32:04.061Z",
+      "updatedAt": "2026-08-31T01:32:04.061Z",
+      "__v": 0
+    },
+    {
+      "_id": {},
+      "evidenceId": "ev:e75cd4be10a10f4101a2863667d56ef60f42ef1617b20624161c6143b02fe571",
+      "logicalKey": "lek:264a6c6ed1a1c9f5456a8ed6586698b51b92d51638152a684e7ddb135c4d75c6",
+      "canonicalKey": "evk:e75cd4be10a10f4101a2863667d56ef60f42ef1617b20624161c6143b02fe571",
+      "schemaVersion": 1,
+      "entityId": "nps:park:grte",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "thingstodo:4fa858b6-189e-43dd-8d09-5b1d7597c2e8",
+        "text": "Hermitage Point: Take a moderately strenuous day or overnight hike to Hermitage Point for views of Jackson Lake and the Teton Range.",
+        "normalizedValue": {
+          "entityId": "nps:park:grte:thingstodo:4FA858B6-189E-43DD-8D09-5B1D7597C2E8",
+          "destinationId": "nps:park:grte",
+          "name": "Hermitage Point",
+          "category": "thingstodo",
+          "activityTypes": [
+            "hiking",
+            "hike"
+          ],
+          "difficulty": "hard",
+          "duration": "4-7 Hours",
+          "walkingDistanceMiles": null,
+          "exposureLevel": null,
+          "accessibility": "The Hermitage Point Trail is a moderately strenuous, 9.5 mi (15.3 km) loop hike with 930 ft (280 m) of elevation gain and an average slope of 4%. While relatively flat, the trail is long and contains obstacles, such as branches, roots, and exposed rock.",
+          "operationalFacts": [
+            {
+              "subject": {
+                "entityId": "nps:park:grte:place:4FA858B6-189E-43DD-8D09-5B1D7597C2E8",
+                "name": "Hermitage Point",
+                "parkCode": "grte"
+              },
+              "type": "reservation_required",
+              "requirement": "a permit",
+              "plannerRule": "Hermitage Point requires a permit. If you include it, state the permit requirement in the same breath.",
+              "confidence": "official_text",
+              "provenance": {
+                "authority": "official_owner",
+                "field": "reservationDescription",
+                "sourceUrl": "https://www.nps.gov/thingstodo/hermitagepoint.htm",
+                "excerpt": "Permits are required"
+              },
+              "observedAt": "2026-08-31T01:32:03.522Z",
+              "subjects": [
+                "Hermitage Point"
+              ]
+            }
+          ],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 0,
+            "longitude": 0
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/thingstodo/hermitagepoint.htm",
+          "observedAt": "2026-08-31T01:32:03.522Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:grte",
+        "objectId": null,
+        "qualifiers": [
+          "named_activity_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2",
+          "source_ingestion_complete"
+        ],
+        "polarity": "positive"
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:grte"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US",
+        "route": null
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "4FA858B6-189E-43DD-8D09-5B1D7597C2E8",
+        "url": "https://www.nps.gov/thingstodo/hermitagepoint.htm",
+        "title": "Hermitage Point",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observation": {
+        "observedAt": "2026-08-31T01:32:03.522Z",
+        "fetchedAt": "2026-08-31T01:32:03.572Z",
+        "expiresAt": "2026-09-30T01:32:03.522Z",
+        "staleUntil": "2026-12-29T01:32:03.522Z",
+        "retrievalMode": "live",
+        "httpEtag": null,
+        "httpLastModified": null
+      },
+      "quality": {
+        "authorityClass": "official_owner",
+        "freshnessStatus": "fresh",
+        "scopeMatch": "exact",
+        "relationshipConfidence": null,
+        "corroboratingEvidenceIds": [],
+        "conflictingEvidenceIds": [],
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v4",
+        "rawPayloadHash": null,
+        "contentHash": "8e2ee2ab3a82a01a35e05857735a06f005cdfc3b5aa8444413e5c4c3f8e062ac"
+      },
+      "retention": {
+        "class": "public_stable_1y",
+        "licenseClass": "government_public",
+        "storeClaimText": true,
+        "deleteAfter": null
+      },
+      "absenceProof": null,
+      "isCurrent": true,
+      "supersedesEvidenceId": null,
+      "createdAt": "2026-08-31T01:32:03.575Z",
+      "updatedAt": "2026-08-31T01:32:03.575Z",
+      "__v": 0
+    },
+    {
+      "_id": {},
+      "evidenceId": "ev:f0af93b92b40967eda5265c5ba87981e16e57a13d5680bc3b20372f2029228ec",
+      "logicalKey": "lek:4c0bce1d3b6b0d6009da0e30a92068485de45ba257da71c62fccd1daa7a6f34a",
+      "canonicalKey": "evk:f0af93b92b40967eda5265c5ba87981e16e57a13d5680bc3b20372f2029228ec",
+      "schemaVersion": 1,
+      "entityId": "nps:park:grte",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "place:ceca710c-302d-4a1c-b057-fb336bfed114",
+        "text": "A Boat's Purpose",
+        "normalizedValue": {
+          "entityId": "nps:park:grte:place:CECA710C-302D-4A1C-B057-FB336BFED114",
+          "destinationId": "nps:park:grte",
+          "name": "A Boat's Purpose",
+          "category": "place",
+          "activityTypes": [],
+          "difficulty": null,
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "exposureLevel": null,
+          "accessibility": null,
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 43.65541125859938,
+            "longitude": -110.71570745877557
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/places/a-boat-s-purpose.htm",
+          "observedAt": "2026-08-31T01:32:03.522Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:grte",
+        "objectId": null,
+        "qualifiers": [
+          "named_place_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2",
+          "source_ingestion_complete"
+        ],
+        "polarity": "positive"
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:grte"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US",
+        "route": null
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "CECA710C-302D-4A1C-B057-FB336BFED114",
+        "url": "https://www.nps.gov/places/a-boat-s-purpose.htm",
+        "title": "A Boat's Purpose",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observation": {
+        "observedAt": "2026-08-31T01:32:03.522Z",
+        "fetchedAt": "2026-08-31T01:32:04.067Z",
+        "expiresAt": "2026-09-30T01:32:03.522Z",
+        "staleUntil": "2026-12-29T01:32:03.522Z",
+        "retrievalMode": "live",
+        "httpEtag": null,
+        "httpLastModified": null
+      },
+      "quality": {
+        "authorityClass": "official_owner",
+        "freshnessStatus": "fresh",
+        "scopeMatch": "exact",
+        "relationshipConfidence": null,
+        "corroboratingEvidenceIds": [],
+        "conflictingEvidenceIds": [],
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v4",
+        "rawPayloadHash": null,
+        "contentHash": "dc2aaedd313217a5db7a3f412072797327742b4d8aa7b10ee956725e0b25b059"
+      },
+      "retention": {
+        "class": "public_stable_1y",
+        "licenseClass": "government_public",
+        "storeClaimText": true,
+        "deleteAfter": null
+      },
+      "absenceProof": null,
+      "isCurrent": true,
+      "supersedesEvidenceId": null,
+      "createdAt": "2026-08-31T01:32:04.068Z",
+      "updatedAt": "2026-08-31T01:32:04.068Z",
+      "__v": 0
+    },
+    {
+      "_id": {},
+      "evidenceId": "ev:f1b04053eb33c177b7a4d155eb2012da69c1e693f6f3f7635b72c3f9888d7155",
+      "logicalKey": "lek:03dbb5005ad4a07844357217436539aae33f7bf020a7e3cec8d4c8d82ef9f4ee",
+      "canonicalKey": "evk:f1b04053eb33c177b7a4d155eb2012da69c1e693f6f3f7635b72c3f9888d7155",
+      "schemaVersion": 1,
+      "entityId": "nps:park:grte",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "thingstodo:ad998cae-7d9a-4b4e-9e67-b8a0a3c6442d",
+        "text": "Moose-Wilson Road: The Moose-Wilson Road is a corridor road connecting the towns of Moose and Wilson.",
+        "normalizedValue": {
+          "entityId": "nps:park:grte:thingstodo:AD998CAE-7D9A-4B4E-9E67-B8A0A3C6442D",
+          "destinationId": "nps:park:grte",
+          "name": "Moose-Wilson Road",
+          "category": "thingstodo",
+          "activityTypes": [
+            "scenic driving"
+          ],
+          "difficulty": null,
+          "duration": "20-60 Minutes",
+          "walkingDistanceMiles": null,
+          "exposureLevel": null,
+          "accessibility": "Moose-Wilson Road is a narrow, paved road. The Moose-Wilson Road is closed to RVs and trailers.",
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [
+            "scenic driving"
+          ],
+          "sunsetSuitability": "possible",
+          "coordinates": {
+            "latitude": 0,
+            "longitude": 0
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/thingstodo/moosewilsonroad.htm",
+          "observedAt": "2026-08-31T01:32:03.522Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:grte",
+        "objectId": null,
+        "qualifiers": [
+          "named_activity_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2",
+          "source_ingestion_complete"
+        ],
+        "polarity": "positive"
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:grte"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US",
+        "route": null
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "AD998CAE-7D9A-4B4E-9E67-B8A0A3C6442D",
+        "url": "https://www.nps.gov/thingstodo/moosewilsonroad.htm",
+        "title": "Moose-Wilson Road",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observation": {
+        "observedAt": "2026-08-31T01:32:03.522Z",
+        "fetchedAt": "2026-08-31T01:32:03.583Z",
+        "expiresAt": "2026-09-30T01:32:03.522Z",
+        "staleUntil": "2026-12-29T01:32:03.522Z",
+        "retrievalMode": "live",
+        "httpEtag": null,
+        "httpLastModified": null
+      },
+      "quality": {
+        "authorityClass": "official_owner",
+        "freshnessStatus": "fresh",
+        "scopeMatch": "exact",
+        "relationshipConfidence": null,
+        "corroboratingEvidenceIds": [],
+        "conflictingEvidenceIds": [],
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v4",
+        "rawPayloadHash": null,
+        "contentHash": "9947e393b9877b786dcf5ba41e53ecc7ab204b6f45acbce84a917ef95959b791"
+      },
+      "retention": {
+        "class": "public_stable_1y",
+        "licenseClass": "government_public",
+        "storeClaimText": true,
+        "deleteAfter": null
+      },
+      "absenceProof": null,
+      "isCurrent": true,
+      "supersedesEvidenceId": null,
+      "createdAt": "2026-08-31T01:32:03.586Z",
+      "updatedAt": "2026-08-31T01:32:03.586Z",
+      "__v": 0
+    },
+    {
+      "_id": {},
+      "evidenceId": "ev:f9426ea352ea4470495d6318ca327b33073f102d792311a1deaaaa66399d2ee0",
+      "logicalKey": "lek:acc5952e30729b18453681ce433a28b26ab9200d6b19ff42e28ffc6c99ab43e8",
+      "canonicalKey": "evk:f9426ea352ea4470495d6318ca327b33073f102d792311a1deaaaa66399d2ee0",
+      "schemaVersion": 1,
+      "entityId": "nps:park:grte",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "thingstodo:efd06a6e-2931-45b4-be4e-8c84d96a1853",
+        "text": "Christian Pond Loop: Christian Pond Loop is an easy hike through a marsh habitat.",
+        "normalizedValue": {
+          "entityId": "nps:park:grte:thingstodo:EFD06A6E-2931-45B4-BE4E-8C84D96A1853",
+          "destinationId": "nps:park:grte",
+          "name": "Christian Pond Loop",
+          "category": "thingstodo",
+          "activityTypes": [
+            "hiking",
+            "hike"
+          ],
+          "difficulty": "easy",
+          "duration": "1-3 Hours",
+          "walkingDistanceMiles": null,
+          "exposureLevel": null,
+          "accessibility": "The Christian Pond Loop is an easy, 3.5 mi (5.6 km) loop hike with 490 ft (150 m) of elevation gain and an average slope of 6%. The trail is initially steep leaving the trailhead before it becomes a gentle level path.",
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 0,
+            "longitude": 0
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/thingstodo/christianpond.htm",
+          "observedAt": "2026-08-31T01:32:03.522Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:grte",
+        "objectId": null,
+        "qualifiers": [
+          "named_activity_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2",
+          "source_ingestion_complete"
+        ],
+        "polarity": "positive"
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:grte"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US",
+        "route": null
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "EFD06A6E-2931-45B4-BE4E-8C84D96A1853",
+        "url": "https://www.nps.gov/thingstodo/christianpond.htm",
+        "title": "Christian Pond Loop",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observation": {
+        "observedAt": "2026-08-31T01:32:03.522Z",
+        "fetchedAt": "2026-08-31T01:32:03.852Z",
+        "expiresAt": "2026-09-30T01:32:03.522Z",
+        "staleUntil": "2026-12-29T01:32:03.522Z",
+        "retrievalMode": "live",
+        "httpEtag": null,
+        "httpLastModified": null
+      },
+      "quality": {
+        "authorityClass": "official_owner",
+        "freshnessStatus": "fresh",
+        "scopeMatch": "exact",
+        "relationshipConfidence": null,
+        "corroboratingEvidenceIds": [],
+        "conflictingEvidenceIds": [],
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v4",
+        "rawPayloadHash": null,
+        "contentHash": "a26ae4f545bc48f29870115cc95c9b3323943f5ab96a755dcd6f59f8ef4e7464"
+      },
+      "retention": {
+        "class": "public_stable_1y",
+        "licenseClass": "government_public",
+        "storeClaimText": true,
+        "deleteAfter": null
+      },
+      "absenceProof": null,
+      "isCurrent": true,
+      "supersedesEvidenceId": null,
+      "createdAt": "2026-08-31T01:32:03.854Z",
+      "updatedAt": "2026-08-31T01:32:03.854Z",
+      "__v": 0
+    },
+    {
+      "_id": {},
+      "evidenceId": "ev:9c3f063166f55f7910a47ca41c5bb6fa8d41cc54fbf1d0448f92ac49c3db9fc4",
+      "logicalKey": "lek:47e6fb92baeff7f7c4487e02d6fa3ad4ba53f95b3ec851ebecccad9a3bc33d28",
+      "canonicalKey": "evk:9c3f063166f55f7910a47ca41c5bb6fa8d41cc54fbf1d0448f92ac49c3db9fc4",
+      "schemaVersion": 1,
+      "entityId": "nps:park:grte",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "place:2ca8fff9-38c5-4a58-a2a7-40037b3a0b2f",
+        "text": "Jenny Lake Lodge",
+        "normalizedValue": {
+          "entityId": "nps:park:grte:place:2CA8FFF9-38C5-4A58-A2A7-40037B3A0B2F",
+          "destinationId": "nps:park:grte",
+          "name": "Jenny Lake Lodge",
+          "category": "lodging",
+          "activityTypes": [
+            "lodging"
+          ],
+          "difficulty": null,
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "exposureLevel": "low",
+          "accessibility": null,
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 43.78275255,
+            "longitude": -110.724766583
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/places/000/jenny-lake-lodge.htm",
+          "observedAt": "2026-08-31T01:32:03.522Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:grte",
+        "objectId": null,
+        "qualifiers": [
+          "named_place_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2",
+          "source_ingestion_complete"
+        ],
+        "polarity": "positive"
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:grte"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US",
+        "route": null
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "2CA8FFF9-38C5-4A58-A2A7-40037B3A0B2F",
+        "url": "https://www.nps.gov/places/000/jenny-lake-lodge.htm",
+        "title": "Jenny Lake Lodge",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observation": {
+        "observedAt": "2026-08-31T01:32:03.522Z",
+        "fetchedAt": "2026-08-31T01:32:04.847Z",
+        "expiresAt": "2026-09-30T01:32:03.522Z",
+        "staleUntil": "2026-12-29T01:32:03.522Z",
+        "retrievalMode": "live",
+        "httpEtag": null,
+        "httpLastModified": null
+      },
+      "quality": {
+        "authorityClass": "official_owner",
+        "freshnessStatus": "fresh",
+        "scopeMatch": "exact",
+        "relationshipConfidence": null,
+        "corroboratingEvidenceIds": [],
+        "conflictingEvidenceIds": [],
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v4",
+        "rawPayloadHash": null,
+        "contentHash": "a924c28757fefa2071603bceeb98fe15f7aa0d178b8d68c5d91036c8ab36005f"
+      },
+      "retention": {
+        "class": "public_stable_1y",
+        "licenseClass": "government_public",
+        "storeClaimText": true,
+        "deleteAfter": null
+      },
+      "absenceProof": null,
+      "isCurrent": true,
+      "supersedesEvidenceId": null,
+      "createdAt": "2026-08-31T01:32:04.848Z",
+      "updatedAt": "2026-08-31T01:32:04.848Z",
+      "__v": 0
+    }
+  ]
+}

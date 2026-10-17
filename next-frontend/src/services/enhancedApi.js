@@ -62,9 +62,11 @@ class EnhancedApiService {
 
         // Debug logging for large requests
         if (config.data && !(config.data instanceof FormData) && JSON.stringify(config.data).length > 1000000) {
+          // `config.headers` carries the Authorization bearer — log the header
+          // NAMES so a missing/extra header is still diagnosable, never the values.
           console.log(`🚀 EnhancedApi Request Interceptor: Large request to ${config.url}:`, {
             method: config.method,
-            headers: config.headers,
+            headerNames: Object.keys(config.headers || {}),
             dataSize: `${(JSON.stringify(config.data).length / 1024).toFixed(2)} KB`,
             maxContentLength: config.maxContentLength,
             maxBodyLength: config.maxBodyLength

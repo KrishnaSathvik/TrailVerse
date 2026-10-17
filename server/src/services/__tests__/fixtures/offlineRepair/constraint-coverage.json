@@ -1,0 +1,1230 @@
+{
+  "source": {
+    "capture": "trailie-core-final-before-replacement-fix-1.jsonl",
+    "row": 9
+  },
+  "prompt": "My parents are joining for the last two days.",
+  "response": "I couldn't apply that change to your saved itinerary, so your current plan has not been changed. Please try that change again.",
+  "attempts": [
+    {
+      "stage": "itinerary_completeness",
+      "reasonCodes": [
+        "insufficient_day_coverage"
+      ]
+    },
+    {
+      "stage": "stop_identity",
+      "reasonCodes": [
+        "stop_identity_excluded"
+      ]
+    },
+    {
+      "stage": "itinerary_completeness",
+      "reasonCodes": [
+        "duplicate_base_experience"
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "response": "I\u2019ve adjusted Days 3 and 4 for your parents to join: Day 3 keeps the leisurely lodge lunch and makes Temple of Sinawava a shorter photo stop, while Day 4 keeps the sunrise outing but leaves more time to rest before a shorter Nature Center visit. I haven\u2019t assumed they have any walking or accessibility limits\u2014let me know if there\u2019s anything specific to plan around.",
+      "operations": [
+        {
+          "op": "update_day",
+          "dayNumber": 3,
+          "day": {
+            "id": "zion-day-3",
+            "dayNumber": 3,
+            "label": "Zion Lodge lunch and unhurried Temple of Sinawava photos",
+            "overnightLocation": "Springdale",
+            "stops": [
+              {
+                "id": "d3-zion-lodge",
+                "order": 1,
+                "type": "lodge",
+                "name": "Zion Lodge",
+                "note": "Enjoy a leisurely lunch together in the dining room. Check canyon transportation and lodge access before setting out; shuttle access restrictions apply.",
+                "parkCode": null,
+                "parkName": null,
+                "startTime": "",
+                "timeWindow": "Early afternoon",
+                "duration": 75,
+                "why": "A relaxed meal gives your parents a comfortable start to their first day with you.",
+                "drivingTimeFromPreviousMin": null,
+                "exposureLevel": "low"
+              },
+              {
+                "id": "d3-temple-sinawava",
+                "order": 2,
+                "type": "photography",
+                "name": "Temple of Sinawava",
+                "note": "Photograph the canyon near the arrival area, taking breaks together rather than setting off on Riverside Walk or into the Narrows.",
+                "parkCode": "zion",
+                "parkName": "Zion National Park",
+                "startTime": "",
+                "timeWindow": "Mid- to late afternoon",
+                "physicalDifficulty": "easy",
+                "duration": 60,
+                "latitude": 37.2851874507,
+                "longitude": -112.947408632,
+                "why": "You can share a different canyon scene with your parents without turning the afternoon into a trail outing.",
+                "drivingTimeFromPreviousMin": null,
+                "exposureLevel": "low"
+              }
+            ]
+          }
+        },
+        {
+          "op": "update_day",
+          "dayNumber": 4,
+          "day": {
+            "id": "zion-day-4",
+            "dayNumber": 4,
+            "label": "Lava Point sunrise and a restful Zion Nature Center afternoon",
+            "stops": [
+              {
+                "id": "d4-lava",
+                "order": 1,
+                "type": "viewpoint",
+                "name": "Lava Point Overlook",
+                "note": "Aim to arrive before sunrise for photographs together from the overlook. Check road access and conditions before the early outing; bring lights and warm layers.",
+                "parkCode": "zion",
+                "parkName": "Zion National Park",
+                "startTime": "",
+                "timeWindow": "Before dawn through early morning",
+                "physicalDifficulty": "easy",
+                "duration": 75,
+                "why": "It keeps your last sunrise photography outing while leaving more room in the day for your parents' pace.",
+                "drivingTimeFromPreviousMin": null,
+                "latitude": 37.3836883879,
+                "longitude": -113.028410441,
+                "exposureLevel": "low"
+              },
+              {
+                "id": "d4-rest",
+                "order": 2,
+                "type": "picnic",
+                "name": "Lunch and a long break",
+                "note": "Eat and take a generous rest together after the early start; leave the onward travel time flexible.",
+                "parkCode": null,
+                "parkName": null,
+                "startTime": "",
+                "timeWindow": "Midday",
+                "duration": 90,
+                "drivingTimeFromPreviousMin": null
+              },
+              {
+                "id": "d4-nature",
+                "order": 3,
+                "type": "visitor_center",
+                "name": "Zion Nature Center",
+                "note": "Explore the exhibits and activities together at an unhurried pace; check seasonal hours before setting out.",
+                "parkCode": "zion",
+                "parkName": "Zion National Park",
+                "startTime": "",
+                "timeWindow": "Afternoon",
+                "duration": 60,
+                "why": "An indoor afternoon visit offers a change of pace after your shared early overlook outing.",
+                "drivingTimeFromPreviousMin": null,
+                "latitude": 37.20535480630132,
+                "longitude": -112.98241138458252,
+                "exposureLevel": "low"
+              }
+            ],
+            "travelEdges": [
+              {
+                "sourceStopId": "d4-lava",
+                "targetStopId": "d4-nature",
+                "relationship": "transfer"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "response": "I\u2019ve kept the last two Zion days relaxed for when your parents join. Day 3 now pairs the lodge lunch and Temple of Sinawava photos with a separate stop at Big Bend; Day 4 keeps the Lava Point sunrise and adds a later photo stop at Canyon Junction. Neither added stop is a hike. Check access before heading to Lava Point early.",
+      "operations": [
+        {
+          "op": "update_day",
+          "dayNumber": 3,
+          "day": {
+            "id": "zion-day-3",
+            "dayNumber": 3,
+            "label": "Zion Lodge lunch and unhurried canyon photography",
+            "overnightLocation": "Springdale",
+            "stops": [
+              {
+                "id": "d3-zion-lodge",
+                "order": 1,
+                "type": "lodge",
+                "name": "Zion Lodge",
+                "note": "Start with a leisurely lunch in the dining room. Check canyon transportation and lodge access before setting out; shuttle access restrictions apply.",
+                "parkCode": null,
+                "parkName": null,
+                "startTime": "",
+                "timeWindow": "Early afternoon",
+                "duration": 60,
+                "why": "A comfortable lunch gives everyone an unhurried start before the afternoon's photography.",
+                "drivingTimeFromPreviousMin": null,
+                "exposureLevel": "low"
+              },
+              {
+                "id": "d3-big-bend",
+                "order": 2,
+                "type": "photography",
+                "name": "Big Bend",
+                "note": "Spend time photographing the canyon from the public viewing area; check access before going and stay on designated areas rather than setting off on a trail.",
+                "parkCode": "zion",
+                "parkName": "Zion National Park",
+                "startTime": "",
+                "timeWindow": "Midafternoon",
+                "duration": 60,
+                "why": "This gives your parents a distinct canyon photo outing without turning the afternoon into a hike."
+              },
+              {
+                "id": "d3-temple-sinawava",
+                "order": 3,
+                "type": "photography",
+                "name": "Temple of Sinawava",
+                "note": "Take your time composing canyon photographs around the arrival area, rather than heading onto Riverside Walk or into the Narrows. Keep this a stationary photo visit with breaks, not a hike.",
+                "parkCode": "zion",
+                "parkName": "Zion National Park",
+                "startTime": "",
+                "timeWindow": "Late afternoon",
+                "physicalDifficulty": "easy",
+                "duration": 90,
+                "latitude": 37.2851874507,
+                "longitude": -112.947408632,
+                "why": "A second canyon setting leaves room for everyone to photograph at their own pace without an exposed trail.",
+                "drivingTimeFromPreviousMin": null,
+                "exposureLevel": "low"
+              }
+            ],
+            "travelEdges": [
+              {
+                "sourceStopId": "d3-zion-lodge",
+                "targetStopId": "d3-big-bend",
+                "relationship": "transfer"
+              },
+              {
+                "sourceStopId": "d3-big-bend",
+                "targetStopId": "d3-temple-sinawava",
+                "relationship": "transfer"
+              }
+            ]
+          }
+        },
+        {
+          "op": "update_day",
+          "dayNumber": 4,
+          "day": {
+            "id": "zion-day-4",
+            "dayNumber": 4,
+            "label": "Lava Point sunrise and a canyon photo finish",
+            "overnightLocation": "Springdale",
+            "stops": [
+              {
+                "id": "d4-lava",
+                "order": 1,
+                "type": "viewpoint",
+                "name": "Lava Point Overlook",
+                "note": "Aim to arrive before sunrise for photographs from this low-exposure overlook. Check road access and conditions before committing to the early outing; bring a light and warm layers.",
+                "parkCode": "zion",
+                "parkName": "Zion National Park",
+                "startTime": "",
+                "timeWindow": "Before dawn through early morning",
+                "physicalDifficulty": "easy",
+                "duration": 100,
+                "why": "A different overlook gives your last sunrise a fresh photographic setting without an exposed trail.",
+                "drivingTimeFromPreviousMin": null,
+                "exposureLevel": "low",
+                "latitude": 37.3836883879,
+                "longitude": -113.028410441
+              },
+              {
+                "id": "d4-rest",
+                "order": 2,
+                "type": "picnic",
+                "name": "Lunch and a long break",
+                "note": "Eat, rest, and leave travel time flexible after the early start.",
+                "parkCode": null,
+                "parkName": null,
+                "startTime": "",
+                "timeWindow": "Midday",
+                "duration": 75,
+                "drivingTimeFromPreviousMin": null,
+                "latitude": null,
+                "longitude": null
+              },
+              {
+                "id": "d4-nature",
+                "order": 3,
+                "type": "visitor_center",
+                "name": "Zion Nature Center",
+                "note": "Spend the afternoon with the exhibits and activities; check seasonal hours before making the trip.",
+                "parkCode": "zion",
+                "parkName": "Zion National Park",
+                "startTime": "",
+                "timeWindow": "Early afternoon",
+                "duration": 90,
+                "why": "An indoor visit offers a change of pace after the early overlook outing.",
+                "drivingTimeFromPreviousMin": null,
+                "exposureLevel": "low",
+                "latitude": 37.20535480630132,
+                "longitude": -112.98241138458252
+              },
+              {
+                "id": "d4-canyon-junction",
+                "order": 4,
+                "type": "photography",
+                "name": "Canyon Junction",
+                "note": "Finish with an unhurried canyon photo stop from designated public areas. Check access before going; there is no need to add a trail outing.",
+                "parkCode": "zion",
+                "parkName": "Zion National Park",
+                "startTime": "",
+                "timeWindow": "Late afternoon",
+                "duration": 60,
+                "why": "A different canyon composition gives your parents another outing after the long midday break."
+              }
+            ],
+            "travelEdges": [
+              {
+                "sourceStopId": "d4-lava",
+                "targetStopId": "d4-nature",
+                "relationship": "transfer"
+              },
+              {
+                "sourceStopId": "d4-nature",
+                "targetStopId": "d4-canyon-junction",
+                "relationship": "transfer"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "response": "I\u2019ve filled out the last two days for your time together: Day 3 adds museum-patio photography before lunch at Zion Lodge and the scenic afternoon at Temple of Sinawava. Day 4 keeps Lava Point sunrise and adds a short, unhurried Pa\u2019rus walk after the Nature Center, with the long midday break retained.",
+      "operations": [
+        {
+          "op": "update_day",
+          "dayNumber": 3,
+          "day": {
+            "id": "zion-day-3",
+            "dayNumber": 3,
+            "label": "Museum patio views and a relaxed canyon afternoon",
+            "overnightLocation": "Springdale",
+            "stops": [
+              {
+                "id": "d3-museum-patio",
+                "order": 1,
+                "type": "viewpoint",
+                "name": "Zion Human History Museum Patio",
+                "note": "Photograph West Temple and the Towers of the Virgin together from the viewing patio. Use the museum parking approach, not the trail connector; check patio access before visiting.",
+                "parkCode": "zion",
+                "parkName": "Zion National Park",
+                "startTime": "",
+                "timeWindow": "Late morning",
+                "physicalDifficulty": "easy",
+                "exposureLevel": "low",
+                "duration": 60,
+                "why": "Revisiting this view lets you share a favorite photographic setting with your parents without adding a hike."
+              },
+              {
+                "id": "d3-zion-lodge",
+                "order": 2,
+                "type": "lodge",
+                "name": "Zion Lodge",
+                "note": "Enjoy a leisurely lunch in the dining room. Check canyon transportation and lodge access before setting out; shuttle access restrictions apply.",
+                "parkCode": null,
+                "parkName": null,
+                "startTime": "",
+                "timeWindow": "Early afternoon",
+                "exposureLevel": "low",
+                "duration": 60,
+                "why": "A comfortable lunch leaves time to catch up before the afternoon's photography.",
+                "drivingTimeFromPreviousMin": null,
+                "latitude": null,
+                "longitude": null
+              },
+              {
+                "id": "d3-temple-sinawava",
+                "order": 3,
+                "type": "photography",
+                "name": "Temple of Sinawava",
+                "note": "Take your time composing canyon photographs around the arrival area, rather than heading onto Riverside Walk or into the Narrows. Keep this a stationary photo visit with breaks, not a hike.",
+                "parkCode": "zion",
+                "parkName": "Zion National Park",
+                "startTime": "",
+                "timeWindow": "Mid- to late afternoon",
+                "physicalDifficulty": "easy",
+                "exposureLevel": "low",
+                "duration": 90,
+                "latitude": 37.2851874507,
+                "longitude": -112.947408632,
+                "why": "This low-exposure canyon setting gives everyone time to enjoy the scenery while you work on photographs.",
+                "drivingTimeFromPreviousMin": null
+              }
+            ],
+            "travelEdges": [
+              {
+                "sourceStopId": "d3-museum-patio",
+                "targetStopId": "d3-zion-lodge",
+                "relationship": "transfer"
+              },
+              {
+                "sourceStopId": "d3-zion-lodge",
+                "targetStopId": "d3-temple-sinawava",
+                "relationship": "transfer"
+              }
+            ]
+          }
+        },
+        {
+          "op": "update_day",
+          "dayNumber": 4,
+          "day": {
+            "id": "zion-day-4",
+            "dayNumber": 4,
+            "label": "Lava Point sunrise and Virgin River scenery",
+            "overnightLocation": "Springdale",
+            "stops": [
+              {
+                "id": "d4-lava",
+                "order": 1,
+                "type": "viewpoint",
+                "name": "Lava Point Overlook",
+                "note": "Aim to arrive before sunrise for photographs from this low-exposure overlook. Confirm transportation and road access before committing to the early outing; bring a light and warm layers.",
+                "parkCode": "zion",
+                "parkName": "Zion National Park",
+                "startTime": "",
+                "timeWindow": "Before dawn through early morning",
+                "physicalDifficulty": "easy",
+                "exposureLevel": "low",
+                "duration": 100,
+                "why": "A different overlook gives your last sunrise a fresh photographic setting without an exposed trail.",
+                "drivingTimeFromPreviousMin": null,
+                "latitude": 37.3836883879,
+                "longitude": -113.028410441
+              },
+              {
+                "id": "d4-rest",
+                "order": 2,
+                "type": "picnic",
+                "name": "Lunch and a long break",
+                "note": "Eat, rest, and leave travel time flexible after the early start.",
+                "startTime": "",
+                "timeWindow": "Midday",
+                "duration": 75,
+                "drivingTimeFromPreviousMin": null,
+                "latitude": null,
+                "longitude": null,
+                "parkCode": null,
+                "parkName": null
+              },
+              {
+                "id": "d4-nature",
+                "order": 3,
+                "type": "visitor_center",
+                "name": "Zion Nature Center",
+                "note": "Spend the afternoon with the exhibits and activities; check seasonal hours before making the trip.",
+                "parkCode": "zion",
+                "parkName": "Zion National Park",
+                "startTime": "",
+                "timeWindow": "Afternoon",
+                "exposureLevel": "low",
+                "duration": 90,
+                "why": "An indoor visit offers a change of pace after the early overlook outing.",
+                "drivingTimeFromPreviousMin": null,
+                "latitude": 37.20535480630132,
+                "longitude": -112.98241138458252
+              },
+              {
+                "id": "d4-parus",
+                "order": 4,
+                "type": "walk",
+                "name": "Pa'rus Trail",
+                "note": "Take a short out-and-back from the visitor-center end for Virgin River scenery and Watchman photographs. Choose your turnaround to suit the group rather than completing the trail; allow time for pauses and bring water.",
+                "parkCode": "zion",
+                "parkName": "Zion National Park",
+                "startTime": "",
+                "timeWindow": "Late afternoon",
+                "physicalDifficulty": "easy",
+                "exposureLevel": "low",
+                "duration": 45,
+                "latitude": 37.2010471279,
+                "longitude": -112.986788497,
+                "why": "A gentle riverside finish adds a different perspective from the morning overlook and time outdoors together."
+              }
+            ],
+            "travelEdges": [
+              {
+                "sourceStopId": "d4-lava",
+                "targetStopId": "d4-nature",
+                "relationship": "transfer"
+              },
+              {
+                "sourceStopId": "d4-nature",
+                "targetStopId": "d4-parus",
+                "relationship": "transfer"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "priorPlan": {
+    "intro": "I replaced Day 3\u2019s Pa\u2019rus hike with a relaxed afternoon: lunch at Zion Lodge, then unhurried canyon photography at Temple of Sinawava without a trail outing.",
+    "narrativeSections": [
+      {
+        "placement": "after_plan",
+        "heading": "Why this trip works",
+        "markdown": "The 4 days in Zion National Park stay intentionally light so there is breathing room for slow traffic and unplanned stops instead of stacking every major attraction."
+      }
+    ],
+    "alternatives": [],
+    "itineraryHash": "b8a57bc252bbfaf8f8674bb833b04c56d63a99972fb08a09f551dfa3ae6c5c64",
+    "feasibilityIssues": [],
+    "days": [
+      {
+        "id": "zion-day-1",
+        "dayNumber": 1,
+        "label": "Pa\u2019rus scenery and Zion\u2019s human stories",
+        "stops": [
+          {
+            "id": "d1-parus",
+            "order": 1,
+            "type": "hike",
+            "name": "Pa'rus - Diversion Dam",
+            "note": "Arrive before sunrise for photographs around the Diversion Dam, then enjoy an unhurried walk. Bring a light and water; check access before making the early trip.",
+            "timeWindow": "Before dawn through sunrise",
+            "duration": 100,
+            "why": "A low-exposure riverside outing puts your photography priority first without an exposed hike.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "evidenceRef": "ev:240fa34736ac9b72a10c39c86a0145d880caba6b62744a590fe1a9304a62a997",
+            "canonicalPlaceName": "Pa'rus - Diversion Dam",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:240fa34736ac9b72a10c39c86a0145d880caba6b62744a590fe1a9304a62a997",
+            "latitude": 37.21431822297103,
+            "longitude": -112.97634422779083,
+            "coordinateSource": "resolved_metadata",
+            "exposureLevel": "low"
+          },
+          {
+            "id": "d1-visitor",
+            "order": 2,
+            "type": "visitor_center",
+            "name": "Zion Canyon Visitor Center",
+            "note": "Stop by after your sunrise outing to check current access and transportation for the remaining days.",
+            "timeWindow": "Midmorning",
+            "duration": 40,
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "evidenceRef": "ev:3b0f96e9f0532fe1bcc81e0389e54cb3cff84c6bf875daa0e68faa9f4f8e91b0",
+            "canonicalPlaceName": "Zion Canyon Visitor Center",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:3b0f96e9f0532fe1bcc81e0389e54cb3cff84c6bf875daa0e68faa9f4f8e91b0",
+            "latitude": 37.20007883740497,
+            "longitude": -112.98688895601737,
+            "coordinateSource": "resolved_metadata",
+            "exposureLevel": "low"
+          },
+          {
+            "id": "d1-lunch",
+            "order": 3,
+            "type": "picnic",
+            "name": "Lunch and a shaded break",
+            "note": "Bring lunch and take a proper break before the afternoon visit.",
+            "timeWindow": "Midday",
+            "duration": 60,
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": null,
+            "parkName": null,
+            "resolutionStatus": "not_applicable",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown"
+          },
+          {
+            "id": "d1-museum",
+            "order": 4,
+            "type": "museum",
+            "name": "Human History Museum",
+            "note": "Explore the human-history exhibits and the 22-minute orientation film, then spend time enjoying the mountain views outside. Confirm museum hours for your dates.",
+            "timeWindow": "Afternoon",
+            "duration": 100,
+            "why": "The stories and exhibits add something different after a morning spent looking at the landscape.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "evidenceRef": "ev:1eb4f9cf62840569d8dec95a604008def6c735d42b7378c939a6b81693ab8d9d",
+            "canonicalPlaceName": "Human History Museum",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:1eb4f9cf62840569d8dec95a604008def6c735d42b7378c939a6b81693ab8d9d",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown",
+            "exposureLevel": "low"
+          }
+        ],
+        "travelEdges": [
+          {
+            "sourceStopId": "d1-parus",
+            "targetStopId": "d1-museum",
+            "relationship": "transfer"
+          }
+        ],
+        "parkCodes": [
+          "zion"
+        ]
+      },
+      {
+        "id": "zion-day-2",
+        "dayNumber": 2,
+        "label": "Museum patio sunrise and canyon photo stops",
+        "overnightLocation": "Springdale",
+        "stops": [
+          {
+            "id": "d2-patio",
+            "order": 1,
+            "type": "viewpoint",
+            "name": "Zion Human History Museum Patio",
+            "note": "Arrive before sunrise to photograph West Temple and the Towers of the Virgin from the viewing patio. Use the museum parking approach rather than the trail connector; check access before your early visit.",
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "startTime": "",
+            "timeWindow": "Before dawn through sunrise",
+            "physicalDifficulty": "easy",
+            "duration": 75,
+            "why": "The patio gives you a defined, low-exposure place to compose your early photographs.",
+            "drivingTimeFromPreviousMin": null,
+            "evidenceRef": "ev:10ee30c5e7a941c5ff87999f506bca0c64e23b332b07e23bd7aa36855a57dc2f",
+            "canonicalPlaceName": "Zion Human History Museum Patio",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:10ee30c5e7a941c5ff87999f506bca0c64e23b332b07e23bd7aa36855a57dc2f",
+            "exposureLevel": "low",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown"
+          },
+          {
+            "name": "Mormon Pioneer National Heritage Area",
+            "type": "walk",
+            "duration": 60,
+            "timeWindow": "Midmorning",
+            "startTime": "",
+            "order": 2,
+            "note": "Take an easy walk through a section of the Mormon Pioneer National Heritage Area and look for details that tell the story of the region's settlement.",
+            "why": "A relaxed heritage walk adds local history to the day without demanding a strenuous outing.",
+            "evidenceEntityId": "nps:park:zion:place:DBCA60CB-70D8-41ED-9957-7A0C727E9D87",
+            "difficulty": null,
+            "alternatives": [],
+            "drivingTimeFromPreviousMin": null,
+            "evidenceRef": "ev:0bf9bb22aa71b905cf2b10aa6d8e3e58b8a37f711026a10a1fea3ef45fad4527",
+            "canonicalPlaceName": "Mormon Pioneer National Heritage Area",
+            "resolutionStatus": "resolved",
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "parkIdentityEvidenceId": "ev:0bf9bb22aa71b905cf2b10aa6d8e3e58b8a37f711026a10a1fea3ef45fad4527",
+            "latitude": 37.83482853143013,
+            "longitude": -112.43756708361622,
+            "coordinateSource": "resolved_metadata",
+            "exposureLevel": "low"
+          },
+          {
+            "id": "d2-break",
+            "order": 3,
+            "type": "picnic",
+            "name": "Lunch and a relaxed break",
+            "note": "Bring lunch and leave time to rest after the morning outings.",
+            "parkCode": null,
+            "parkName": null,
+            "startTime": "",
+            "timeWindow": "Midday",
+            "duration": 60,
+            "drivingTimeFromPreviousMin": null,
+            "resolutionStatus": "not_applicable",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown"
+          },
+          {
+            "name": "Zion Human History Museum",
+            "type": "museum",
+            "duration": 60,
+            "timeWindow": "Early afternoon",
+            "startTime": "",
+            "order": 4,
+            "note": "Explore the exhibits at the Zion Human History Museum to learn about the people and landscapes of the canyon.",
+            "why": "This indoor stop offers a comfortable way to wind down while adding context to your time in Zion.",
+            "evidenceEntityId": "nps:park:zion:place:6E8678F7-171F-43EA-9507-AA5F7713A775",
+            "difficulty": null,
+            "walkingDistanceMiles": null,
+            "alternatives": [],
+            "drivingTimeFromPreviousMin": null,
+            "evidenceRef": "ev:d8e155c14e0ca587aea8313a28ba7814340c095f1125b8238c07c293dd032b5a",
+            "canonicalPlaceName": "Zion Human History Museum",
+            "resolutionStatus": "resolved",
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "parkIdentityEvidenceId": "ev:d8e155c14e0ca587aea8313a28ba7814340c095f1125b8238c07c293dd032b5a",
+            "latitude": 37.20954316006341,
+            "longitude": -112.98031972636329,
+            "coordinateSource": "resolved_metadata",
+            "exposureLevel": "low"
+          }
+        ],
+        "travelEdges": [],
+        "day": 2,
+        "parkCodes": [
+          "zion"
+        ]
+      },
+      {
+        "id": "zion-day-3",
+        "dayNumber": 3,
+        "label": "Zion Lodge and canyon photography at Temple of Sinawava",
+        "overnightLocation": "Springdale",
+        "stops": [
+          {
+            "id": "d3-zion-lodge",
+            "order": 1,
+            "type": "lodge",
+            "name": "Zion Lodge",
+            "note": "Start with a leisurely lunch in the dining room. Check canyon transportation and lodge access before setting out; shuttle access restrictions apply.",
+            "parkCode": null,
+            "parkName": null,
+            "startTime": "",
+            "timeWindow": "Early afternoon",
+            "duration": 60,
+            "why": "A comfortable lunch gives you an unhurried start before the afternoon's photography.",
+            "drivingTimeFromPreviousMin": null,
+            "resolutionStatus": "ambiguous",
+            "exposureLevel": "low",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown"
+          },
+          {
+            "id": "d3-temple-sinawava",
+            "order": 2,
+            "type": "hike",
+            "name": "Temple of Sinawava",
+            "note": "Take your time composing canyon photographs around the arrival area, rather than heading onto Riverside Walk or into the Narrows. Keep this a stationary photo visit with breaks, not a hike.",
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "startTime": "",
+            "timeWindow": "Mid- to late afternoon",
+            "physicalDifficulty": "easy",
+            "duration": 90,
+            "latitude": 37.2851874507,
+            "longitude": -112.947408632,
+            "why": "This low-exposure canyon setting gives you a different photographic subject while leaving the morning free.",
+            "drivingTimeFromPreviousMin": null,
+            "evidenceRef": "ev:621c983c8b9fae25b64f2cbf15caadfa28a9fe7d48c1d84fa45a0a49ed4bee5c",
+            "canonicalPlaceName": "Temple of Sinawava",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:621c983c8b9fae25b64f2cbf15caadfa28a9fe7d48c1d84fa45a0a49ed4bee5c",
+            "coordinateSource": "resolved_metadata",
+            "exposureLevel": "low"
+          }
+        ],
+        "travelEdges": [],
+        "day": 3,
+        "parkCodes": [
+          "zion"
+        ]
+      },
+      {
+        "id": "zion-day-4",
+        "dayNumber": 4,
+        "label": "Lava Point sunrise and Zion Nature Center",
+        "stops": [
+          {
+            "id": "d4-lava",
+            "order": 1,
+            "type": "viewpoint",
+            "name": "Lava Point Overlook",
+            "note": "Aim to arrive before sunrise for photographs from this low-exposure overlook. Check road access and conditions before committing to the early outing; bring a light and warm layers.",
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "startTime": "",
+            "timeWindow": "Before dawn through early morning",
+            "physicalDifficulty": "easy",
+            "duration": 100,
+            "why": "A different overlook gives your last sunrise a fresh photographic setting without an exposed trail.",
+            "drivingTimeFromPreviousMin": null,
+            "evidenceRef": "ev:8dd88bd0b6ad458d3923da499ab0b40d7322fd25eb702693042b684c71bee8ea",
+            "canonicalPlaceName": "Lava Point Overlook",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:8dd88bd0b6ad458d3923da499ab0b40d7322fd25eb702693042b684c71bee8ea",
+            "latitude": 37.3836883879,
+            "longitude": -113.028410441,
+            "coordinateSource": "resolved_metadata",
+            "exposureLevel": "low"
+          },
+          {
+            "id": "d4-rest",
+            "order": 2,
+            "type": "picnic",
+            "name": "Lunch and a long break",
+            "note": "Eat, rest, and leave travel time flexible after the early start.",
+            "startTime": "",
+            "timeWindow": "Midday",
+            "duration": 75,
+            "drivingTimeFromPreviousMin": null,
+            "resolutionStatus": "not_applicable",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown",
+            "parkCode": null,
+            "parkName": null
+          },
+          {
+            "id": "d4-nature",
+            "order": 3,
+            "type": "visitor_center",
+            "name": "Zion Nature Center",
+            "note": "Spend the afternoon with the exhibits and activities; check seasonal hours before making the trip.",
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "startTime": "",
+            "timeWindow": "Afternoon",
+            "duration": 90,
+            "why": "An indoor visit offers a change of pace after the early overlook outing.",
+            "drivingTimeFromPreviousMin": null,
+            "evidenceRef": "ev:7d9937acbe871e6883779e3a38c03dd1a449cbe52a5766a248bb190ea2ab1f02",
+            "canonicalPlaceName": "Zion Nature Center",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:7d9937acbe871e6883779e3a38c03dd1a449cbe52a5766a248bb190ea2ab1f02",
+            "latitude": 37.20535480630132,
+            "longitude": -112.98241138458252,
+            "coordinateSource": "resolved_metadata",
+            "exposureLevel": "low"
+          }
+        ],
+        "travelEdges": [
+          {
+            "sourceStopId": "d4-lava",
+            "targetStopId": "d4-nature",
+            "relationship": "transfer"
+          }
+        ],
+        "day": 4,
+        "parkCodes": [
+          "zion"
+        ]
+      }
+    ]
+  },
+  "acceptedPlan": {
+    "intro": "I replaced Day 3\u2019s Pa\u2019rus hike with a relaxed afternoon: lunch at Zion Lodge, then unhurried canyon photography at Temple of Sinawava without a trail outing.",
+    "narrativeSections": [
+      {
+        "placement": "after_plan",
+        "heading": "Why this trip works",
+        "markdown": "The 4 days in Zion National Park stay intentionally light so there is breathing room for slow traffic and unplanned stops instead of stacking every major attraction."
+      }
+    ],
+    "alternatives": [],
+    "itineraryHash": "b8a57bc252bbfaf8f8674bb833b04c56d63a99972fb08a09f551dfa3ae6c5c64",
+    "feasibilityIssues": [],
+    "days": [
+      {
+        "id": "zion-day-1",
+        "dayNumber": 1,
+        "label": "Pa\u2019rus scenery and Zion\u2019s human stories",
+        "stops": [
+          {
+            "id": "d1-parus",
+            "order": 1,
+            "type": "hike",
+            "name": "Pa'rus - Diversion Dam",
+            "note": "Arrive before sunrise for photographs around the Diversion Dam, then enjoy an unhurried walk. Bring a light and water; check access before making the early trip.",
+            "timeWindow": "Before dawn through sunrise",
+            "duration": 100,
+            "why": "A low-exposure riverside outing puts your photography priority first without an exposed hike.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "evidenceRef": "ev:240fa34736ac9b72a10c39c86a0145d880caba6b62744a590fe1a9304a62a997",
+            "canonicalPlaceName": "Pa'rus - Diversion Dam",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:240fa34736ac9b72a10c39c86a0145d880caba6b62744a590fe1a9304a62a997",
+            "latitude": 37.21431822297103,
+            "longitude": -112.97634422779083,
+            "coordinateSource": "resolved_metadata",
+            "exposureLevel": "low"
+          },
+          {
+            "id": "d1-visitor",
+            "order": 2,
+            "type": "visitor_center",
+            "name": "Zion Canyon Visitor Center",
+            "note": "Stop by after your sunrise outing to check current access and transportation for the remaining days.",
+            "timeWindow": "Midmorning",
+            "duration": 40,
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "evidenceRef": "ev:3b0f96e9f0532fe1bcc81e0389e54cb3cff84c6bf875daa0e68faa9f4f8e91b0",
+            "canonicalPlaceName": "Zion Canyon Visitor Center",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:3b0f96e9f0532fe1bcc81e0389e54cb3cff84c6bf875daa0e68faa9f4f8e91b0",
+            "latitude": 37.20007883740497,
+            "longitude": -112.98688895601737,
+            "coordinateSource": "resolved_metadata",
+            "exposureLevel": "low"
+          },
+          {
+            "id": "d1-lunch",
+            "order": 3,
+            "type": "picnic",
+            "name": "Lunch and a shaded break",
+            "note": "Bring lunch and take a proper break before the afternoon visit.",
+            "timeWindow": "Midday",
+            "duration": 60,
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": null,
+            "parkName": null,
+            "resolutionStatus": "not_applicable",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown"
+          },
+          {
+            "id": "d1-museum",
+            "order": 4,
+            "type": "museum",
+            "name": "Human History Museum",
+            "note": "Explore the human-history exhibits and the 22-minute orientation film, then spend time enjoying the mountain views outside. Confirm museum hours for your dates.",
+            "timeWindow": "Afternoon",
+            "duration": 100,
+            "why": "The stories and exhibits add something different after a morning spent looking at the landscape.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "evidenceRef": "ev:1eb4f9cf62840569d8dec95a604008def6c735d42b7378c939a6b81693ab8d9d",
+            "canonicalPlaceName": "Human History Museum",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:1eb4f9cf62840569d8dec95a604008def6c735d42b7378c939a6b81693ab8d9d",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown",
+            "exposureLevel": "low"
+          }
+        ],
+        "travelEdges": [
+          {
+            "sourceStopId": "d1-parus",
+            "targetStopId": "d1-museum",
+            "relationship": "transfer"
+          }
+        ],
+        "parkCodes": [
+          "zion"
+        ]
+      },
+      {
+        "id": "zion-day-2",
+        "dayNumber": 2,
+        "label": "Museum patio sunrise and canyon photo stops",
+        "overnightLocation": "Springdale",
+        "stops": [
+          {
+            "id": "d2-patio",
+            "order": 1,
+            "type": "viewpoint",
+            "name": "Zion Human History Museum Patio",
+            "note": "Arrive before sunrise to photograph West Temple and the Towers of the Virgin from the viewing patio. Use the museum parking approach rather than the trail connector; check access before your early visit.",
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "startTime": "",
+            "timeWindow": "Before dawn through sunrise",
+            "physicalDifficulty": "easy",
+            "duration": 75,
+            "why": "The patio gives you a defined, low-exposure place to compose your early photographs.",
+            "drivingTimeFromPreviousMin": null,
+            "evidenceRef": "ev:10ee30c5e7a941c5ff87999f506bca0c64e23b332b07e23bd7aa36855a57dc2f",
+            "canonicalPlaceName": "Zion Human History Museum Patio",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:10ee30c5e7a941c5ff87999f506bca0c64e23b332b07e23bd7aa36855a57dc2f",
+            "exposureLevel": "low",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown"
+          },
+          {
+            "name": "Mormon Pioneer National Heritage Area",
+            "type": "walk",
+            "duration": 60,
+            "timeWindow": "Midmorning",
+            "startTime": "",
+            "order": 2,
+            "note": "Take an easy walk through a section of the Mormon Pioneer National Heritage Area and look for details that tell the story of the region's settlement.",
+            "why": "A relaxed heritage walk adds local history to the day without demanding a strenuous outing.",
+            "evidenceEntityId": "nps:park:zion:place:DBCA60CB-70D8-41ED-9957-7A0C727E9D87",
+            "difficulty": null,
+            "alternatives": [],
+            "drivingTimeFromPreviousMin": null,
+            "evidenceRef": "ev:0bf9bb22aa71b905cf2b10aa6d8e3e58b8a37f711026a10a1fea3ef45fad4527",
+            "canonicalPlaceName": "Mormon Pioneer National Heritage Area",
+            "resolutionStatus": "resolved",
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "parkIdentityEvidenceId": "ev:0bf9bb22aa71b905cf2b10aa6d8e3e58b8a37f711026a10a1fea3ef45fad4527",
+            "latitude": 37.83482853143013,
+            "longitude": -112.43756708361622,
+            "coordinateSource": "resolved_metadata",
+            "exposureLevel": "low"
+          },
+          {
+            "id": "d2-break",
+            "order": 3,
+            "type": "picnic",
+            "name": "Lunch and a relaxed break",
+            "note": "Bring lunch and leave time to rest after the morning outings.",
+            "parkCode": null,
+            "parkName": null,
+            "startTime": "",
+            "timeWindow": "Midday",
+            "duration": 60,
+            "drivingTimeFromPreviousMin": null,
+            "resolutionStatus": "not_applicable",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown"
+          },
+          {
+            "name": "Zion Human History Museum",
+            "type": "museum",
+            "duration": 60,
+            "timeWindow": "Early afternoon",
+            "startTime": "",
+            "order": 4,
+            "note": "Explore the exhibits at the Zion Human History Museum to learn about the people and landscapes of the canyon.",
+            "why": "This indoor stop offers a comfortable way to wind down while adding context to your time in Zion.",
+            "evidenceEntityId": "nps:park:zion:place:6E8678F7-171F-43EA-9507-AA5F7713A775",
+            "difficulty": null,
+            "walkingDistanceMiles": null,
+            "alternatives": [],
+            "drivingTimeFromPreviousMin": null,
+            "evidenceRef": "ev:d8e155c14e0ca587aea8313a28ba7814340c095f1125b8238c07c293dd032b5a",
+            "canonicalPlaceName": "Zion Human History Museum",
+            "resolutionStatus": "resolved",
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "parkIdentityEvidenceId": "ev:d8e155c14e0ca587aea8313a28ba7814340c095f1125b8238c07c293dd032b5a",
+            "latitude": 37.20954316006341,
+            "longitude": -112.98031972636329,
+            "coordinateSource": "resolved_metadata",
+            "exposureLevel": "low"
+          }
+        ],
+        "travelEdges": [],
+        "day": 2,
+        "parkCodes": [
+          "zion"
+        ]
+      },
+      {
+        "id": "zion-day-3",
+        "dayNumber": 3,
+        "label": "Zion Lodge and canyon photography at Temple of Sinawava",
+        "overnightLocation": "Springdale",
+        "stops": [
+          {
+            "id": "d3-zion-lodge",
+            "order": 1,
+            "type": "lodge",
+            "name": "Zion Lodge",
+            "note": "Start with a leisurely lunch in the dining room. Check canyon transportation and lodge access before setting out; shuttle access restrictions apply.",
+            "parkCode": null,
+            "parkName": null,
+            "startTime": "",
+            "timeWindow": "Early afternoon",
+            "duration": 60,
+            "why": "A comfortable lunch gives you an unhurried start before the afternoon's photography.",
+            "drivingTimeFromPreviousMin": null,
+            "resolutionStatus": "ambiguous",
+            "exposureLevel": "low",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown"
+          },
+          {
+            "id": "d3-temple-sinawava",
+            "order": 2,
+            "type": "hike",
+            "name": "Temple of Sinawava",
+            "note": "Take your time composing canyon photographs around the arrival area, rather than heading onto Riverside Walk or into the Narrows. Keep this a stationary photo visit with breaks, not a hike.",
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "startTime": "",
+            "timeWindow": "Mid- to late afternoon",
+            "physicalDifficulty": "easy",
+            "duration": 90,
+            "latitude": 37.2851874507,
+            "longitude": -112.947408632,
+            "why": "This low-exposure canyon setting gives you a different photographic subject while leaving the morning free.",
+            "drivingTimeFromPreviousMin": null,
+            "evidenceRef": "ev:621c983c8b9fae25b64f2cbf15caadfa28a9fe7d48c1d84fa45a0a49ed4bee5c",
+            "canonicalPlaceName": "Temple of Sinawava",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:621c983c8b9fae25b64f2cbf15caadfa28a9fe7d48c1d84fa45a0a49ed4bee5c",
+            "coordinateSource": "resolved_metadata",
+            "exposureLevel": "low"
+          }
+        ],
+        "travelEdges": [],
+        "day": 3,
+        "parkCodes": [
+          "zion"
+        ]
+      },
+      {
+        "id": "zion-day-4",
+        "dayNumber": 4,
+        "label": "Lava Point sunrise and Zion Nature Center",
+        "stops": [
+          {
+            "id": "d4-lava",
+            "order": 1,
+            "type": "viewpoint",
+            "name": "Lava Point Overlook",
+            "note": "Aim to arrive before sunrise for photographs from this low-exposure overlook. Check road access and conditions before committing to the early outing; bring a light and warm layers.",
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "startTime": "",
+            "timeWindow": "Before dawn through early morning",
+            "physicalDifficulty": "easy",
+            "duration": 100,
+            "why": "A different overlook gives your last sunrise a fresh photographic setting without an exposed trail.",
+            "drivingTimeFromPreviousMin": null,
+            "evidenceRef": "ev:8dd88bd0b6ad458d3923da499ab0b40d7322fd25eb702693042b684c71bee8ea",
+            "canonicalPlaceName": "Lava Point Overlook",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:8dd88bd0b6ad458d3923da499ab0b40d7322fd25eb702693042b684c71bee8ea",
+            "latitude": 37.3836883879,
+            "longitude": -113.028410441,
+            "coordinateSource": "resolved_metadata",
+            "exposureLevel": "low"
+          },
+          {
+            "id": "d4-rest",
+            "order": 2,
+            "type": "picnic",
+            "name": "Lunch and a long break",
+            "note": "Eat, rest, and leave travel time flexible after the early start.",
+            "startTime": "",
+            "timeWindow": "Midday",
+            "duration": 75,
+            "drivingTimeFromPreviousMin": null,
+            "resolutionStatus": "not_applicable",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown",
+            "parkCode": null,
+            "parkName": null
+          },
+          {
+            "id": "d4-nature",
+            "order": 3,
+            "type": "visitor_center",
+            "name": "Zion Nature Center",
+            "note": "Spend the afternoon with the exhibits and activities; check seasonal hours before making the trip.",
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "startTime": "",
+            "timeWindow": "Afternoon",
+            "duration": 90,
+            "why": "An indoor visit offers a change of pace after the early overlook outing.",
+            "drivingTimeFromPreviousMin": null,
+            "evidenceRef": "ev:7d9937acbe871e6883779e3a38c03dd1a449cbe52a5766a248bb190ea2ab1f02",
+            "canonicalPlaceName": "Zion Nature Center",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:7d9937acbe871e6883779e3a38c03dd1a449cbe52a5766a248bb190ea2ab1f02",
+            "latitude": 37.20535480630132,
+            "longitude": -112.98241138458252,
+            "coordinateSource": "resolved_metadata",
+            "exposureLevel": "low"
+          }
+        ],
+        "travelEdges": [
+          {
+            "sourceStopId": "d4-lava",
+            "targetStopId": "d4-nature",
+            "relationship": "transfer"
+          }
+        ],
+        "day": 4,
+        "parkCodes": [
+          "zion"
+        ]
+      }
+    ]
+  },
+  "constraints": {
+    "planningState": {
+      "preferences": {
+        "interests": [
+          "photography"
+        ],
+        "fitness": null,
+        "pace": "relaxed",
+        "riskTolerance": null,
+        "avoidExposure": true,
+        "maxDailyDriveMinutes": null,
+        "minimizeDriving": null
+      },
+      "mobility": {
+        "maxWalkMilesPerSegment": null,
+        "maxWalkMinutesPerSegment": null,
+        "walkingTolerance": null,
+        "requiresFrequentBreaks": null,
+        "wheelchair": null,
+        "stroller": null,
+        "avoidStairs": null
+      },
+      "activityPreferences": {
+        "hiking": null,
+        "photography": true,
+        "photographyTiming": "sunrise",
+        "wildlife": null
+      },
+      "travelers": {
+        "count": null,
+        "travelParty": null,
+        "hasChildren": false,
+        "childrenCount": 0,
+        "pets": null,
+        "accessibilityNeeds": [],
+        "hasOlderTravelers": null
+      },
+      "time": {
+        "availableHours": null
+      }
+    }
+  }
+}

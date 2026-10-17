@@ -8,8 +8,8 @@ const tripService = {
   },
 
   // Get single trip
-  getTrip: async (tripId) => {
-    const response = await api.get(`/trips/${tripId}`);
+  getTrip: async (tripId, options = {}) => {
+    const response = await api.get(`/trips/${tripId}`, options);
     return response.data;
   },
 
@@ -19,9 +19,16 @@ const tripService = {
     return response.data;
   },
 
-  // Update trip
+  // Update trip (conversation+plan response saves). Plan-only editor writes
+  // must use applyManualMutation instead.
   updateTrip: async (tripId, tripData) => {
     const response = await api.put(`/trips/${tripId}`, tripData);
+    return response.data;
+  },
+
+  // Typed owner structural edits (remove/move stop, add/remove day).
+  applyManualMutation: async (tripId, body) => {
+    const response = await api.post(`/trips/${tripId}/manual-mutations`, body);
     return response.data;
   },
 
@@ -31,21 +38,35 @@ const tripService = {
     return response.data;
   },
 
+  // Stage 8.1 — narrow feedback command. Updates ONLY userFeedback on one
+  // message; never rewrites conversation content or the plan.
+  updateMessageFeedback: async (tripId, messageId, feedback) => {
+    const response = await api.patch(`/trips/${tripId}/messages/${messageId}/feedback`, { feedback });
+    return response.data;
+  },
+
   // Delete trip
   deleteTrip: async (tripId) => {
     const response = await api.delete(`/trips/${tripId}`);
     return response.data;
   },
 
-  // Archive trip
-  archiveTrip: async (tripId) => {
-    const response = await api.put(`/trips/${tripId}`, { status: 'archived' });
+  // Stage 8.3 — narrow trip-management metadata command (title/status/shareScope).
+  // Kept separate from response saves so a stale auto-save can never change these.
+  updateTripMetadata: async (tripId, metadata) => {
+    const response = await api.patch(`/trips/${tripId}/metadata`, metadata);
     return response.data;
   },
 
-  // Restore/Unarchive trip
+  // Archive trip (via the narrow metadata command)
+  archiveTrip: async (tripId) => {
+    const response = await api.patch(`/trips/${tripId}/metadata`, { status: 'archived' });
+    return response.data;
+  },
+
+  // Restore/Unarchive trip (via the narrow metadata command)
   unarchiveTrip: async (tripId) => {
-    const response = await api.put(`/trips/${tripId}`, { status: 'active' });
+    const response = await api.patch(`/trips/${tripId}/metadata`, { status: 'active' });
     return response.data;
   },
 

@@ -2,10 +2,17 @@ const { extractMessageConstraintOverrides, applyMessageConstraintOverrides } = r
 const { parseConstraints } = require('../constraintEngine');
 
 describe('messageConstraintOverrides', () => {
+  test.each(['Our reservation got cancelled.', 'Actually, our reservation got cancelled.'])(
+    'reservation text cannot invent an RV stay: %s', message => {
+      expect(parseConstraints({}, message).accommodation).not.toBe('rv');
+      expect(extractMessageConstraintOverrides(message).accommodation).toBeUndefined();
+    }
+  );
   const quickFillForm = {
     parkCode: 'yose',
     startDate: '2026-08-10',
     endDate: '2026-08-12',
+    numDays: 3,
     groupSize: 2,
     budget: 'moderate',
     fitnessLevel: 'easy',
@@ -49,5 +56,14 @@ describe('messageConstraintOverrides', () => {
     expect(constraints.groupSize).toBe(2);
     expect(constraints.budget).toBe('moderate');
     expect(constraints.accommodation).toBe('lodging');
+  });
+
+  test('Pass #1 — numeric under-$ override beats stale formData budget', () => {
+    const constraints = parseConstraints(
+      { formData: { ...quickFillForm, budget: '1200' } },
+      'Keep it under $700 instead.'
+    );
+    expect(constraints.budget).toBe('700');
+    expect(constraints.groupSize).toBe(2);
   });
 });

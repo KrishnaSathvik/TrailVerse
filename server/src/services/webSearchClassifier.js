@@ -126,6 +126,7 @@ async function refineCategoryWithLlm(userMessage, regexCategory) {
     system,
     user: userMessage.trim().slice(0, 500),
     maxTokens: 24,
+    purpose: 'intent_classification',
   });
 
   if (!text) return regexCategory;

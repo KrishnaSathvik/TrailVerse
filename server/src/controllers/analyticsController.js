@@ -1,9 +1,12 @@
+const { classifyBot } = require('../utils/botClassifier');
+const { persistAnalytics } = require('../services/analyticsWriter');
 const Analytics = require('../models/Analytics');
 const { normalizeClientEvent } = require('../utils/analyticsNormalize');
 const User = require('../models/User');
 const BlogPost = require('../models/BlogPost');
 const Event = require('../models/Event');
-const { protect, admin } = require('../middleware/auth');
+const { humanTrafficFilter } = require('../utils/botClassifier');
+const { listSnapshots } = require('../services/analyticsSnapshotService');
 
 // @desc    Get analytics dashboard data
 // @route   GET /api/analytics/dashboard
@@ -33,6 +36,9 @@ exports.getDashboard = async (req, res, next) => {
         startDate.setDate(now.getDate() - 7);
     }
 
+    const includeBots = req.query.includeBots === 'true';
+    const trafficFilter = includeBots ? {} : humanTrafficFilter();
+
     // Get various analytics in parallel
     const [
       eventCounts,
@@ -43,9 +49,10 @@ exports.getDashboard = async (req, res, next) => {
       searchAnalytics,
       errorAnalytics,
       deviceStats,
-      locationStats
+      locationStats,
+      snapshots
     ] = await Promise.all([
-      Analytics.getEventCounts(startDate, now),
+      Analytics.getEventCounts(startDate, now, trafficFilter),
       Analytics.getUserEngagement(startDate, now),
       Analytics.getPopularContent(startDate, now, 'parks'),
       Analytics.getPopularContent(startDate, now, 'blogs'),
@@ -53,22 +60,25 @@ exports.getDashboard = async (req, res, next) => {
       Analytics.getSearchAnalytics(startDate, now),
       Analytics.getErrorAnalytics(startDate, now),
       getDeviceStats(startDate, now),
-      getLocationStats(startDate, now)
+      getLocationStats(startDate, now),
+      listSnapshots({ grain: 'day', limit: 90 }).catch(() => []),
     ]);
 
     // Calculate growth metrics
     const previousStartDate = new Date(startDate.getTime() - (now.getTime() - startDate.getTime()));
     const [previousEventCounts, currentTotalEvents] = await Promise.all([
       Analytics.countDocuments({
-        timestamp: { $gte: previousStartDate, $lt: startDate }
+        timestamp: { $gte: previousStartDate, $lt: startDate },
+        ...trafficFilter,
       }),
       Analytics.countDocuments({
-        timestamp: { $gte: startDate, $lte: now }
+        timestamp: { $gte: startDate, $lte: now },
+        ...trafficFilter,
       })
     ]);
 
     const growthRate = previousEventCounts > 0 
-      ? ((currentTotalEvents - previousTotalEvents) / previousTotalEvents * 100).toFixed(2)
+      ? ((currentTotalEvents - previousEventCounts) / previousEventCounts * 100).toFixed(2)
       : 0;
 
     res.status(200).json({
@@ -94,7 +104,9 @@ exports.getDashboard = async (req, res, next) => {
         searchAnalytics: searchAnalytics.slice(0, 20),
         errorAnalytics: errorAnalytics.slice(0, 10),
         deviceStats,
-        locationStats
+        locationStats,
+        snapshots,
+        traffic: includeBots ? 'all' : 'human',
       }
     });
   } catch (error) {
@@ -510,7 +522,7 @@ exports.getPerformanceAnalytics = async (req, res, next) => {
 // @access  Public
 exports.trackEvents = async (req, res, next) => {
   try {
-    const { events, sessionId, userId } = req.body;
+    const { events, sessionId, userId, browserId } = req.body;
 
     if (!events || !Array.isArray(events) || events.length === 0) {
       return res.status(400).json({
@@ -519,18 +531,28 @@ exports.trackEvents = async (req, res, next) => {
       });
     }
 
+    if (classifyBot(req.get('User-Agent')).isBot) {
+      return res.status(200).json({ success: true, message: 'Events processed' });
+    }
+    if (events.length > 100) {
+      return res.status(400).json({ success: false, error: 'Maximum 100 events per batch' });
+    }
+
     // Process events in batch
-    const analyticsData = events.map((event) =>
+    const analyticsData = events.filter(event => event && !classifyBot(event.userAgent).isBot).map((event) =>
       normalizeClientEvent(event, {
         sessionId,
-        userId,
+        browserId,
+        userId: req.user?._id || userId || null,
         ipAddress: req.ip || req.connection.remoteAddress,
         userAgent: req.get('User-Agent'),
       })
     );
 
     // Save to database
-    await Analytics.insertMany(analyticsData, { ordered: false });
+    if (analyticsData.length) {
+      await persistAnalytics(() => Analytics.insertMany(analyticsData, { ordered: false }));
+    }
 
     res.status(200).json({
       success: true,
@@ -538,11 +560,22 @@ exports.trackEvents = async (req, res, next) => {
     });
   } catch (error) {
     // Don't fail the request if analytics tracking fails
-    console.error('Analytics tracking error:', error);
+    console.error('Analytics tracking error:', error?.name || 'Error');
     res.status(200).json({
       success: true,
       message: 'Events processed'
     });
+  }
+};
+
+exports.getSnapshots = async (req, res, next) => {
+  try {
+    const grain = req.query.grain === 'month' ? 'month' : 'day';
+    const limit = Math.min(parseInt(req.query.limit, 10) || 90, 366);
+    const snapshots = await listSnapshots({ grain, limit });
+    res.status(200).json({ success: true, data: snapshots });
+  } catch (error) {
+    next(error);
   }
 };
 

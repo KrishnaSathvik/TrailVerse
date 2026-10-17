@@ -4,7 +4,14 @@ import Link from 'next/link';
 import { ArrowRight } from '@components/icons';
 import TrailieAvatar from '@/components/plan-ai/TrailieAvatar';
 
-export default function TrailieDemoCta({ className = '' }) {
+/**
+ * `askPrompt` hands the scenario the visitor just watched to live Trailie via
+ * `?ask=`, so "try it yourself" replays that exact question through the real
+ * send path instead of leaving the captured playback as its own dead end.
+ */
+export default function TrailieDemoCta({ className = '', askPrompt = null }) {
+  const planHref = askPrompt ? `/plan-ai?entry=new-trip&ask=${encodeURIComponent(askPrompt)}` : '/plan-ai';
+
   return (
     <div
       className={`border-t pt-8 sm:pt-10 ${className}`}
@@ -28,7 +35,7 @@ export default function TrailieDemoCta({ className = '' }) {
           </div>
 
           <Link
-            href="/plan-ai"
+            href={planHref}
             className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white transition-all hover:opacity-90 sm:px-6 sm:py-3"
             style={{ backgroundColor: 'var(--accent-green)' }}
           >

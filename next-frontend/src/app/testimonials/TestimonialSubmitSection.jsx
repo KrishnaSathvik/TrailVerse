@@ -19,16 +19,23 @@ export default function TestimonialSubmitSection() {
   };
 
   return (
-    <section id="submit-testimonial" className="py-12 sm:py-16 scroll-mt-24">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-2xl font-bold mb-2 text-center" style={{ color: 'var(--text-primary)' }}>
-          Leave a review
+    <section id="submit-testimonial" className="info-section scroll-mt-24 border-t" style={{ borderColor: 'var(--border)' }}>
+      <div className="public-content">
+        <h2 className="text-2xl font-bold mb-2 text-left" style={{ color: 'var(--text-primary)' }}>
+          Have a TrailVerse story to share?
         </h2>
-        <p className="text-center text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
+        <p className="text-left text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
           Name, star rating, and a short write-up — that&apos;s all we need.
         </p>
-        <TestimonialForm key={formKey} onSuccess={handleSubmitSuccess} resetOnSuccess />
-        <p className="text-center text-sm mt-6" style={{ color: 'var(--text-tertiary)' }}>
+        <details className="group">
+          <summary style={{ display: 'flex' }} className="public-action public-action-secondary w-fit cursor-pointer list-none px-5 font-semibold">
+            Share your story
+          </summary>
+          <div className="mt-6">
+            <TestimonialForm key={formKey} onSuccess={handleSubmitSuccess} resetOnSuccess />
+          </div>
+        </details>
+        <p className="text-left text-sm mt-6" style={{ color: 'var(--text-tertiary)' }}>
           Have an account? You can also manage reviews from your{' '}
           <a href="/profile" className="underline" style={{ color: 'var(--primary)' }}>
             profile

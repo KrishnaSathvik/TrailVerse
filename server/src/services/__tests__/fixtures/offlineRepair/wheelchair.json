@@ -1,0 +1,383 @@
+{
+  "source": {
+    "capture": "trailie-core-final-before-replacement-fix-1.jsonl",
+    "row": 0
+  },
+  "prompt": "I use a wheelchair and we're staying near Zion for three days. Help me plan something scenic without assuming hiking.",
+  "response": "For three days at Zion, I\u2019d build the scenery around wheelchair-accessible buildings and the museum\u2019s viewing patio rather than assume you want to hike. The Kolob Canyons outing is a separate, lighter day; confirm how you\u2019ll get between areas before committing to it.",
+  "attempts": [
+    {
+      "stage": null,
+      "reasonCodes": []
+    }
+  ],
+  "outputs": [
+    {
+      "intro": "For three days at Zion, I\u2019d build the scenery around wheelchair-accessible buildings and the museum\u2019s viewing patio rather than assume you want to hike. The Kolob Canyons outing is a separate, lighter day; confirm how you\u2019ll get between areas before committing to it.",
+      "days": [
+        {
+          "id": "zion-1",
+          "dayNumber": 1,
+          "label": "Canyon orientation and the museum\u2019s cliff views",
+          "stops": [
+            {
+              "id": "d1-vc",
+              "order": 1,
+              "type": "visitor_center",
+              "name": "Zion Canyon Visitor Center",
+              "duration": 40,
+              "timeWindow": "Morning",
+              "note": "Start at this wheelchair-accessible facility near the South Entrance; it has reserved parking and paved walkways. Ask about access for the rest of your visit.",
+              "why": "It gives you a practical start without making a trail the centerpiece."
+            },
+            {
+              "id": "d1-museum",
+              "order": 2,
+              "type": "museum",
+              "name": "Zion Human History Museum",
+              "duration": 65,
+              "timeWindow": "Late morning or early afternoon",
+              "note": "Use the ramp to reach the accessible exhibits and park film. Check seasonal hours before going; the museum also has views of the Towers of the Virgin and Bridge Mountain outside.",
+              "why": "The exhibits and canyon scenery offer a substantial, flexible first-day visit."
+            }
+          ],
+          "travelEdges": [
+            {
+              "sourceStopId": "d1-vc",
+              "targetStopId": "d1-museum",
+              "relationship": "transfer"
+            }
+          ]
+        },
+        {
+          "id": "zion-2",
+          "dayNumber": 2,
+          "label": "Zion Lodge and canyon nature exhibits",
+          "stops": [
+            {
+              "id": "d2-lodge",
+              "order": 1,
+              "type": "lodge",
+              "name": "Zion Lodge",
+              "duration": 90,
+              "timeWindow": "Late morning",
+              "note": "Spend time in the wheelchair-accessible dining room and auditorium, and take a leisurely break. Confirm current access arrangements before setting out; access to the lodge is subject to shuttle restrictions.",
+              "why": "This makes room for an unhurried canyon day without relying on a hike."
+            },
+            {
+              "id": "d2-nature",
+              "order": 2,
+              "type": "museum",
+              "name": "Zion Nature Center",
+              "duration": 60,
+              "timeWindow": "Afternoon, if open",
+              "note": "Explore the interactive exhibits via the accessible entrance ramp. It operates seasonally, so check hours for your dates before making it part of the day.",
+              "why": "The exhibits provide a different perspective on Zion\u2019s habitats after time at the lodge.",
+              "alternatives": [
+                {
+                  "name": "Zion Canyon Visitor Center",
+                  "note": "If the Nature Center is closed, return for the accessible outdoor exhibits and a more leisurely look around."
+                }
+              ]
+            }
+          ],
+          "travelEdges": [
+            {
+              "sourceStopId": "d2-lodge",
+              "targetStopId": "d2-nature",
+              "relationship": "transfer"
+            }
+          ]
+        },
+        {
+          "id": "zion-3",
+          "dayNumber": 3,
+          "label": "Kolob Canyons and a final museum-patio view",
+          "stops": [
+            {
+              "id": "d3-kolob",
+              "order": 1,
+              "type": "visitor_center",
+              "name": "Kolob Canyons Visitor Center",
+              "duration": 65,
+              "timeWindow": "Morning, outside the noon\u20131 PM closure",
+              "note": "Use the accessible walkways, information desk, exhibits and restrooms. This is a separate park area, listed by NPS as 45 miles north of Springdale; plan your transport before setting out.",
+              "why": "It brings a different part of Zion into your three-day visit, without adding an unverified trail outing."
+            },
+            {
+              "id": "d3-patio",
+              "order": 2,
+              "type": "viewpoint",
+              "name": "Zion Human History Museum Patio",
+              "duration": 35,
+              "timeWindow": "Later afternoon, if the return trip leaves time",
+              "note": "Approach via the museum parking area for the wheelchair-accessible viewing patio overlooking West Temple and the Towers of the Virgin.",
+              "why": "This gives your last day a specific scenic viewpoint, rather than ending it at an information desk."
+            }
+          ],
+          "travelEdges": [
+            {
+              "sourceStopId": "d3-kolob",
+              "targetStopId": "d3-patio",
+              "relationship": "transfer"
+            }
+          ]
+        }
+      ],
+      "narrativeSections": [
+        {
+          "placement": "after_plan",
+          "markdown": "The plan favors places with documented wheelchair access, but that doesn\u2019t establish an accessible way to travel between them. Kolob Canyons is the biggest logistical commitment; if transport there isn\u2019t workable, spend that day at the museum patio and other accessible main-canyon stops instead. Check current hours and access arrangements for your dates, especially for the seasonal Nature Center and the lodge."
+        }
+      ]
+    }
+  ],
+  "priorPlan": null,
+  "acceptedPlan": {
+    "intro": "For three days at Zion, I\u2019d build the scenery around wheelchair-accessible buildings and the museum\u2019s viewing patio rather than assume you want to hike. The Kolob Canyons outing is a separate, lighter day; confirm how you\u2019ll get between areas before committing to it.",
+    "days": [
+      {
+        "id": "zion-1",
+        "dayNumber": 1,
+        "label": "Canyon orientation and the museum\u2019s cliff views",
+        "stops": [
+          {
+            "id": "d1-vc",
+            "order": 1,
+            "type": "visitor_center",
+            "name": "Zion Canyon Visitor Center",
+            "duration": 40,
+            "timeWindow": "Morning",
+            "note": "Start at this wheelchair-accessible facility near the South Entrance; it has reserved parking and paved walkways. Ask about access for the rest of your visit.",
+            "why": "It gives you a practical start without making a trail the centerpiece.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "exposureLevel": "low",
+            "evidenceRef": "ev:3b0f96e9f0532fe1bcc81e0389e54cb3cff84c6bf875daa0e68faa9f4f8e91b0",
+            "canonicalPlaceName": "Zion Canyon Visitor Center",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:3b0f96e9f0532fe1bcc81e0389e54cb3cff84c6bf875daa0e68faa9f4f8e91b0",
+            "latitude": 37.20007883740497,
+            "longitude": -112.98688895601737,
+            "coordinateSource": "resolved_metadata"
+          },
+          {
+            "id": "d1-museum",
+            "order": 2,
+            "type": "museum",
+            "name": "Zion Human History Museum",
+            "duration": 65,
+            "timeWindow": "Late morning or early afternoon",
+            "note": "Use the ramp to reach the accessible exhibits and park film. Check seasonal hours before going; the museum also has views of the Towers of the Virgin and Bridge Mountain outside.",
+            "why": "The exhibits and canyon scenery offer a substantial, flexible first-day visit.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "exposureLevel": "low",
+            "evidenceRef": "ev:d8e155c14e0ca587aea8313a28ba7814340c095f1125b8238c07c293dd032b5a",
+            "canonicalPlaceName": "Zion Human History Museum",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:d8e155c14e0ca587aea8313a28ba7814340c095f1125b8238c07c293dd032b5a",
+            "latitude": 37.20954316006341,
+            "longitude": -112.98031972636329,
+            "coordinateSource": "resolved_metadata"
+          }
+        ],
+        "travelEdges": [
+          {
+            "sourceStopId": "d1-vc",
+            "targetStopId": "d1-museum",
+            "relationship": "transfer"
+          }
+        ],
+        "parkCodes": [
+          "zion"
+        ]
+      },
+      {
+        "id": "zion-2",
+        "dayNumber": 2,
+        "label": "Zion Lodge and canyon nature exhibits",
+        "stops": [
+          {
+            "id": "d2-lodge",
+            "order": 1,
+            "type": "lodge",
+            "name": "Zion Lodge",
+            "duration": 90,
+            "timeWindow": "Late morning",
+            "note": "Spend time in the wheelchair-accessible dining room and auditorium, and take a leisurely break. Confirm current access arrangements before setting out; access to the lodge is subject to shuttle restrictions.",
+            "why": "This makes room for an unhurried canyon day without relying on a hike.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": null,
+            "parkName": null,
+            "exposureLevel": "low",
+            "resolutionStatus": "ambiguous",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown"
+          },
+          {
+            "id": "d2-nature",
+            "order": 2,
+            "type": "visitor_center",
+            "name": "Zion Nature Center",
+            "duration": 60,
+            "timeWindow": "Afternoon, if open",
+            "note": "Explore the interactive exhibits via the accessible entrance ramp. It operates seasonally, so check hours for your dates before making it part of the day.",
+            "why": "The exhibits provide a different perspective on Zion\u2019s habitats after time at the lodge.",
+            "alternatives": [
+              {
+                "name": "Zion Canyon Visitor Center",
+                "note": "If the Nature Center is closed, return for the accessible outdoor exhibits and a more leisurely look around."
+              }
+            ],
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "exposureLevel": "low",
+            "evidenceRef": "ev:7d9937acbe871e6883779e3a38c03dd1a449cbe52a5766a248bb190ea2ab1f02",
+            "canonicalPlaceName": "Zion Nature Center",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:7d9937acbe871e6883779e3a38c03dd1a449cbe52a5766a248bb190ea2ab1f02",
+            "latitude": 37.20535480630132,
+            "longitude": -112.98241138458252,
+            "coordinateSource": "resolved_metadata"
+          }
+        ],
+        "travelEdges": [],
+        "parkCodes": [
+          "zion"
+        ]
+      },
+      {
+        "id": "zion-3",
+        "dayNumber": 3,
+        "label": "Kolob Canyons and a final museum-patio view",
+        "stops": [
+          {
+            "id": "d3-kolob",
+            "order": 1,
+            "type": "visitor_center",
+            "name": "Kolob Canyons Visitor Center",
+            "duration": 65,
+            "timeWindow": "Morning, outside the noon\u20131 PM closure",
+            "note": "Use the accessible walkways, information desk, exhibits and restrooms. This is a separate park area, listed by NPS as 45 miles north of Springdale; plan your transport before setting out.",
+            "why": "It brings a different part of Zion into your three-day visit, without adding an unverified trail outing.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "exposureLevel": "low",
+            "evidenceRef": "ev:cf2c8a155365f120e589f71d3e7e51f5a9c28a31270c9187c5406466ad99beb2",
+            "canonicalPlaceName": "Kolob Canyons Visitor Center",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:cf2c8a155365f120e589f71d3e7e51f5a9c28a31270c9187c5406466ad99beb2",
+            "latitude": 37.4534968211,
+            "longitude": -113.225414419,
+            "coordinateSource": "resolved_metadata"
+          },
+          {
+            "id": "d3-patio",
+            "order": 2,
+            "type": "viewpoint",
+            "name": "Zion Human History Museum Patio",
+            "duration": 35,
+            "timeWindow": "Later afternoon, if the return trip leaves time",
+            "note": "Approach via the museum parking area for the wheelchair-accessible viewing patio overlooking West Temple and the Towers of the Virgin.",
+            "why": "This gives your last day a specific scenic viewpoint, rather than ending it at an information desk.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "exposureLevel": "low",
+            "evidenceRef": "ev:10ee30c5e7a941c5ff87999f506bca0c64e23b332b07e23bd7aa36855a57dc2f",
+            "canonicalPlaceName": "Zion Human History Museum Patio",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:10ee30c5e7a941c5ff87999f506bca0c64e23b332b07e23bd7aa36855a57dc2f",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown"
+          }
+        ],
+        "travelEdges": [
+          {
+            "sourceStopId": "d3-kolob",
+            "targetStopId": "d3-patio",
+            "relationship": "transfer"
+          }
+        ],
+        "parkCodes": [
+          "zion"
+        ]
+      }
+    ],
+    "narrativeSections": [
+      {
+        "placement": "after_plan",
+        "heading": null,
+        "markdown": "The plan favors places with documented wheelchair access, but that doesn\u2019t establish an accessible way to travel between them. Kolob Canyons is the biggest logistical commitment; if transport there isn\u2019t workable, spend that day at the museum patio and other accessible main-canyon stops instead. Check current hours and access arrangements for your dates, especially for the seasonal Nature Center and the lodge."
+      }
+    ],
+    "alternatives": [
+      {
+        "name": "Zion Canyon Visitor Center",
+        "note": "If the Nature Center is closed, return for the accessible outdoor exhibits and a more leisurely look around.",
+        "parent": "Zion Nature Center"
+      }
+    ],
+    "itineraryHash": "988102101a854e469dbaf08e89701b2b0e28c0a63127d57e99b0da70e498b6df",
+    "feasibilityIssues": []
+  },
+  "constraints": {
+    "planningState": {
+      "preferences": {
+        "interests": [],
+        "fitness": null,
+        "pace": null,
+        "riskTolerance": null,
+        "avoidExposure": null,
+        "maxDailyDriveMinutes": null,
+        "minimizeDriving": null
+      },
+      "mobility": {
+        "maxWalkMilesPerSegment": null,
+        "maxWalkMinutesPerSegment": null,
+        "walkingTolerance": null,
+        "requiresFrequentBreaks": null,
+        "wheelchair": true,
+        "stroller": null,
+        "avoidStairs": null
+      },
+      "activityPreferences": {
+        "hiking": null,
+        "photography": null,
+        "photographyTiming": null,
+        "wildlife": null
+      },
+      "travelers": {
+        "count": null,
+        "travelParty": null,
+        "hasChildren": false,
+        "childrenCount": 0,
+        "pets": null,
+        "accessibilityNeeds": [],
+        "hasOlderTravelers": null
+      },
+      "time": {
+        "availableHours": null
+      }
+    }
+  }
+}

@@ -48,9 +48,12 @@ export default function VoiceButton() {
   const lastScrollYRef = useRef(0);
   const pathname = usePathname();
 
-  // Hide on pages where voice chat isn't relevant
+  // Demo playback already provides its own Trailie CTA; floating voice UI obscures the answer.
+  // Hide on pages where voice chat is not relevant.
   const hiddenOnChat =
     pathname?.startsWith('/plan-ai') ||
+    pathname === '/dev/trailie-preview' ||
+    pathname === '/trailie-demo' ||
     pathname?.startsWith('/blog') ||
     pathname?.startsWith('/map') ||
     pathname === '/magazine' ||
@@ -200,7 +203,7 @@ export default function VoiceButton() {
           </span>
           <button
             onClick={(e) => { e.stopPropagation(); dismissHint(); }}
-            className="flex-shrink-0 p-0.5 rounded-md transition hover:opacity-70"
+            className="inline-flex min-h-11 min-w-11 flex-shrink-0 items-center justify-center rounded-md transition hover:opacity-70"
             style={{ color: 'var(--text-tertiary)' }}
             aria-label="Dismiss"
           >

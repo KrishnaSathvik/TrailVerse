@@ -101,40 +101,58 @@ describe('drivingTimesContextService', () => {
     expect(codes.some((c) => ['SLC', 'CDC', 'LAS'].includes(c))).toBe(true);
   });
 
-  it('enriches itinerary stop drive times from Google', async () => {
+  it('Phase 9C.1B — adjacency alone no longer authorizes a driving lookup, and unverified model minutes are stripped', async () => {
+    // Pre-9C.1B this made 2 live Distance Matrix calls purely because
+    // consecutive stops both had coordinates. That premise was never valid —
+    // it cannot tell a destination transfer from two waypoints on one hike.
+    // Until Phase 9C.1C defines real travel-edge authority, NO automatic
+    // lookup happens, and any unverified model-authored value is stripped
+    // rather than kept as false authority.
     const key = process.env.GMAPS_SERVER_KEY;
     process.env.GMAPS_SERVER_KEY = 'test-key';
 
     const fetchMock = nodeFetch;
-    fetchMock
-      .mockResolvedValueOnce({
-        json: async () => ({
-          status: 'OK',
-          rows: [{ elements: [{ status: 'OK', duration: { value: 1500, text: '25 mins' }, distance: { text: '10 mi' } }] }],
-        }),
-      })
-      .mockResolvedValueOnce({
-        json: async () => ({
-          status: 'OK',
-          rows: [{ elements: [{ status: 'OK', duration: { value: 720, text: '12 mins' }, distance: { text: '5 mi' } }] }],
-        }),
-      });
     fetchMock.mockClear();
 
     const data = {
       days: [{
         stops: [
-          { name: 'Stop A', latitude: 37.1, longitude: -113.0, drivingTimeFromPreviousMin: 0 },
-          { name: 'Stop B', latitude: 37.2, longitude: -113.1, drivingTimeFromPreviousMin: 99 },
-          { name: 'Stop C', latitude: 37.3, longitude: -113.2 },
+          { id: 's1', name: 'Stop A', latitude: 37.1, longitude: -113.0, drivingTimeFromPreviousMin: 0 },
+          { id: 's2', name: 'Stop B', latitude: 37.2, longitude: -113.1, drivingTimeFromPreviousMin: 99 },
+          { id: 's3', name: 'Stop C', latitude: 37.3, longitude: -113.2 },
         ],
       }],
     };
 
     await enrichItineraryDrivingTimes(data, '[test]');
-    expect(data.days[0].stops[1].drivingTimeFromPreviousMin).toBe(25);
-    expect(data.days[0].stops[2].drivingTimeFromPreviousMin).toBe(12);
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(data.days[0].stops[0].drivingTimeFromPreviousMin).toBeNull();
+    expect(data.days[0].stops[1].drivingTimeFromPreviousMin).toBeNull();
+    expect(data.days[0].stops[2].drivingTimeFromPreviousMin).toBeNull();
+
+    if (key) process.env.GMAPS_SERVER_KEY = key;
+    else delete process.env.GMAPS_SERVER_KEY;
+  });
+
+  it('Phase 9C.1B — same-activity-group adjacent stops never trigger a lookup even in principle', async () => {
+    const key = process.env.GMAPS_SERVER_KEY;
+    process.env.GMAPS_SERVER_KEY = 'test-key';
+    const fetchMock = nodeFetch;
+    fetchMock.mockClear();
+
+    const data = {
+      days: [{
+        activityGroups: [{ id: 'g1', stopIds: ['trailhead', 'chalet'] }],
+        stops: [
+          { id: 'trailhead', name: 'Highline Trailhead', latitude: 48.69, longitude: -113.72 },
+          { id: 'chalet', name: 'Granite Park Chalet', latitude: 48.77, longitude: -113.79 },
+        ],
+      }],
+    };
+
+    await enrichItineraryDrivingTimes(data, '[test]');
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(data.days[0].stops[1].drivingTimeFromPreviousMin).toBeNull();
 
     if (key) process.env.GMAPS_SERVER_KEY = key;
     else delete process.env.GMAPS_SERVER_KEY;

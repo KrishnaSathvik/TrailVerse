@@ -1,5 +1,6 @@
 'use client';
 
+import { groundedPlaceType } from '@/lib/tripPresentation';
 import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Mountain, Tent, Info, Home, Utensils, Clock, MoreVertical, Plus, ArrowLeft, ExternalLink, Trash2 } from '@components/icons';
 
@@ -27,6 +28,7 @@ const DIFFICULTY_COLORS = {
 
 function formatTime12(timeStr) {
   if (!timeStr) return '';
+  if (!/^\d{1,2}:\d{2}$/.test(timeStr)) return timeStr;
   const [h, m] = timeStr.split(':').map(Number);
   const suffix = h >= 12 ? 'PM' : 'AM';
   const hour12 = h % 12 || 12;
@@ -51,8 +53,14 @@ function groupStopsByPeriod(stops) {
   const evening = [];
 
   sorted.forEach(stop => {
-    if (!stop.startTime) {
+    if (!stop.startTime && !stop.timeWindow) {
       afternoon.push(stop);  // unbucketed → middle
+      return;
+    }
+    if (stop.timeWindow) {
+      if (/morning|first light|sunrise/i.test(stop.timeWindow)) morning.push(stop);
+      else if (/evening|golden hour|sunset/i.test(stop.timeWindow)) evening.push(stop);
+      else afternoon.push(stop);
       return;
     }
     const hour = parseInt(stop.startTime.split(':')[0], 10);
@@ -73,7 +81,7 @@ function groupStopsByPeriod(stops) {
 function CompactStopCard({ stop, dayId, allDays, selectedStopId, onStopClick, onRemoveStop, onMoveStop }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
-  const meta = TYPE_META[stop.type] || TYPE_META.custom;
+  const meta = { ...(TYPE_META[stop.type] || TYPE_META.custom), label: groundedPlaceType(stop) || '', color: 'var(--text-secondary)' };
   const Icon = meta.icon;
   const isSelected = stop.id === selectedStopId;
 
@@ -105,9 +113,9 @@ function CompactStopCard({ stop, dayId, allDays, selectedStopId, onStopClick, on
     >
       {/* Row 1: Time + type pill + difficulty pill + menu */}
       <div className="flex items-center gap-1.5 mb-1">
-        {stop.startTime && (
+        {(stop.startTime || stop.timeWindow) && (
           <span className="text-[11px] font-semibold tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
-            {formatTime12(stop.startTime)}
+            {stop.timeWindow || formatTime12(stop.startTime)}
           </span>
         )}
         <span
@@ -322,7 +330,7 @@ export default function DayCardList({
           <div>
             <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>No stops yet</p>
             <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
-              Add stops below or ask Trailie in chat to build this day.
+              Add a place by name below, or ask Trailie in chat.
             </p>
           </div>
           <div className="mt-1 flex gap-2">
@@ -334,14 +342,16 @@ export default function DayCardList({
               <ArrowLeft className="h-3.5 w-3.5" />
               Back to Chat
             </button>
-            <button
-              onClick={() => onRequestAddStop(day.id)}
-              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition hover:opacity-90"
-              style={{ backgroundColor: 'var(--accent-green)', color: '#fff' }}
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Add Stop
-            </button>
+            {typeof onRequestAddStop === 'function' && (
+              <button
+                onClick={() => onRequestAddStop(day.id)}
+                className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition hover:opacity-90"
+                style={{ backgroundColor: 'var(--accent-green)', color: '#fff' }}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add Stop
+              </button>
+            )}
           </div>
         </div>
       )}

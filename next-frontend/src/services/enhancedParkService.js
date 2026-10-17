@@ -57,7 +57,7 @@ class EnhancedParkService {
   // Get park weather data
   async getParkWeather(parkCode) {
     const result = await globalCacheManager.get(
-      `weather-${parkCode}`,
+      `weather-widget-v1-${parkCode}`,
       'weather',
       async () => {
         const result = await enhancedApi.get(`/parks/${parkCode}/weather`, {}, { 

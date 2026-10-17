@@ -220,7 +220,7 @@ const DailyFeedLoader = ({ isGenerating = false } = {}) => {
         </div>
 
         {/* Progress Bar */}
-        <div className="max-w-2xl mx-auto mt-8">
+        <div className="public-content mt-8">
           <div className="bg-gray-200 rounded-full h-3 overflow-hidden">
             <div 
               className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-500 ease-out" 

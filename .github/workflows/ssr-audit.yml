@@ -1,5 +1,5 @@
 # Post-deploy SSR regression: first-response HTML vs route-tier expectations.
-# PRs audit the Vercel preview URL when available; main uses production.
+# PRs require a successful preview for their exact head commit; main uses production.
 
 name: SSR route audit
 
@@ -11,24 +11,36 @@ on:
         required: false
         default: https://www.nationalparksexplorerusa.com
   push:
-    branches: [main]
+    branches: [master, main]
   pull_request:
-    branches: [main, develop]
+    branches: [master, main, develop]
 
 concurrency:
   group: ssr-audit-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  PUPPETEER_SKIP_DOWNLOAD: "true"
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+
+permissions:
+  contents: read
+  deployments: read
+  statuses: read
+
 jobs:
   ssr-audit:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: npm
           cache-dependency-path: next-frontend/package-lock.json
 
@@ -37,12 +49,11 @@ jobs:
 
       - name: Wait for Vercel preview (pull requests)
         if: github.event_name == 'pull_request'
-        uses: patrickedigital/wait-for-vercel-preview@v1.0.9
         id: vercel-preview
-        continue-on-error: true
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          max_timeout: 600
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PREVIEW_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/ci/wait-for-vercel-preview.mjs
 
       - name: Resolve BASE_URL
         id: base
@@ -54,7 +65,8 @@ jobs:
         run: |
           if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ -n "$DISPATCH_URL" ]; then
             URL="$DISPATCH_URL"
-          elif [ "$EVENT_NAME" = "pull_request" ] && [ -n "$VERCEL_URL" ]; then
+          elif [ "$EVENT_NAME" = "pull_request" ]; then
+            [ -n "$VERCEL_URL" ] || { echo "Missing exact-commit preview" >&2; exit 1; }
             URL="$VERCEL_URL"
           elif [ -n "$VAR_URL" ]; then
             URL="$VAR_URL"

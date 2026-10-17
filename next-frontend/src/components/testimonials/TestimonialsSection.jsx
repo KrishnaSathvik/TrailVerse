@@ -10,7 +10,7 @@ import {
   TESTIMONIALS_SECTION_SUBTITLE
 } from './testimonialsCopy';
 import { LANDING_SECTION, LANDING_SECTION_HEADER_MB } from '@/lib/landingLayout';
-import TestimonialBadge from './TestimonialBadge';
+import TestimonialBadge from './TestimonialBadge.jsx';
 
 function TestimonialAttribution({ testimonial }) {
   if (testimonial.sourceUrl) {
@@ -41,7 +41,7 @@ function TestimonialAttribution({ testimonial }) {
 function TestimonialCard({ testimonial, renderStars, className = '' }) {
   return (
     <div
-      className={`flex h-full flex-col rounded-2xl p-5 sm:p-6 backdrop-blur ${className}`}
+      className={`flex h-full flex-col rounded-2xl p-5 sm:p-6 ${className}`}
       style={{
         backgroundColor: 'var(--surface)',
         borderWidth: '1px',
@@ -107,7 +107,7 @@ function TestimonialCarouselNav({ count, currentIndex, onPrev, onNext, onSelect,
       <button
         type="button"
         onClick={onPrev}
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full backdrop-blur transition"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition"
         style={{
           backgroundColor: 'var(--surface)',
           borderWidth: '1px',
@@ -140,7 +140,7 @@ function TestimonialCarouselNav({ count, currentIndex, onPrev, onNext, onSelect,
       <button
         type="button"
         onClick={onNext}
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full backdrop-blur transition"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition"
         style={{
           backgroundColor: 'var(--surface)',
           borderWidth: '1px',
@@ -274,13 +274,13 @@ const TestimonialsSection = ({
   if (loading) {
     return (
       <div className={LANDING_SECTION}>
-        <div className="max-w-[92rem] mx-auto">
+        <div className="public-shell">
           {showTitle && (
             <div className={`text-center ${LANDING_SECTION_HEADER_MB}`}>
               <h2 className="text-3xl sm:text-4xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
                 {TESTIMONIALS_SECTION_TITLE}
               </h2>
-              <p className="text-base sm:text-lg max-w-2xl mx-auto px-1" style={{ color: 'var(--text-secondary)' }}>
+              <p className="text-base sm:text-lg public-content px-1" style={{ color: 'var(--text-secondary)' }}>
                 {TESTIMONIALS_SECTION_SUBTITLE}
               </p>
             </div>
@@ -289,7 +289,7 @@ const TestimonialsSection = ({
             {[...Array(DESKTOP_BATCH_SIZE)].map((_, index) => (
               <div
                 key={index}
-                className="animate-pulse rounded-2xl p-6 backdrop-blur"
+                className="animate-pulse rounded-2xl p-6 "
                 style={{
                   backgroundColor: 'var(--surface)',
                   borderWidth: '1px',
@@ -309,7 +309,7 @@ const TestimonialsSection = ({
           </div>
           <div className="md:hidden flex flex-col gap-4">
             <div
-              className="animate-pulse rounded-2xl p-5 sm:p-6 backdrop-blur"
+              className="animate-pulse rounded-2xl p-5 sm:p-6 "
               style={{
                 backgroundColor: 'var(--surface)',
                 borderWidth: '1px',
@@ -337,7 +337,7 @@ const TestimonialsSection = ({
     }
     return (
       <div className="py-8">
-        <div className="max-w-[92rem] mx-auto">
+        <div className="public-shell">
           <p className="text-center text-base" style={{ color: 'var(--text-secondary)' }}>
             No published testimonials yet. Be the first to share your experience below.
           </p>
@@ -349,7 +349,7 @@ const TestimonialsSection = ({
   if (visibleTestimonials.length === 0) {
     return (
       <div className="py-8">
-        <div className="max-w-[92rem] mx-auto">
+        <div className="public-shell">
           <p className="text-center text-base" style={{ color: 'var(--text-secondary)' }}>
             No testimonials match your search.
           </p>
@@ -360,13 +360,13 @@ const TestimonialsSection = ({
 
   return (
     <div className={LANDING_SECTION} id="testimonials">
-      <div className="max-w-[92rem] mx-auto">
+      <div className="public-shell">
         {showTitle && (
           <div className={`text-center ${LANDING_SECTION_HEADER_MB}`}>
             <h2 className="text-3xl sm:text-4xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
               {TESTIMONIALS_SECTION_TITLE}
             </h2>
-            <p className="text-base sm:text-lg max-w-2xl mx-auto px-1" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-base sm:text-lg public-content px-1" style={{ color: 'var(--text-secondary)' }}>
               {TESTIMONIALS_SECTION_SUBTITLE}
             </p>
           </div>

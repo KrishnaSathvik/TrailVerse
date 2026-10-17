@@ -18,7 +18,16 @@ const api = axios.create({
 const TOKEN_KEY = 'token';
 const USER_KEY = 'user';
 
-/** HTTP-only mirror of JWT — read on server for SSR auth hints (see AuthProvider). */
+/**
+ * SSR/proxy authentication HINT — not an authentication mechanism, and NOT
+ * HttpOnly: it is written with `document.cookie` below, so it is script-readable
+ * exactly like the localStorage copy. Read on the server by `src/proxy.js` and
+ * `AuthProvider` to decide what to render before hydration.
+ *
+ * The backend authenticates from the `Authorization: Bearer` header only
+ * (`server/src/middleware/auth.js` protect); it never reads this cookie, so a
+ * request carrying the cookie alone is unauthenticated.
+ */
 export const AUTH_TOKEN_COOKIE = 'trailverse_auth_token';
 
 export const AUTH_SESSION_EXPIRED_EVENT = 'authSessionExpired';
@@ -145,35 +154,34 @@ class AuthService {
       rememberMe
     });
     
-    console.log('🔐 AuthService: Login response received:', response.data);
-    
+    // Never log the login payload or the token itself. `response.data` carries a
+    // live bearer credential valid for 7 (or 30) days, and console output is
+    // routinely copied into bug reports, error reporters and support screenshots.
+    // Presence flags carry the same diagnostic value with no credential material.
     if (response.data.token) {
-      console.log('✅ AuthService: Login successful, storing token and user data');
-      console.log('🔐 AuthService: Token to store:', response.data.token);
-      console.log('🔐 AuthService: User data to store:', response.data.data);
-      
       persistAuth(response.data.token, response.data.data, rememberMe);
-      
-      console.log(`✅ AuthService: Token and user data stored in localStorage and cookies (rememberMe: ${rememberMe})`);
-      
-      // Verify storage
-      const storedToken = getStoredToken();
-      const storedUser = getStoredUser();
-      console.log('🔍 AuthService: Verification - stored token exists:', !!storedToken);
-      console.log('🔍 AuthService: Verification - stored user exists:', !!storedUser);
-      console.log('🔍 AuthService: Verification - stored user data:', storedUser);
+
+      console.log('✅ AuthService: login succeeded', {
+        authTokenIssued: true,
+        rememberMe,
+        tokenStored: Boolean(getStoredToken()),
+        userStored: Boolean(getStoredUser()),
+      });
     } else {
-      console.log('❌ AuthService: No token in response data');
+      console.log('❌ AuthService: login response carried no auth token');
     }
-    
+
     return response.data;
   }
 
   async getMe() {
     const response = await this.api.get('/auth/me');
-    console.log('🔍 AuthService: getMe() response:', response);
-    console.log('🔍 AuthService: getMe() response.data:', response.data);
-    console.log('🔍 AuthService: getMe() response.data.data:', response.data.data);
+    // The axios response object embeds `config.headers.Authorization`, so logging
+    // it whole would print the bearer token. Log the outcome, not the response.
+    console.log('🔍 AuthService: getMe() resolved', {
+      status: response.status,
+      userResolved: Boolean(response.data?.data),
+    });
     // Server returns {success: true, data: user}, so we return the full response.data
     // and let the caller access response.data.data for the user object
     return response.data;
@@ -226,8 +234,9 @@ class AuthService {
 
   getToken() {
     const token = getStoredToken();
-    console.log('🔍 AuthService: getToken() called');
-    console.log('🔍 AuthService: Token from storage:', token ? `EXISTS (${token.substring(0, 20)}...)` : 'NOT_FOUND');
+    // Presence only. A truncated prefix is still credential material and offers
+    // nothing a boolean does not.
+    console.log('🔍 AuthService: getToken()', { tokenPresent: Boolean(token) });
     return token;
   }
 

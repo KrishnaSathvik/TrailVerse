@@ -1,13 +1,12 @@
 import { notFound } from 'next/navigation';
+import { getBlogPostServer as getPostBySlug } from '@/lib/blogApi';
+
+export const revalidate = 3600;
+export async function generateStaticParams() { return []; }
 import BlogPostClient from './BlogPostClient';
 import { blogMetaDescription, blogRobots } from '@/lib/blogSeo';
 
 const SITE_URL = 'https://www.nationalparksexplorerusa.com';
-
-function getApiBaseUrl() {
-  const configuredUrl = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'http://127.0.0.1:5001/api';
-  return configuredUrl.endsWith('/api') ? configuredUrl : `${configuredUrl}/api`;
-}
 
 function toAbsoluteImageUrl(imageUrl) {
   if (!imageUrl || imageUrl.trim() === '' || imageUrl.startsWith('data:')) {
@@ -34,23 +33,6 @@ function toAbsoluteImageUrl(imageUrl) {
   }
   const path = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
   return `${SITE_URL}${path}`;
-}
-
-async function getPostBySlug(slug) {
-  try {
-    const response = await fetch(`${getApiBaseUrl()}/blogs/${slug}`, {
-      next: { revalidate: 3600 }
-    });
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const payload = await response.json();
-    return payload?.data || null;
-  } catch {
-    return null;
-  }
 }
 
 export async function generateMetadata({ params }) {

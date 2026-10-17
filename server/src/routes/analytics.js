@@ -8,12 +8,13 @@ const {
   getErrorAnalytics,
   getPerformanceAnalytics,
   getMcpAnalytics,
+  getSnapshots,
   trackEvents
 } = require('../controllers/analyticsController');
-const { protect, admin } = require('../middleware/auth');
+const { optionalAuth, protect, admin } = require('../middleware/auth');
 
 // Analytics tracking endpoint (no auth required for client-side tracking)
-router.post('/track', trackEvents);
+router.post('/track', optionalAuth, trackEvents);
 
 // All other routes are admin only
 router.use(protect, admin);
@@ -26,5 +27,6 @@ router.get('/search', getSearchAnalytics);
 router.get('/errors', getErrorAnalytics);
 router.get('/performance', getPerformanceAnalytics);
 router.get('/mcp', getMcpAnalytics);
+router.get('/snapshots', getSnapshots);
 
 module.exports = router;

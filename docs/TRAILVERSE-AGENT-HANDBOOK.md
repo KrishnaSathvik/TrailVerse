@@ -3,7 +3,7 @@
 > **Human-readable merge of all Cursor rules.**  
 > **Source of truth for agents:** `.cursor/rules/*.mdc` (Cursor loads these automatically; update rules first, then refresh this handbook when doing large doc passes).
 
-**Last consolidated:** June 2026 · **Repo:** `npe-usa` · **Production:** [nationalparksexplorerusa.com](https://www.nationalparksexplorerusa.com)
+**Last consolidated:** August 2026 · **Repo:** `npe-usa` · **Production:** [nationalparksexplorerusa.com](https://www.nationalparksexplorerusa.com)
 
 ---
 
@@ -170,7 +170,8 @@ python -m server.main
 | `/chatgpt` | ChatGPT App Directory landing | See [§8](#8-mcp-chatgpt--cloud-render) |
 | `/mcp` | Claude MCP install guide | Connector: `https://trailverse-mcp.onrender.com/mcp` |
 | `/privacy`, `/terms` | Legal | |
-| `/reports/when-to-go.html` | Crowd calendar (static) | Redirect from `/reports/when-to-go` |
+| `/reports/when-to-go.html` | Crowd calendar (static; analytics: `crowd_calendar_view`) | Redirect from `/reports/when-to-go` |
+| `/where-next` | Where Next destination pick | `POST /api/where-next/pick` |
 | `/reports/national-parks-2025.html` | Data report | |
 
 ### Park discovery
@@ -179,7 +180,7 @@ python -m server.main
 |-------|---------|
 | `/explore` | Grid: search, national-parks-only toggle, 56 states, sort, pagination |
 | `/parks/[parkCode]` | Park detail — **slug URLs** (`length > 4`), tabs, lazy NPS data |
-| `/parks/state/[stateCode]` | All sites in a state |
+| `/parks/state/[stateCode]` | All sites in a state. `notFound()` only for invalid slugs; API failure is not a 404. Uses `GET /api/parks?state=UT&all=true`. |
 | `/parks/[parkCode]/activity/[id]` | Single activity |
 | `/compare` | 2–4 park comparison |
 | `/map` | Full-screen Google Maps |
@@ -203,7 +204,7 @@ API: `GET /api/discover/catalog`, `detail`, `parks`, `nps-guide`
 
 | Route | Purpose |
 |-------|---------|
-| `/plan-ai` | Main chat (anonymous or authed) |
+| `/plan-ai` | Main chat (anonymous or authed). Guests: **5 messages / 48h**. |
 | `/plan-ai/[tripId]` | Saved trip (+ `/plan`, `/itinerary`, `/map`) |
 | `/plan-ai/shared/[shareId]` | Public share (noindex) |
 | `/chat-history` | Past chats (auth, noindex) |
@@ -305,6 +306,7 @@ Requires JWT + `role: 'admin'`.
 | UI | `VoiceButton`, `VoiceOverlay` |
 | API | `POST /api/ai/realtime-session`, `voice-tool` |
 | Tech | OpenAI Realtime API + WebRTC, 4 function tools |
+| Limits | Anonymous: 3 free sessions / 24h then sign-in. All users: 10 sessions / hour. |
 
 ### Admin CMS
 
@@ -325,7 +327,7 @@ Requires JWT + `role: 'admin'`.
 | MCP health | `GET /health` (MCP service only) |
 | Express API | https://trailverse.onrender.com/api |
 | Express liveness | `GET /health/ping` (Render health check) |
-| Express diagnostics | `GET /health`, `GET /health/database` |
+| Express diagnostics | `GET /health`, `GET /health/database`, `GET /health/product` |
 
 Deploy MCP: `mcp-server/render.yaml` → `python -m server.main`
 

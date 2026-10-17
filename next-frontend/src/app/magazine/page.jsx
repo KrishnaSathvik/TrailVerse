@@ -1,3 +1,5 @@
+import Header from '@/components/common/Header';
+import Footer from '@/components/common/Footer';
 import Link from 'next/link';
 
 export const metadata = {
@@ -26,17 +28,19 @@ export const metadata = {
 export default function MagazinePage() {
   return (
     <div className="flex min-h-dvh flex-col">
-      <header
-        className="shrink-0 border-b px-4 py-3 sm:px-6"
+      <Header />
+      <main className="flex flex-1 flex-col">
+      <section
+        className="shrink-0 border-b py-3"
         style={{
           backgroundColor: 'var(--bg-primary)',
           borderColor: 'var(--border)',
           color: 'var(--text-primary)',
         }}
       >
-        <div className="mx-auto flex max-w-4xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="public-shell flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-lg font-bold tracking-tight sm:text-xl">
+            <h1 className="public-page-title mb-3">
               TrailVerse Magazine — Issue 01
             </h1>
             <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
@@ -46,13 +50,13 @@ export default function MagazinePage() {
           </div>
           <Link
             href="/magazine.html"
-            className="text-sm font-semibold underline-offset-2 hover:underline"
+            className="public-action public-action-secondary shrink-0 px-4 text-sm font-semibold"
             style={{ color: 'var(--accent-green)' }}
           >
             Read full screen
           </Link>
         </div>
-      </header>
+      </section>
 
       <noscript>
         <p className="px-4 py-3 text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
@@ -65,13 +69,15 @@ export default function MagazinePage() {
       <iframe
         src="/magazine.html"
         title="TrailVerse Magazine — Issue 01"
-        className="min-h-0 flex-1"
+        className="min-h-[80dvh] flex-1"
         style={{
           width: '100%',
           border: 'none',
           display: 'block',
         }}
       />
+      </main>
+      <Footer />
     </div>
   );
 }

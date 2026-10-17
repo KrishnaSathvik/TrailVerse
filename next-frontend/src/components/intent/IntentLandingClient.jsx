@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
@@ -78,9 +78,20 @@ function IntentFaqAccordion({ items }) {
   );
 }
 
-export default function IntentLandingClient({ landing, canonicalUrl, children }) {
+export default function IntentLandingClient(props) {
+  return (
+    <Suspense fallback={<IntentLandingContent {...props} returnFrom={null} />}>
+      <IntentLandingWithNavigation {...props} />
+    </Suspense>
+  );
+}
+
+function IntentLandingWithNavigation(props) {
   const searchParams = useSearchParams();
-  const returnFrom = sanitizeFromPath(searchParams.get('from'));
+  return <IntentLandingContent {...props} returnFrom={sanitizeFromPath(searchParams.get('from'))} />;
+}
+
+function IntentLandingContent({ landing, canonicalUrl, children, returnFrom }) {
   const relatedLandings = (landing.relatedLinks ?? [])
     .map((link) => getIntentLandingByPath(link.href))
     .filter(Boolean);
@@ -162,7 +173,7 @@ export default function IntentLandingClient({ landing, canonicalUrl, children })
 
         {landing.intro ? (
           <p
-            className="text-base sm:text-lg leading-relaxed max-w-3xl"
+            className="text-base sm:text-lg leading-relaxed public-content"
             style={{ color: 'var(--text-secondary)' }}
           >
             {landing.intro}
@@ -208,7 +219,7 @@ export default function IntentLandingClient({ landing, canonicalUrl, children })
             Top matches
           </h2>
           <p
-            className="text-base sm:text-lg leading-relaxed mb-6 max-w-3xl"
+            className="text-base sm:text-lg leading-relaxed mb-6 public-content"
             style={{ color: 'var(--text-secondary)' }}
           >
             Sorted by how well each park fits this trip type — scenic views, pace, season, terrain, and
@@ -221,7 +232,7 @@ export default function IntentLandingClient({ landing, canonicalUrl, children })
         </section>
 
         {landing.faq?.length > 0 && (
-          <section id="faq" className="scroll-mt-28 max-w-3xl">
+          <section id="faq" className="scroll-mt-28 public-content">
             <h2 className={`${ARTICLE_H2} mb-6`} style={{ color: 'var(--text-primary)' }}>
               Frequently asked questions
             </h2>

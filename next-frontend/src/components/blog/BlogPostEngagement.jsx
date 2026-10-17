@@ -17,7 +17,7 @@ export default function BlogPostEngagement({ post, onPostUpdate }) {
   const tags = post.tags?.length ? post.tags : [];
 
   return (
-    <footer className="w-full mt-12 pt-10 space-y-0" style={{ borderTop: '1px solid var(--border)' }}>
+    <footer className="public-reading mt-12 pt-10 space-y-0" style={{ borderTop: '1px solid var(--border)' }}>
       {/* 1 — Like, save, comment */}
       <section className="space-y-5" aria-label="Engage with this post">
         <LikeFavorite post={post} onUpdate={onPostUpdate} embedded />
@@ -54,9 +54,9 @@ export default function BlogPostEngagement({ post, onPostUpdate }) {
       <section
         className={SECTION_DIVIDER}
         style={{ borderColor: 'var(--border)' }}
-        aria-label="Newsletter signup"
+        aria-label="Where Next? newsletter signup"
       >
-        <NewsletterWidget source="blog-post" category={post.category} embedded />
+        <NewsletterWidget source="blog-footer" sourceDetail={post.category} category={post.category} embedded />
       </section>
     </footer>
   );

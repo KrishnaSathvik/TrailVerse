@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 API_BASE = os.getenv("TRAILVERSE_API_BASE", "https://trailverse.onrender.com").rstrip("/")
 TIMEOUT = float(os.getenv("BACKEND_TIMEOUT", "30"))
-PLAN_TRIP_TIMEOUT = float(os.getenv("PLAN_TRIP_TIMEOUT", "30"))
+PLAN_TRIP_TIMEOUT = float(os.getenv("PLAN_TRIP_TIMEOUT", "180"))
 USER_AGENT = os.getenv("BACKEND_USER_AGENT", "TrailVerse-MCP/1.0")
 MCP_BYPASS_KEY = os.getenv("MCP_BYPASS_KEY", "")
 
@@ -240,7 +240,7 @@ class TrailVerseClient:
         anonymous_id: str | None = None,
     ) -> dict[str, Any]:
         """
-        Call the anonymous AI planner (Trailie on Claude Sonnet 5).
+        Call the shared Trailie planner; the backend owns runtime/model routing.
 
         form_data: optional structured constraints (dates, groupSize, budget, etc.).
         messages: full conversation history for multi-turn continuity.
@@ -256,7 +256,7 @@ class TrailVerseClient:
             metadata["formData"] = form_data
         body: dict[str, Any] = {
             "messages": messages if messages else [{"role": "user", "content": message}],
-            "provider": "claude",
+            "provider": "auto",
             "metadata": metadata,
         }
         if anonymous_id:

@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const DailyFeed = require('./src/models/DailyFeed');
 const reliableAstronomicalService = require('./src/services/reliableAstronomicalService');
-const npsService = require('./src/services/npsService');
+const { getNpsService } = require('./src/services/npsService');
 const openaiService = require('./src/services/openaiService');
 const enhancedParkService = require('./src/services/enhancedParkService');
 
@@ -23,7 +23,7 @@ async function generateDailyFeed() {
 
     // Get a National Park from NPS API
     console.log('\n🏞️ Getting National Park from NPS API...');
-    const allParks = await npsService.getAllParks();
+    const allParks = await getNpsService().getAllParks();
     const nationalParks = allParks.filter(park => 
       park.designation && park.designation.toLowerCase() === 'national park'
     );

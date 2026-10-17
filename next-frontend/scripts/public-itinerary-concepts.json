@@ -1,0 +1,102 @@
+[
+  {
+    "slug": "yellowstone-3-day",
+    "title": "Yellowstone National Park",
+    "prompt": "Plan me a first-time-friendly 3-day Yellowstone trip with wildlife, geyser basins, scenic stops, and no crazy hikes. Keep the pacing realistic.",
+    "days": 3,
+    "tags": [
+      "Wildlife",
+      "Geysers"
+    ]
+  },
+  {
+    "slug": "glacier-5-day",
+    "title": "Glacier National Park",
+    "prompt": "Plan me 5 days in Glacier in mid-July with realistic pacing, scenic drives, classic viewpoints, photography, and moderate or shorter hikes.",
+    "days": 5,
+    "tags": [
+      "Photography",
+      "Summer"
+    ]
+  },
+  {
+    "slug": "utah-mighty-5-7-day",
+    "title": "Utah Mighty 5",
+    "prompt": "Plan a realistic 7-day Utah Mighty 5 road trip covering Zion, Bryce Canyon, Capitol Reef, Arches, and Canyonlands. Keep the driving realistic and don\u2019t cram every day.",
+    "days": 7,
+    "tags": [
+      "Road trips",
+      "Scenic drives"
+    ]
+  },
+  {
+    "slug": "alaska-10-day",
+    "title": "Alaska National Parks",
+    "prompt": "Plan a paced 10-day Alaska national parks trip that hits the major highlights without feeling rushed. Be realistic about travel time and logistics.",
+    "days": 10,
+    "tags": [
+      "Road trips",
+      "Wildlife"
+    ]
+  },
+  {
+    "slug": "yosemite-3-day",
+    "title": "Yosemite National Park",
+    "prompt": "Plan a clean 3-day first-time Yosemite itinerary with Valley views, one moderate hike, scenic stops, and enough downtime that the weekend doesn\u2019t feel rushed.",
+    "days": 3,
+    "tags": [
+      "First-time visitors",
+      "Valley views"
+    ]
+  },
+  {
+    "slug": "grand-canyon-page-4-day",
+    "title": "Grand Canyon + Page",
+    "prompt": "Plan a 4-day Grand Canyon trip that also includes Page, with one major scenic day, viewpoints, and one deliberately relaxed day.",
+    "days": 4,
+    "tags": [
+      "Road trips",
+      "Viewpoints"
+    ]
+  },
+  {
+    "slug": "olympic-4-day",
+    "title": "Olympic National Park",
+    "prompt": "Plan a 4-day Olympic National Park road trip with mountains, rainforest, and coast, but keep the driving realistic.",
+    "days": 4,
+    "tags": [
+      "Road trips",
+      "Coast"
+    ]
+  },
+  {
+    "slug": "big-bend-weekend",
+    "title": "Big Bend National Park",
+    "prompt": "Plan a weekend in Big Bend focused on dark skies, Milky Way photography, scenic windows, and easy photo-friendly timing.",
+    "days": 2,
+    "tags": [
+      "Weekend",
+      "Dark skies"
+    ]
+  },
+  {
+    "slug": "washington-parks-7-day",
+    "title": "Washington\u2019s National Parks",
+    "prompt": "Plan a realistic 7-day Washington national parks trip covering Olympic, Mount Rainier, and North Cascades without turning it into a driving marathon.",
+    "days": 7,
+    "tags": [
+      "Road trips",
+      "Mountains"
+    ]
+  },
+  {
+    "slug": "acadia-fall-weekend",
+    "title": "Acadia National Park",
+    "prompt": "Plan a fall weekend in Acadia with sunrise, scenic drives, easy-to-moderate walks, and the best autumn atmosphere.",
+    "days": 2,
+    "tags": [
+      "Weekend",
+      "Fall"
+    ]
+  }
+]

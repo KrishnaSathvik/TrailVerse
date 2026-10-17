@@ -7,10 +7,10 @@ import { useAuth } from '../../context/AuthContext';
 import { LogOut, ChevronDown } from '@components/icons';
 import ThemeSwitcher, { SegmentedThemeSkeleton } from './ThemeSwitcher';
 import { BROWSE_HUB_NAV_LABEL, BROWSE_HUB_PATH } from '@/lib/browseHub';
+import { resolveHeaderMobileNav } from '@/lib/planAiHeaderNav';
 
 const AUTH_HOME_NAV_ITEM = { path: '/home', label: 'Home' };
 const BLOG_NAV_ITEM = { path: '/blog', label: 'Blog' };
-const EVENTS_NAV_ITEM = { path: '/events', label: 'Events' };
 
 const CORE_PRIMARY_NAV_ITEMS = [
   { path: '/explore', label: 'Explore' },
@@ -31,29 +31,9 @@ const AUTH_MORE_NAV_ITEMS = [
   { path: '/profile', label: 'Profile' },
 ];
 
-const LANDING_MOBILE_MORE_ITEMS = [
-  { path: '/map', label: 'Map' },
-  { path: '/plan-ai', label: 'Trailie' },
-];
-
-const LANDING_MOBILE_INLINE_ITEMS_GUEST = [
-  { path: '/explore', label: 'Explore' },
-  BLOG_NAV_ITEM,
-  EVENTS_NAV_ITEM,
-];
-
-const LANDING_MOBILE_INLINE_ITEMS_AUTH = [
-  AUTH_HOME_NAV_ITEM,
-  { path: '/explore', label: 'Explore' },
-  BLOG_NAV_ITEM,
-  EVENTS_NAV_ITEM,
-];
-
-const LANDING_MOBILE_MORE_EXCLUDED_PATHS = new Set(['/blog', '/events']);
-
 /** Stable class string — active visuals via .header-mobile-nav-item CSS + aria-current. */
 const MOBILE_NAV_ITEM_CLASS =
-  'header-mobile-nav-item inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full border border-solid px-2.5 py-2 text-sm leading-none transition sm:px-3 sm:text-[0.9375rem] hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10';
+  'header-mobile-nav-item inline-flex h-11 min-h-11 shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full border border-solid px-2 py-0 text-sm leading-none transition sm:px-3 sm:text-[0.9375rem] hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10';
 
 const Header = () => {
   const { isAuthenticated, authReady, initialAuthHint, user, logout } = useAuth();
@@ -88,18 +68,14 @@ const Header = () => {
     return pathname === path;
   };
 
-  const isLandingPage = pathname === '/';
 
-  const inlineNavItems = isLandingPage
-    ? (showAuthenticatedNav ? LANDING_MOBILE_INLINE_ITEMS_AUTH : LANDING_MOBILE_INLINE_ITEMS_GUEST)
-    : primaryNavItems;
-
-  const currentMoreNavItems = isLandingPage
-    ? [
-        ...LANDING_MOBILE_MORE_ITEMS,
-        ...moreNavItems.filter((item) => !LANDING_MOBILE_MORE_EXCLUDED_PATHS.has(item.path)),
-      ]
-    : moreNavItems;
+  const {
+    inlineNavItems,
+    mobileMoreNavItems: currentMoreNavItems,
+  } = resolveHeaderMobileNav({
+    primaryNavItems,
+    moreNavItems,
+  });
 
   const isMoreActive = (items = moreNavItems) => items.some((item) => isActive(item.path));
 
@@ -211,7 +187,7 @@ const Header = () => {
     <button
       type="button"
       onClick={() => setMoreMenuOpen((open) => !open)}
-      className={`${MOBILE_NAV_ITEM_CLASS} ${mobile && active ? 'header-mobile-nav-item--active' : ''} lg:px-4 lg:py-2.5 lg:text-[0.9375rem] ${
+      className={`${MOBILE_NAV_ITEM_CLASS} ${mobile && active ? 'header-mobile-nav-item--active' : ''} lg:h-auto lg:min-h-0 lg:px-4 lg:py-2.5 lg:text-[0.9375rem] ${
         !mobile && active ? 'lg:font-semibold lg:ring-1' : ''
       }`}
       {...(mobile
@@ -279,14 +255,14 @@ const Header = () => {
 
   return (
     <header
-      className="sticky top-0 z-50 overflow-visible border-b backdrop-blur-xl"
+      className="sticky top-0 z-50 overflow-visible border-b"
       style={{
         backgroundColor: 'var(--bg-primary)',
         borderColor: 'var(--border)',
         color: 'var(--text-primary)',
       }}
     >
-      <nav className="relative max-w-[92rem] mx-auto px-2 sm:px-6 lg:px-10 xl:px-12">
+      <nav className="public-shell relative">
         {moreMenuOpen && (
           <button
             type="button"
@@ -300,7 +276,10 @@ const Header = () => {
           <div className="flex shrink-0 items-center justify-self-start">
             <Link href="/" className="flex items-center gap-2.5 group" aria-label="TrailVerse home">
               <img
-                src="/logo.png"
+                src="/brand/trailverse-logo-40.a8f681720be9.webp"
+                srcSet="/brand/trailverse-logo-40.a8f681720be9.webp 1x, /brand/trailverse-logo-80.5ba3166e4f83.webp 2x, /brand/trailverse-logo-120.c31aee090dd3.webp 3x"
+                width={40}
+                height={40}
                 alt=""
                 aria-hidden="true"
                 className="h-9 w-9 shrink-0 rounded-lg object-contain transition-transform group-hover:scale-105 sm:h-10 sm:w-10 lg:h-10 lg:w-10 lg:rounded-xl"
@@ -337,11 +316,11 @@ const Header = () => {
             </div>
 
             <div className="hidden items-center justify-center gap-2 lg:flex">
-              {inlineNavItems.map((item) => renderNavLink(item))}
+              {primaryNavItems.map((item) => renderNavLink(item))}
 
               <div className="relative">
-                {renderMoreButton({ active: isMoreActive(currentMoreNavItems) })}
-                {renderMoreDropdown('center', currentMoreNavItems)}
+                {renderMoreButton({ active: isMoreActive(moreNavItems) })}
+                {renderMoreDropdown('center', moreNavItems)}
               </div>
             </div>
           </div>

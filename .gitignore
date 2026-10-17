@@ -30,3 +30,11 @@ logs/
 server/logs/
 server/eval/results/
 server/eval/.auth-token
+
+# Private diagnostic payloads (raw tool output — never committed)
+artifacts/private/
+
+# Private local environment backups and authenticated capture sessions
+.env.bak*
+artifacts/**/session.json
+artifacts/trailie-git-provenance-reconstruction/

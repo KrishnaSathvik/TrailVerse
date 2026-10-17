@@ -1,12 +1,18 @@
 "use client";
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const ToastContext = createContext();
 
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
 
-  const showToast = (message, type = 'info', duration = 3000) => {
+  const removeToast = useCallback((id) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  }, []);
+
+  // Consumers use this in loading-effect dependencies. Toast changes must not
+  // restart conversation restoration and discard an in-flight draft or error.
+  const showToast = useCallback((message, type = 'info', duration = 3000) => {
     // Check if a toast with the same message and type already exists
     setToasts(prev => {
       const existingToast = prev.find(toast => 
@@ -30,11 +36,7 @@ export const ToastProvider = ({ children }) => {
       
       return [...prev, newToast];
     });
-  };
-
-  const removeToast = (id) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
-  };
+  }, [removeToast]);
 
   // Global rate limiting error handler
   useEffect(() => {

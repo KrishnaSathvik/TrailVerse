@@ -1,0 +1,34 @@
+{
+  "current": {
+    "dt": 1786276200,
+    "name": "Yosemite Valley",
+    "coord": { "lat": 37.7459, "lon": -119.5332 },
+    "main": { "temp": 72.4, "feels_like": 71.8, "humidity": 35 },
+    "weather": [{ "description": "clear sky" }],
+    "wind": { "speed": 4.2 }
+  },
+  "forecast": {
+    "city": { "name": "Yosemite Valley", "timezone": -25200 },
+    "list": [
+      {
+        "dt": 1786291200,
+        "main": { "temp": 76, "temp_min": 70, "temp_max": 78, "humidity": 30 },
+        "weather": [{ "description": "clear sky" }],
+        "wind": { "speed": 5 }
+      },
+      {
+        "dt": 1786302000,
+        "main": { "temp": 80, "temp_min": 75, "temp_max": 82, "humidity": 28 },
+        "weather": [{ "description": "few clouds" }],
+        "wind": { "speed": 6 }
+      }
+    ]
+  },
+  "climate": {
+    "month": 10,
+    "highF": 65,
+    "lowF": 35,
+    "conditions": "cool to mild",
+    "source": "TrailVerse climate estimate"
+  }
+}

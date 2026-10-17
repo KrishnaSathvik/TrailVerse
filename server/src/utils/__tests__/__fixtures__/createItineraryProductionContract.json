@@ -1,0 +1,1552 @@
+{
+  "_note": "GOLDEN: the production (strict OFF) create_itinerary contract. Refreshed 2026-09-19 in Phase 12G for visible itinerary completeness (intro + after_plan closing). Any further diff is a deliberate production change and must be reviewed as one.",
+  "patchToolStrict": null,
+  "variants": {
+    "default": {
+      "strict": null,
+      "name": "create_itinerary",
+      "description": "Emit structured days when the traveler asked for day-by-day planning. intro is a short opening (usually 1–3 sentences: destination, the shaping priority, and how the days are organized). For a full itinerary, include one narrativeSections after_plan item explaining why this sequence works — not a canned footer. Optional before_plan only when it adds something the days cannot say.",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "days",
+          "intro"
+        ],
+        "properties": {
+          "days": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "dayNumber",
+                "label",
+                "stops"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "dayNumber": {
+                  "type": "number"
+                },
+                "label": {
+                  "type": "string",
+                  "description": "An editorial subtitle for the day, e.g. \"Badlands Loop + sunset overlooks\" or \"An easy west-side afternoon\" — what the day is FOR, in plain trip language. Do not start with \"Day N\" (the day number is shown separately) and do not describe the day's planning status or how it was assembled (no \"priority\", \"coverage\", \"conditions check\", \"return\", \"district\" alone as the whole title). Name the place or experience."
+                },
+                "overnightLocation": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "A concrete area, town, or lodge the day is based from, only when the itinerary genuinely establishes one — e.g. \"Springdale\" or \"Moose, WY\", not generic filler like \"near the park\" or \"in the area\". Use null when no specific base is actually grounded; a plausible-sounding placeholder is worse than omitting it."
+                },
+                "stops": {
+                  "type": "array",
+                  "description": "Build the day around park-defining experiences (trail, viewpoint, scenic_drive, landmark, wildlife, geothermal, historic, lake, beach, boat, photography) rather than operational stops (visitor_center, museum, picnic, restaurant, lodging). Operational stops are fine when the traveler asked for them or they are genuinely useful for that day, but should not be the reason the day exists.",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "order",
+                      "type",
+                      "name",
+                      "note",
+                      "startTime",
+                      "duration"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "order": {
+                        "type": "number"
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "trail",
+                          "walk",
+                          "viewpoint",
+                          "scenic_drive",
+                          "landmark",
+                          "lake",
+                          "visitor_center",
+                          "historic",
+                          "ranger_program",
+                          "museum",
+                          "lodge",
+                          "wildlife",
+                          "photography",
+                          "picnic",
+                          "accessible",
+                          "geothermal",
+                          "beach",
+                          "boat",
+                          "campground",
+                          "restaurant",
+                          "lodging",
+                          "custom"
+                        ]
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "note": {
+                        "type": "string",
+                        "description": "What the traveler needs to know about THIS stop: what to do there, a concrete thing to check or bring, or what makes it worth the time. Ordinary trip language only — never mention evidence, sources, validators, repairs, obligations, or how this stop was chosen. State a material uncertainty once as a concrete instruction (\"Check the morning road status before heading out\"), not as repeated hedging (\"I could not verify...\")."
+                      },
+                      "parkCode": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "parkName": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "startTime": {
+                        "type": "string",
+                        "description": "Use HH:mm only when an exact time is operationally required; otherwise use an empty string and populate timeWindow."
+                      },
+                      "timeWindow": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "A bounded daypart/window such as \"Early morning · around 7–8 AM\" or \"Late afternoon\" when exact clock precision is not justified."
+                      },
+                      "physicalDifficulty": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "enum": [
+                          "easy",
+                          "moderate",
+                          "strenuous",
+                          null
+                        ]
+                      },
+                      "exposureLevel": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "enum": [
+                          "low",
+                          "moderate",
+                          "high",
+                          null
+                        ]
+                      },
+                      "duration": {
+                        "type": "number"
+                      },
+                      "walkingDistanceMiles": {
+                        "type": [
+                          "number",
+                          "null"
+                        ],
+                        "description": "Total walking distance only when explicitly present in the Frozen EvidenceBundle. Never estimate or infer it."
+                      },
+                      "latitude": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "longitude": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "difficulty": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "enum": [
+                          "easy",
+                          "moderate",
+                          "strenuous",
+                          null
+                        ]
+                      },
+                      "why": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "Why THIS stop belongs in THIS traveler's plan, at this point in the trip — how it fits their stated preferences, pace, or the rest of the day. Not a restatement of `note`. Never explain plan mechanics (not \"this satisfies\", \"adds coverage\", \"is a valid replacement\", \"keeps the existing stop unchanged\") — write it the way a travel companion would explain their own recommendation."
+                      },
+                      "drivingTimeFromPreviousMin": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "alternatives": {
+                        "type": "array",
+                        "description": "Concrete fallback options for this stop when access/parking/conditions fail.",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": true,
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "note": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "activityGroups": {
+                  "type": "array",
+                  "description": "Optional. An activity group is one uninterrupted traveler activity with multiple physical stages or waypoints: one hike with waypoints, one scenic drive with its own pullouts/stages, one boat trip with stops, or a guided continuous tour. Geographic clustering, being \"clustered\", \"nearby\", in the \"same area\" or \"same basin\", a shared theme, or geographic convenience are not reasons to group independent experiences that are merely convenient to visit together. Visitor centers, museums, information stations, meals/rest stops, or other separate visits must not be grouped with an attraction merely because they are adjacent to it. This tells the system not to treat movement between these specific stops as an independent drive. It does not change the stops themselves, their names, or their order — omit entirely when every stop already stands on its own.",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "stopIds"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "stopIds": {
+                        "type": "array",
+                        "description": "The exact stop ids (from this same day's stops) that belong to this one continuous activity, in order. At least two.",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                },
+                "travelEdges": {
+                  "type": "array",
+                  "description": "Optional. Each entry marks an intentional transfer on this day: the traveler finishes one experience and moves on to a separate, independent experience at another place in the same destination (e.g. from Old Faithful to Grand Prismatic Spring). An edge says only that a transfer happens, never how — by itself it does not assert driving, walking, a shuttle, or transit, and it carries no duration, no distance, and no claim that a route is feasible. The optional modeIntent is the only mode statement, and it is limited to \"drive\" (see that field); omit it whenever the mode is uncertain. It is not the same thing as activityGroups: stops in one continuous activity are already connected by their group, so never author an edge between two stops in the same activity group. When a transfer enters a group, target the group's first stop; when it leaves a group, the source is the group's last stop. When the day moves from one destination to a different destination, do not author an edge for that change — travel between destinations is handled separately. An edge is not needed for every pair of consecutive stops: author one only where the plan genuinely moves the traveler between independent experiences, and omit the field entirely when no such transfer exists.",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "sourceStopId",
+                      "targetStopId",
+                      "relationship"
+                    ],
+                    "properties": {
+                      "sourceStopId": {
+                        "type": "string",
+                        "description": "The exact id of the stop the traveler leaves, from this same day's stops. It must come earlier in the day than the target."
+                      },
+                      "targetStopId": {
+                        "type": "string",
+                        "description": "The exact id of the stop the traveler moves on to, from this same day's stops."
+                      },
+                      "relationship": {
+                        "type": "string",
+                        "enum": [
+                          "transfer"
+                        ]
+                      },
+                      "modeIntent": {
+                        "type": "string",
+                        "enum": [
+                          "drive"
+                        ],
+                        "description": "Optional. Set to \"drive\" only when this specific transfer is intentionally made by private vehicle AND the traveler context explicitly supports having or driving a vehicle (for example the traveler has said they are driving or have a rental car). Do not infer driving merely because two stops are far apart, in a national park, on the same day, inconvenient to walk between, or because a route could theoretically be driven. If the traveler said they will not have a car, will not drive, or will use the shuttle, walk or bike only, never set it. If the transport mode is uncertain, omit this field — omitting it is the correct answer, not an incomplete one. It states planning intent only, never that a drive route exists or how long it takes."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "intro": {
+            "type": "string",
+            "description": "The traveler-facing opening, read before the itinerary. Usually 1–3 sentences: the shape of the trip or the one tradeoff that actually matters. Go longer only when something genuinely needs it (a real conflict, an unusual condition) — do not pad by default. Do not restate the days, do not advertise Trailie or say what Trailie is, and do not say \"At a glance\", mention evidence or tools, or invent a backup. Write like someone who knows the park explaining their own plan — never mechanical planning-process language like \"designed to optimize\" or \"this itinerary has been designed to\"."
+          },
+          "narrativeSections": {
+            "type": "array",
+            "description": "Traveler-facing context around the plan (max 3). For a full itinerary, include one after_plan section that explains why this sequence works for this traveler — a real tradeoff, the organizing logic, or one specific condition worth confirming. Never a generic \"Let me know if you'd like changes\" or similar offer to help further, and never a canned \"Before you go\" footer. before_plan is optional. Do not restate every day.",
+            "maxItems": 3,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "placement",
+                "markdown"
+              ],
+              "properties": {
+                "placement": {
+                  "type": "string",
+                  "enum": [
+                    "before_plan",
+                    "after_plan"
+                  ]
+                },
+                "heading": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Optional short heading. Omit or null when the section should read as continuing prose."
+                },
+                "markdown": {
+                  "type": "string",
+                  "description": "Ordinary traveler language. No evidence-system jargon, no \"At a glance\", no restating every stop."
+                }
+              }
+            }
+          },
+          "alternatives": {
+            "type": "array",
+            "description": "Trip-level backup/contingency plan when the traveler asked for a Plan B. List identifiable places/activities that remain usable if the uncertain primary fails.",
+            "items": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                },
+                "when": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "reduced": {
+      "strict": null,
+      "name": "create_itinerary",
+      "description": "Emit structured days when the traveler asked for day-by-day planning. intro is a short opening (usually 1–3 sentences: destination, the shaping priority, and how the days are organized). For a full itinerary, include one narrativeSections after_plan item explaining why this sequence works — not a canned footer. Optional before_plan only when it adds something the days cannot say.",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "days",
+          "intro"
+        ],
+        "properties": {
+          "days": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "dayNumber",
+                "label",
+                "stops"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "dayNumber": {
+                  "type": "number"
+                },
+                "label": {
+                  "type": "string",
+                  "description": "An editorial subtitle for the day, e.g. \"Badlands Loop + sunset overlooks\" or \"An easy west-side afternoon\" — what the day is FOR, in plain trip language. Do not start with \"Day N\" (the day number is shown separately) and do not describe the day's planning status or how it was assembled (no \"priority\", \"coverage\", \"conditions check\", \"return\", \"district\" alone as the whole title). Name the place or experience."
+                },
+                "overnightLocation": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "A concrete area, town, or lodge the day is based from, only when the itinerary genuinely establishes one — e.g. \"Springdale\" or \"Moose, WY\", not generic filler like \"near the park\" or \"in the area\". Use null when no specific base is actually grounded; a plausible-sounding placeholder is worse than omitting it."
+                },
+                "stops": {
+                  "type": "array",
+                  "description": "Build the day around park-defining experiences (trail, viewpoint, scenic_drive, landmark, wildlife, geothermal, historic, lake, beach, boat, photography) rather than operational stops (visitor_center, museum, picnic, restaurant, lodging). Operational stops are fine when the traveler asked for them or they are genuinely useful for that day, but should not be the reason the day exists.",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "order",
+                      "type",
+                      "name",
+                      "note",
+                      "duration"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "order": {
+                        "type": "number"
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "trail",
+                          "walk",
+                          "viewpoint",
+                          "scenic_drive",
+                          "landmark",
+                          "lake",
+                          "visitor_center",
+                          "historic",
+                          "ranger_program",
+                          "museum",
+                          "lodge",
+                          "wildlife",
+                          "photography",
+                          "picnic",
+                          "accessible",
+                          "geothermal",
+                          "beach",
+                          "boat",
+                          "campground",
+                          "restaurant",
+                          "lodging",
+                          "custom"
+                        ]
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "note": {
+                        "type": "string",
+                        "description": "What the traveler needs to know about THIS stop: what to do there, a concrete thing to check or bring, or what makes it worth the time. Ordinary trip language only — never mention evidence, sources, validators, repairs, obligations, or how this stop was chosen. State a material uncertainty once as a concrete instruction (\"Check the morning road status before heading out\"), not as repeated hedging (\"I could not verify...\")."
+                      },
+                      "parkCode": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "parkName": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "timeWindow": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "A bounded daypart/window such as \"Early morning · around 7–8 AM\" or \"Late afternoon\" when exact clock precision is not justified."
+                      },
+                      "exposureLevel": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "enum": [
+                          "low",
+                          "moderate",
+                          "high",
+                          null
+                        ]
+                      },
+                      "duration": {
+                        "type": "number"
+                      },
+                      "walkingDistanceMiles": {
+                        "type": [
+                          "number",
+                          "null"
+                        ],
+                        "description": "Total walking distance only when explicitly present in the Frozen EvidenceBundle. Never estimate or infer it."
+                      },
+                      "latitude": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "longitude": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "difficulty": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "enum": [
+                          "easy",
+                          "moderate",
+                          "strenuous",
+                          null
+                        ]
+                      },
+                      "why": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "Why THIS stop belongs in THIS traveler's plan, at this point in the trip — how it fits their stated preferences, pace, or the rest of the day. Not a restatement of `note`. Never explain plan mechanics (not \"this satisfies\", \"adds coverage\", \"is a valid replacement\", \"keeps the existing stop unchanged\") — write it the way a travel companion would explain their own recommendation."
+                      },
+                      "alternatives": {
+                        "type": "array",
+                        "description": "Concrete fallback options for this stop when access/parking/conditions fail.",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": true,
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "note": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "activityGroups": {
+                  "type": "array",
+                  "description": "Optional. An activity group is one uninterrupted traveler activity with multiple physical stages or waypoints: one hike with waypoints, one scenic drive with its own pullouts/stages, one boat trip with stops, or a guided continuous tour. Geographic clustering, being \"clustered\", \"nearby\", in the \"same area\" or \"same basin\", a shared theme, or geographic convenience are not reasons to group independent experiences that are merely convenient to visit together. Visitor centers, museums, information stations, meals/rest stops, or other separate visits must not be grouped with an attraction merely because they are adjacent to it. This tells the system not to treat movement between these specific stops as an independent drive. It does not change the stops themselves, their names, or their order — omit entirely when every stop already stands on its own.",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "stopIds"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "stopIds": {
+                        "type": "array",
+                        "description": "The exact stop ids (from this same day's stops) that belong to this one continuous activity, in order. At least two.",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                },
+                "travelEdges": {
+                  "type": "array",
+                  "description": "Optional. Each entry marks an intentional transfer on this day: the traveler finishes one experience and moves on to a separate, independent experience at another place in the same destination (e.g. from Old Faithful to Grand Prismatic Spring). An edge says only that a transfer happens, never how — by itself it does not assert driving, walking, a shuttle, or transit, and it carries no duration, no distance, and no claim that a route is feasible. The optional modeIntent is the only mode statement, and it is limited to \"drive\" (see that field); omit it whenever the mode is uncertain. It is not the same thing as activityGroups: stops in one continuous activity are already connected by their group, so never author an edge between two stops in the same activity group. When a transfer enters a group, target the group's first stop; when it leaves a group, the source is the group's last stop. When the day moves from one destination to a different destination, do not author an edge for that change — travel between destinations is handled separately. An edge is not needed for every pair of consecutive stops: author one only where the plan genuinely moves the traveler between independent experiences, and omit the field entirely when no such transfer exists.",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "sourceStopId",
+                      "targetStopId",
+                      "relationship"
+                    ],
+                    "properties": {
+                      "sourceStopId": {
+                        "type": "string",
+                        "description": "The exact id of the stop the traveler leaves, from this same day's stops. It must come earlier in the day than the target."
+                      },
+                      "targetStopId": {
+                        "type": "string",
+                        "description": "The exact id of the stop the traveler moves on to, from this same day's stops."
+                      },
+                      "relationship": {
+                        "type": "string",
+                        "enum": [
+                          "transfer"
+                        ]
+                      },
+                      "modeIntent": {
+                        "type": "string",
+                        "enum": [
+                          "drive"
+                        ],
+                        "description": "Optional. Set to \"drive\" only when this specific transfer is intentionally made by private vehicle AND the traveler context explicitly supports having or driving a vehicle (for example the traveler has said they are driving or have a rental car). Do not infer driving merely because two stops are far apart, in a national park, on the same day, inconvenient to walk between, or because a route could theoretically be driven. If the traveler said they will not have a car, will not drive, or will use the shuttle, walk or bike only, never set it. If the transport mode is uncertain, omit this field — omitting it is the correct answer, not an incomplete one. It states planning intent only, never that a drive route exists or how long it takes."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "intro": {
+            "type": "string",
+            "description": "The traveler-facing opening, read before the itinerary. Usually 1–3 sentences: the shape of the trip or the one tradeoff that actually matters. Go longer only when something genuinely needs it (a real conflict, an unusual condition) — do not pad by default. Do not restate the days, do not advertise Trailie or say what Trailie is, and do not say \"At a glance\", mention evidence or tools, or invent a backup. Write like someone who knows the park explaining their own plan — never mechanical planning-process language like \"designed to optimize\" or \"this itinerary has been designed to\"."
+          },
+          "narrativeSections": {
+            "type": "array",
+            "description": "Traveler-facing context around the plan (max 3). For a full itinerary, include one after_plan section that explains why this sequence works for this traveler — a real tradeoff, the organizing logic, or one specific condition worth confirming. Never a generic \"Let me know if you'd like changes\" or similar offer to help further, and never a canned \"Before you go\" footer. before_plan is optional. Do not restate every day.",
+            "maxItems": 3,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "placement",
+                "markdown"
+              ],
+              "properties": {
+                "placement": {
+                  "type": "string",
+                  "enum": [
+                    "before_plan",
+                    "after_plan"
+                  ]
+                },
+                "heading": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Optional short heading. Omit or null when the section should read as continuing prose."
+                },
+                "markdown": {
+                  "type": "string",
+                  "description": "Ordinary traveler language. No evidence-system jargon, no \"At a glance\", no restating every stop."
+                }
+              }
+            }
+          },
+          "alternatives": {
+            "type": "array",
+            "description": "Trip-level backup/contingency plan when the traveler asked for a Plan B. List identifiable places/activities that remain usable if the uncertain primary fails.",
+            "items": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                },
+                "when": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "reducedRequireAlternatives": {
+      "strict": null,
+      "name": "create_itinerary",
+      "description": "Emit structured days for the traveler-facing plan. intro is a short opening (usually 1–3 sentences). For a full itinerary, include one narrativeSections after_plan item explaining why this sequence works. Because the traveler asked for a backup/contingency, you MUST populate plan-level alternatives with an independent fallback from park facts.",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "days",
+          "intro",
+          "alternatives"
+        ],
+        "properties": {
+          "days": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "dayNumber",
+                "label",
+                "stops"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "dayNumber": {
+                  "type": "number"
+                },
+                "label": {
+                  "type": "string",
+                  "description": "An editorial subtitle for the day, e.g. \"Badlands Loop + sunset overlooks\" or \"An easy west-side afternoon\" — what the day is FOR, in plain trip language. Do not start with \"Day N\" (the day number is shown separately) and do not describe the day's planning status or how it was assembled (no \"priority\", \"coverage\", \"conditions check\", \"return\", \"district\" alone as the whole title). Name the place or experience."
+                },
+                "overnightLocation": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "A concrete area, town, or lodge the day is based from, only when the itinerary genuinely establishes one — e.g. \"Springdale\" or \"Moose, WY\", not generic filler like \"near the park\" or \"in the area\". Use null when no specific base is actually grounded; a plausible-sounding placeholder is worse than omitting it."
+                },
+                "stops": {
+                  "type": "array",
+                  "description": "Build the day around park-defining experiences (trail, viewpoint, scenic_drive, landmark, wildlife, geothermal, historic, lake, beach, boat, photography) rather than operational stops (visitor_center, museum, picnic, restaurant, lodging). Operational stops are fine when the traveler asked for them or they are genuinely useful for that day, but should not be the reason the day exists.",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "order",
+                      "type",
+                      "name",
+                      "note",
+                      "duration"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "order": {
+                        "type": "number"
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "trail",
+                          "walk",
+                          "viewpoint",
+                          "scenic_drive",
+                          "landmark",
+                          "lake",
+                          "visitor_center",
+                          "historic",
+                          "ranger_program",
+                          "museum",
+                          "lodge",
+                          "wildlife",
+                          "photography",
+                          "picnic",
+                          "accessible",
+                          "geothermal",
+                          "beach",
+                          "boat",
+                          "campground",
+                          "restaurant",
+                          "lodging",
+                          "custom"
+                        ]
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "note": {
+                        "type": "string",
+                        "description": "What the traveler needs to know about THIS stop: what to do there, a concrete thing to check or bring, or what makes it worth the time. Ordinary trip language only — never mention evidence, sources, validators, repairs, obligations, or how this stop was chosen. State a material uncertainty once as a concrete instruction (\"Check the morning road status before heading out\"), not as repeated hedging (\"I could not verify...\")."
+                      },
+                      "parkCode": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "parkName": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "timeWindow": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "A bounded daypart/window such as \"Early morning · around 7–8 AM\" or \"Late afternoon\" when exact clock precision is not justified."
+                      },
+                      "exposureLevel": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "enum": [
+                          "low",
+                          "moderate",
+                          "high",
+                          null
+                        ]
+                      },
+                      "duration": {
+                        "type": "number"
+                      },
+                      "walkingDistanceMiles": {
+                        "type": [
+                          "number",
+                          "null"
+                        ],
+                        "description": "Total walking distance only when explicitly present in the Frozen EvidenceBundle. Never estimate or infer it."
+                      },
+                      "latitude": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "longitude": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "difficulty": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "enum": [
+                          "easy",
+                          "moderate",
+                          "strenuous",
+                          null
+                        ]
+                      },
+                      "why": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "Why THIS stop belongs in THIS traveler's plan, at this point in the trip — how it fits their stated preferences, pace, or the rest of the day. Not a restatement of `note`. Never explain plan mechanics (not \"this satisfies\", \"adds coverage\", \"is a valid replacement\", \"keeps the existing stop unchanged\") — write it the way a travel companion would explain their own recommendation."
+                      },
+                      "alternatives": {
+                        "type": "array",
+                        "description": "Concrete fallback options for this stop when access/parking/conditions fail.",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": true,
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "note": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "activityGroups": {
+                  "type": "array",
+                  "description": "Optional. An activity group is one uninterrupted traveler activity with multiple physical stages or waypoints: one hike with waypoints, one scenic drive with its own pullouts/stages, one boat trip with stops, or a guided continuous tour. Geographic clustering, being \"clustered\", \"nearby\", in the \"same area\" or \"same basin\", a shared theme, or geographic convenience are not reasons to group independent experiences that are merely convenient to visit together. Visitor centers, museums, information stations, meals/rest stops, or other separate visits must not be grouped with an attraction merely because they are adjacent to it. This tells the system not to treat movement between these specific stops as an independent drive. It does not change the stops themselves, their names, or their order — omit entirely when every stop already stands on its own.",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "stopIds"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "stopIds": {
+                        "type": "array",
+                        "description": "The exact stop ids (from this same day's stops) that belong to this one continuous activity, in order. At least two.",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                },
+                "travelEdges": {
+                  "type": "array",
+                  "description": "Optional. Each entry marks an intentional transfer on this day: the traveler finishes one experience and moves on to a separate, independent experience at another place in the same destination (e.g. from Old Faithful to Grand Prismatic Spring). An edge says only that a transfer happens, never how — by itself it does not assert driving, walking, a shuttle, or transit, and it carries no duration, no distance, and no claim that a route is feasible. The optional modeIntent is the only mode statement, and it is limited to \"drive\" (see that field); omit it whenever the mode is uncertain. It is not the same thing as activityGroups: stops in one continuous activity are already connected by their group, so never author an edge between two stops in the same activity group. When a transfer enters a group, target the group's first stop; when it leaves a group, the source is the group's last stop. When the day moves from one destination to a different destination, do not author an edge for that change — travel between destinations is handled separately. An edge is not needed for every pair of consecutive stops: author one only where the plan genuinely moves the traveler between independent experiences, and omit the field entirely when no such transfer exists.",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "sourceStopId",
+                      "targetStopId",
+                      "relationship"
+                    ],
+                    "properties": {
+                      "sourceStopId": {
+                        "type": "string",
+                        "description": "The exact id of the stop the traveler leaves, from this same day's stops. It must come earlier in the day than the target."
+                      },
+                      "targetStopId": {
+                        "type": "string",
+                        "description": "The exact id of the stop the traveler moves on to, from this same day's stops."
+                      },
+                      "relationship": {
+                        "type": "string",
+                        "enum": [
+                          "transfer"
+                        ]
+                      },
+                      "modeIntent": {
+                        "type": "string",
+                        "enum": [
+                          "drive"
+                        ],
+                        "description": "Optional. Set to \"drive\" only when this specific transfer is intentionally made by private vehicle AND the traveler context explicitly supports having or driving a vehicle (for example the traveler has said they are driving or have a rental car). Do not infer driving merely because two stops are far apart, in a national park, on the same day, inconvenient to walk between, or because a route could theoretically be driven. If the traveler said they will not have a car, will not drive, or will use the shuttle, walk or bike only, never set it. If the transport mode is uncertain, omit this field — omitting it is the correct answer, not an incomplete one. It states planning intent only, never that a drive route exists or how long it takes."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "intro": {
+            "type": "string",
+            "description": "The traveler-facing opening, read before the itinerary. Usually 1–3 sentences: the shape of the trip or the one tradeoff that actually matters. Go longer only when something genuinely needs it (a real conflict, an unusual condition) — do not pad by default. Do not restate the days, do not advertise Trailie or say what Trailie is, and do not say \"At a glance\", mention evidence or tools, or invent a backup. Write like someone who knows the park explaining their own plan — never mechanical planning-process language like \"designed to optimize\" or \"this itinerary has been designed to\"."
+          },
+          "narrativeSections": {
+            "type": "array",
+            "description": "Traveler-facing context around the plan (max 3). For a full itinerary, include one after_plan section that explains why this sequence works for this traveler — a real tradeoff, the organizing logic, or one specific condition worth confirming. Never a generic \"Let me know if you'd like changes\" or similar offer to help further, and never a canned \"Before you go\" footer. before_plan is optional. Do not restate every day.",
+            "maxItems": 3,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "placement",
+                "markdown"
+              ],
+              "properties": {
+                "placement": {
+                  "type": "string",
+                  "enum": [
+                    "before_plan",
+                    "after_plan"
+                  ]
+                },
+                "heading": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Optional short heading. Omit or null when the section should read as continuing prose."
+                },
+                "markdown": {
+                  "type": "string",
+                  "description": "Ordinary traveler language. No evidence-system jargon, no \"At a glance\", no restating every stop."
+                }
+              }
+            }
+          },
+          "alternatives": {
+            "type": "array",
+            "description": "REQUIRED trip-level backup/contingency plan. Include at least one identifiable outdoor place/activity from the Frozen EvidenceBundle that remains usable if the named access/parking subject fails. Do not use vague conditions-check wording.",
+            "items": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                },
+                "when": {
+                  "type": "string"
+                }
+              }
+            },
+            "minItems": 1
+          }
+        }
+      }
+    },
+    "reducedBindParkIdentity": {
+      "strict": null,
+      "name": "create_itinerary",
+      "description": "Emit structured days when the traveler asked for day-by-day planning. intro is a short opening (usually 1–3 sentences: destination, the shaping priority, and how the days are organized). For a full itinerary, include one narrativeSections after_plan item explaining why this sequence works — not a canned footer. Optional before_plan only when it adds something the days cannot say.",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "days",
+          "intro"
+        ],
+        "properties": {
+          "days": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "dayNumber",
+                "label",
+                "stops"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "dayNumber": {
+                  "type": "number"
+                },
+                "label": {
+                  "type": "string",
+                  "description": "An editorial subtitle for the day, e.g. \"Badlands Loop + sunset overlooks\" or \"An easy west-side afternoon\" — what the day is FOR, in plain trip language. Do not start with \"Day N\" (the day number is shown separately) and do not describe the day's planning status or how it was assembled (no \"priority\", \"coverage\", \"conditions check\", \"return\", \"district\" alone as the whole title). Name the place or experience."
+                },
+                "overnightLocation": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "A concrete area, town, or lodge the day is based from, only when the itinerary genuinely establishes one — e.g. \"Springdale\" or \"Moose, WY\", not generic filler like \"near the park\" or \"in the area\". Use null when no specific base is actually grounded; a plausible-sounding placeholder is worse than omitting it."
+                },
+                "stops": {
+                  "type": "array",
+                  "description": "Build the day around park-defining experiences (trail, viewpoint, scenic_drive, landmark, wildlife, geothermal, historic, lake, beach, boat, photography) rather than operational stops (visitor_center, museum, picnic, restaurant, lodging). Operational stops are fine when the traveler asked for them or they are genuinely useful for that day, but should not be the reason the day exists.",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "order",
+                      "type",
+                      "name",
+                      "note",
+                      "duration"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "order": {
+                        "type": "number"
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "trail",
+                          "walk",
+                          "viewpoint",
+                          "scenic_drive",
+                          "landmark",
+                          "lake",
+                          "visitor_center",
+                          "historic",
+                          "ranger_program",
+                          "museum",
+                          "lodge",
+                          "wildlife",
+                          "photography",
+                          "picnic",
+                          "accessible",
+                          "geothermal",
+                          "beach",
+                          "boat",
+                          "campground",
+                          "restaurant",
+                          "lodging",
+                          "custom"
+                        ]
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "note": {
+                        "type": "string",
+                        "description": "What the traveler needs to know about THIS stop: what to do there, a concrete thing to check or bring, or what makes it worth the time. Ordinary trip language only — never mention evidence, sources, validators, repairs, obligations, or how this stop was chosen. State a material uncertainty once as a concrete instruction (\"Check the morning road status before heading out\"), not as repeated hedging (\"I could not verify...\")."
+                      },
+                      "timeWindow": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "A bounded daypart/window such as \"Early morning · around 7–8 AM\" or \"Late afternoon\" when exact clock precision is not justified."
+                      },
+                      "exposureLevel": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "enum": [
+                          "low",
+                          "moderate",
+                          "high",
+                          null
+                        ]
+                      },
+                      "duration": {
+                        "type": "number"
+                      },
+                      "walkingDistanceMiles": {
+                        "type": [
+                          "number",
+                          "null"
+                        ],
+                        "description": "Total walking distance only when explicitly present in the Frozen EvidenceBundle. Never estimate or infer it."
+                      },
+                      "latitude": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "longitude": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "difficulty": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "enum": [
+                          "easy",
+                          "moderate",
+                          "strenuous",
+                          null
+                        ]
+                      },
+                      "why": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "Why THIS stop belongs in THIS traveler's plan, at this point in the trip — how it fits their stated preferences, pace, or the rest of the day. Not a restatement of `note`. Never explain plan mechanics (not \"this satisfies\", \"adds coverage\", \"is a valid replacement\", \"keeps the existing stop unchanged\") — write it the way a travel companion would explain their own recommendation."
+                      },
+                      "alternatives": {
+                        "type": "array",
+                        "description": "Concrete fallback options for this stop when access/parking/conditions fail.",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": true,
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "note": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "activityGroups": {
+                  "type": "array",
+                  "description": "Optional. An activity group is one uninterrupted traveler activity with multiple physical stages or waypoints: one hike with waypoints, one scenic drive with its own pullouts/stages, one boat trip with stops, or a guided continuous tour. Geographic clustering, being \"clustered\", \"nearby\", in the \"same area\" or \"same basin\", a shared theme, or geographic convenience are not reasons to group independent experiences that are merely convenient to visit together. Visitor centers, museums, information stations, meals/rest stops, or other separate visits must not be grouped with an attraction merely because they are adjacent to it. This tells the system not to treat movement between these specific stops as an independent drive. It does not change the stops themselves, their names, or their order — omit entirely when every stop already stands on its own.",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "stopIds"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "stopIds": {
+                        "type": "array",
+                        "description": "The exact stop ids (from this same day's stops) that belong to this one continuous activity, in order. At least two.",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                },
+                "travelEdges": {
+                  "type": "array",
+                  "description": "Optional. Each entry marks an intentional transfer on this day: the traveler finishes one experience and moves on to a separate, independent experience at another place in the same destination (e.g. from Old Faithful to Grand Prismatic Spring). An edge says only that a transfer happens, never how — by itself it does not assert driving, walking, a shuttle, or transit, and it carries no duration, no distance, and no claim that a route is feasible. The optional modeIntent is the only mode statement, and it is limited to \"drive\" (see that field); omit it whenever the mode is uncertain. It is not the same thing as activityGroups: stops in one continuous activity are already connected by their group, so never author an edge between two stops in the same activity group. When a transfer enters a group, target the group's first stop; when it leaves a group, the source is the group's last stop. When the day moves from one destination to a different destination, do not author an edge for that change — travel between destinations is handled separately. An edge is not needed for every pair of consecutive stops: author one only where the plan genuinely moves the traveler between independent experiences, and omit the field entirely when no such transfer exists.",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "sourceStopId",
+                      "targetStopId",
+                      "relationship"
+                    ],
+                    "properties": {
+                      "sourceStopId": {
+                        "type": "string",
+                        "description": "The exact id of the stop the traveler leaves, from this same day's stops. It must come earlier in the day than the target."
+                      },
+                      "targetStopId": {
+                        "type": "string",
+                        "description": "The exact id of the stop the traveler moves on to, from this same day's stops."
+                      },
+                      "relationship": {
+                        "type": "string",
+                        "enum": [
+                          "transfer"
+                        ]
+                      },
+                      "modeIntent": {
+                        "type": "string",
+                        "enum": [
+                          "drive"
+                        ],
+                        "description": "Optional. Set to \"drive\" only when this specific transfer is intentionally made by private vehicle AND the traveler context explicitly supports having or driving a vehicle (for example the traveler has said they are driving or have a rental car). Do not infer driving merely because two stops are far apart, in a national park, on the same day, inconvenient to walk between, or because a route could theoretically be driven. If the traveler said they will not have a car, will not drive, or will use the shuttle, walk or bike only, never set it. If the transport mode is uncertain, omit this field — omitting it is the correct answer, not an incomplete one. It states planning intent only, never that a drive route exists or how long it takes."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "intro": {
+            "type": "string",
+            "description": "The traveler-facing opening, read before the itinerary. Usually 1–3 sentences: the shape of the trip or the one tradeoff that actually matters. Go longer only when something genuinely needs it (a real conflict, an unusual condition) — do not pad by default. Do not restate the days, do not advertise Trailie or say what Trailie is, and do not say \"At a glance\", mention evidence or tools, or invent a backup. Write like someone who knows the park explaining their own plan — never mechanical planning-process language like \"designed to optimize\" or \"this itinerary has been designed to\"."
+          },
+          "narrativeSections": {
+            "type": "array",
+            "description": "Traveler-facing context around the plan (max 3). For a full itinerary, include one after_plan section that explains why this sequence works for this traveler — a real tradeoff, the organizing logic, or one specific condition worth confirming. Never a generic \"Let me know if you'd like changes\" or similar offer to help further, and never a canned \"Before you go\" footer. before_plan is optional. Do not restate every day.",
+            "maxItems": 3,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "placement",
+                "markdown"
+              ],
+              "properties": {
+                "placement": {
+                  "type": "string",
+                  "enum": [
+                    "before_plan",
+                    "after_plan"
+                  ]
+                },
+                "heading": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Optional short heading. Omit or null when the section should read as continuing prose."
+                },
+                "markdown": {
+                  "type": "string",
+                  "description": "Ordinary traveler language. No evidence-system jargon, no \"At a glance\", no restating every stop."
+                }
+              }
+            }
+          },
+          "alternatives": {
+            "type": "array",
+            "description": "Trip-level backup/contingency plan when the traveler asked for a Plan B. List identifiable places/activities that remain usable if the uncertain primary fails.",
+            "items": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                },
+                "when": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "reducedBindCoordinates": {
+      "strict": null,
+      "name": "create_itinerary",
+      "description": "Emit structured days when the traveler asked for day-by-day planning. intro is a short opening (usually 1–3 sentences: destination, the shaping priority, and how the days are organized). For a full itinerary, include one narrativeSections after_plan item explaining why this sequence works — not a canned footer. Optional before_plan only when it adds something the days cannot say.",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "days",
+          "intro"
+        ],
+        "properties": {
+          "days": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "dayNumber",
+                "label",
+                "stops"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "dayNumber": {
+                  "type": "number"
+                },
+                "label": {
+                  "type": "string",
+                  "description": "An editorial subtitle for the day, e.g. \"Badlands Loop + sunset overlooks\" or \"An easy west-side afternoon\" — what the day is FOR, in plain trip language. Do not start with \"Day N\" (the day number is shown separately) and do not describe the day's planning status or how it was assembled (no \"priority\", \"coverage\", \"conditions check\", \"return\", \"district\" alone as the whole title). Name the place or experience."
+                },
+                "overnightLocation": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "A concrete area, town, or lodge the day is based from, only when the itinerary genuinely establishes one — e.g. \"Springdale\" or \"Moose, WY\", not generic filler like \"near the park\" or \"in the area\". Use null when no specific base is actually grounded; a plausible-sounding placeholder is worse than omitting it."
+                },
+                "stops": {
+                  "type": "array",
+                  "description": "Build the day around park-defining experiences (trail, viewpoint, scenic_drive, landmark, wildlife, geothermal, historic, lake, beach, boat, photography) rather than operational stops (visitor_center, museum, picnic, restaurant, lodging). Operational stops are fine when the traveler asked for them or they are genuinely useful for that day, but should not be the reason the day exists.",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "order",
+                      "type",
+                      "name",
+                      "note",
+                      "duration"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "order": {
+                        "type": "number"
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "trail",
+                          "walk",
+                          "viewpoint",
+                          "scenic_drive",
+                          "landmark",
+                          "lake",
+                          "visitor_center",
+                          "historic",
+                          "ranger_program",
+                          "museum",
+                          "lodge",
+                          "wildlife",
+                          "photography",
+                          "picnic",
+                          "accessible",
+                          "geothermal",
+                          "beach",
+                          "boat",
+                          "campground",
+                          "restaurant",
+                          "lodging",
+                          "custom"
+                        ]
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "note": {
+                        "type": "string",
+                        "description": "What the traveler needs to know about THIS stop: what to do there, a concrete thing to check or bring, or what makes it worth the time. Ordinary trip language only — never mention evidence, sources, validators, repairs, obligations, or how this stop was chosen. State a material uncertainty once as a concrete instruction (\"Check the morning road status before heading out\"), not as repeated hedging (\"I could not verify...\")."
+                      },
+                      "parkCode": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "parkName": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "timeWindow": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "A bounded daypart/window such as \"Early morning · around 7–8 AM\" or \"Late afternoon\" when exact clock precision is not justified."
+                      },
+                      "exposureLevel": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "enum": [
+                          "low",
+                          "moderate",
+                          "high",
+                          null
+                        ]
+                      },
+                      "duration": {
+                        "type": "number"
+                      },
+                      "walkingDistanceMiles": {
+                        "type": [
+                          "number",
+                          "null"
+                        ],
+                        "description": "Total walking distance only when explicitly present in the Frozen EvidenceBundle. Never estimate or infer it."
+                      },
+                      "difficulty": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "enum": [
+                          "easy",
+                          "moderate",
+                          "strenuous",
+                          null
+                        ]
+                      },
+                      "why": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "Why THIS stop belongs in THIS traveler's plan, at this point in the trip — how it fits their stated preferences, pace, or the rest of the day. Not a restatement of `note`. Never explain plan mechanics (not \"this satisfies\", \"adds coverage\", \"is a valid replacement\", \"keeps the existing stop unchanged\") — write it the way a travel companion would explain their own recommendation."
+                      },
+                      "alternatives": {
+                        "type": "array",
+                        "description": "Concrete fallback options for this stop when access/parking/conditions fail.",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": true,
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "note": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "activityGroups": {
+                  "type": "array",
+                  "description": "Optional. An activity group is one uninterrupted traveler activity with multiple physical stages or waypoints: one hike with waypoints, one scenic drive with its own pullouts/stages, one boat trip with stops, or a guided continuous tour. Geographic clustering, being \"clustered\", \"nearby\", in the \"same area\" or \"same basin\", a shared theme, or geographic convenience are not reasons to group independent experiences that are merely convenient to visit together. Visitor centers, museums, information stations, meals/rest stops, or other separate visits must not be grouped with an attraction merely because they are adjacent to it. This tells the system not to treat movement between these specific stops as an independent drive. It does not change the stops themselves, their names, or their order — omit entirely when every stop already stands on its own.",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "stopIds"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "stopIds": {
+                        "type": "array",
+                        "description": "The exact stop ids (from this same day's stops) that belong to this one continuous activity, in order. At least two.",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                },
+                "travelEdges": {
+                  "type": "array",
+                  "description": "Optional. Each entry marks an intentional transfer on this day: the traveler finishes one experience and moves on to a separate, independent experience at another place in the same destination (e.g. from Old Faithful to Grand Prismatic Spring). An edge says only that a transfer happens, never how — by itself it does not assert driving, walking, a shuttle, or transit, and it carries no duration, no distance, and no claim that a route is feasible. The optional modeIntent is the only mode statement, and it is limited to \"drive\" (see that field); omit it whenever the mode is uncertain. It is not the same thing as activityGroups: stops in one continuous activity are already connected by their group, so never author an edge between two stops in the same activity group. When a transfer enters a group, target the group's first stop; when it leaves a group, the source is the group's last stop. When the day moves from one destination to a different destination, do not author an edge for that change — travel between destinations is handled separately. An edge is not needed for every pair of consecutive stops: author one only where the plan genuinely moves the traveler between independent experiences, and omit the field entirely when no such transfer exists.",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "sourceStopId",
+                      "targetStopId",
+                      "relationship"
+                    ],
+                    "properties": {
+                      "sourceStopId": {
+                        "type": "string",
+                        "description": "The exact id of the stop the traveler leaves, from this same day's stops. It must come earlier in the day than the target."
+                      },
+                      "targetStopId": {
+                        "type": "string",
+                        "description": "The exact id of the stop the traveler moves on to, from this same day's stops."
+                      },
+                      "relationship": {
+                        "type": "string",
+                        "enum": [
+                          "transfer"
+                        ]
+                      },
+                      "modeIntent": {
+                        "type": "string",
+                        "enum": [
+                          "drive"
+                        ],
+                        "description": "Optional. Set to \"drive\" only when this specific transfer is intentionally made by private vehicle AND the traveler context explicitly supports having or driving a vehicle (for example the traveler has said they are driving or have a rental car). Do not infer driving merely because two stops are far apart, in a national park, on the same day, inconvenient to walk between, or because a route could theoretically be driven. If the traveler said they will not have a car, will not drive, or will use the shuttle, walk or bike only, never set it. If the transport mode is uncertain, omit this field — omitting it is the correct answer, not an incomplete one. It states planning intent only, never that a drive route exists or how long it takes."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "intro": {
+            "type": "string",
+            "description": "The traveler-facing opening, read before the itinerary. Usually 1–3 sentences: the shape of the trip or the one tradeoff that actually matters. Go longer only when something genuinely needs it (a real conflict, an unusual condition) — do not pad by default. Do not restate the days, do not advertise Trailie or say what Trailie is, and do not say \"At a glance\", mention evidence or tools, or invent a backup. Write like someone who knows the park explaining their own plan — never mechanical planning-process language like \"designed to optimize\" or \"this itinerary has been designed to\"."
+          },
+          "narrativeSections": {
+            "type": "array",
+            "description": "Traveler-facing context around the plan (max 3). For a full itinerary, include one after_plan section that explains why this sequence works for this traveler — a real tradeoff, the organizing logic, or one specific condition worth confirming. Never a generic \"Let me know if you'd like changes\" or similar offer to help further, and never a canned \"Before you go\" footer. before_plan is optional. Do not restate every day.",
+            "maxItems": 3,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "placement",
+                "markdown"
+              ],
+              "properties": {
+                "placement": {
+                  "type": "string",
+                  "enum": [
+                    "before_plan",
+                    "after_plan"
+                  ]
+                },
+                "heading": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Optional short heading. Omit or null when the section should read as continuing prose."
+                },
+                "markdown": {
+                  "type": "string",
+                  "description": "Ordinary traveler language. No evidence-system jargon, no \"At a glance\", no restating every stop."
+                }
+              }
+            }
+          },
+          "alternatives": {
+            "type": "array",
+            "description": "Trip-level backup/contingency plan when the traveler asked for a Plan B. List identifiable places/activities that remain usable if the uncertain primary fails.",
+            "items": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                },
+                "when": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

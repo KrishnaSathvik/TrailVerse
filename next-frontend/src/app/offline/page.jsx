@@ -24,7 +24,7 @@ export default function OfflinePage() {
   }, []);
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "var(--bg-primary)" }}>
+    <div className="public-state min-h-screen" style={{ backgroundColor: "var(--bg-primary)" }}>
       {/* Hero Section */}
       <section className="relative w-full min-h-[80vh] flex items-center justify-center">
         {/* Background Image */}
@@ -64,7 +64,7 @@ export default function OfflinePage() {
             You&apos;re Offline
           </h1>
 
-          <p className="mx-auto mt-2 max-w-2xl text-lg sm:text-xl leading-relaxed text-white/90 mb-12">
+          <p className="mx-auto mt-2 public-content text-lg sm:text-xl leading-relaxed text-white/90 mb-12">
             It looks like you&apos;ve wandered off the trail.
             Check your internet connection and try again — the parks will be here when you&apos;re back.
           </p>
@@ -124,7 +124,7 @@ export default function OfflinePage() {
               What You Can Still Do
             </h3>
             <p
-              className="text-base sm:text-lg mb-8 max-w-2xl mx-auto"
+              className="text-base sm:text-lg mb-8 public-content mx-auto"
               style={{ color: "var(--text-secondary)" }}
             >
               Pages you&apos;ve already visited are cached and may still be available.

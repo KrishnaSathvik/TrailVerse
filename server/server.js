@@ -8,11 +8,39 @@ const mongoose = require('mongoose');
 // Load env vars (only in development)
 if (process.env.NODE_ENV !== 'production') {
   dotenv.config({ path: './.env' });
+  const { ensureLocalTrailieEvidenceRefreshSecret } = require('./src/config/trailieEvidenceRefreshSecret');
+  const ensured = ensureLocalTrailieEvidenceRefreshSecret();
+  if (ensured.generated) {
+    console.log('Generated local TRAILIE_EVIDENCE_REFRESH_HASH_SECRET in server/.env (gitignored).');
+  }
 }
 
 // Validate environment variables
 const validateEnv = require('./src/config/validateEnv');
 validateEnv();
+
+// NPS configuration is checked here — the real production startup seam — and
+// nowhere else. Importing npsService, src/app, or any route must never require
+// a key, so deterministic evaluation runs can boot with an injected adapter.
+const { assertNpsConfigured } = require('./src/services/npsService');
+try {
+  assertNpsConfigured();
+} catch (error) {
+  console.error('❌ NPS is not configured (nps_not_configured)');
+  if (process.env.NODE_ENV === 'production') {
+    process.exit(1);
+  }
+  console.warn('⚠️  Continuing in development mode; NPS-backed routes will fail.');
+}
+
+const { assertTrailieEvidenceRefreshConfigured } = require('./src/config/trailieEvidenceRefreshSecret');
+try {
+  assertTrailieEvidenceRefreshConfigured();
+} catch (error) {
+  console.error('❌ Trailie evidence refresh is not configured (evidence_refresh_hash_secret_missing)');
+  console.error('Set TRAILIE_EVIDENCE_REFRESH_HASH_SECRET in the deployment environment (production) or server/.env (local). The value is never logged.');
+  process.exit(1);
+}
 
 // Import app with WebSocket support
 const { app, server, wsService } = require('./src/app');
@@ -23,28 +51,47 @@ const connectDB = require('./src/config/database');
 // Scheduler services
 const { startScheduler, stopScheduler } = require('./src/services/schedulerService');
 const { startDailyFeedScheduler, stopDailyFeedScheduler } = require('./src/services/dailyFeedScheduler');
-const npsService = require('./src/services/npsService');
+const { startAnalyticsSnapshotScheduler, stopAnalyticsSnapshotScheduler } = require('./src/services/analyticsSnapshotScheduler');
+const { getNpsService } = require('./src/services/npsService');
 const { loadDynamicMap } = require('./src/utils/parkExtractor');
 
 // Connect to database
 connectDB().then(async () => {
-  // Migrate legacy emailNotifications: boolean → { blogNotifications: Boolean }
-  try {
-    const { db } = require('mongoose').connection;
-    const result = await db.collection('users').updateMany(
-      { emailNotifications: { $type: 'bool' } },
-      [{ $set: { emailNotifications: { blogNotifications: '$emailNotifications' } } }]
-    );
-    if (result.modifiedCount > 0) {
-      console.log(`✅ Migrated emailNotifications for ${result.modifiedCount} user(s)`);
-    }
-  } catch (err) {
-    console.warn('⚠️ emailNotifications migration skipped:', err.message);
-  }
+  // Data migrations are separate, explicitly approved operations.
+
+  // No HTTP/WebSocket traffic until required database indexes are verified.
+  const PORT = process.env.PORT || 5001;
+  server.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
+    console.log(`📡 WebSocket server ready for real-time updates`);
+  });
 
   // Start schedulers after database connection is established
   startScheduler();
   startDailyFeedScheduler();
+  startAnalyticsSnapshotScheduler();
+
+  // Stage 9 — durable shadow-review worker. DISABLED by default; runs only when
+  // TRAILIE_REVIEW_WORKER_ENABLED=true. It reviews sampled canonical responses
+  // OFF the request path and can never mutate saved trip data. Requires an
+  // Anthropic key to make reviewer calls; without one it stays idle.
+  try {
+    const { getTrailieReviewConfig } = require('./src/config/trailieReviewConfig');
+    if (getTrailieReviewConfig().workerEnabled) {
+      const { createReviewWorker } = require('./src/services/trailieReviewWorker');
+      let anthropic = null;
+      if (process.env.ANTHROPIC_API_KEY) {
+        const Anthropic = require('@anthropic-ai/sdk');
+        anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+      }
+      const reviewWorker = createReviewWorker({ anthropic });
+      reviewWorker.start();
+      global.__trailieReviewWorker = reviewWorker; // for graceful shutdown
+      console.log('🕵️  Trailie shadow-review worker started (async, off-path)');
+    }
+  } catch (err) {
+    console.warn('⚠️ Trailie review worker not started:', err.message);
+  }
 
   // Only warm the parks list at startup — it's needed for the parks listing page.
   // All other NPS data (alerts, campgrounds, visitor centers, places, tours,
@@ -54,13 +101,13 @@ connectDB().then(async () => {
   setImmediate(async () => {
     console.log('🚀 Starting NPS parks warm-up...');
     try {
-      const parks = await npsService.getAllParks();
+      const parks = await getNpsService().getAllParks();
       console.log(`🌲 Warmed parks snapshot with ${parks.length} parks`);
       // Build dynamic park name map — reuses the already-cached park list
       await loadDynamicMap();
 
       // Bulk alerts: one warm load so crawlers don't fill the 500-key endpoint cache
-      npsService
+      getNpsService()
         .getAllAlerts()
         .then((alertsByPark) => {
           const parkCount = Object.keys(alertsByPark || {}).length;
@@ -71,14 +118,14 @@ connectDB().then(async () => {
         });
 
       // Bulk tab snapshots (places, campgrounds, etc.) — Mongo only, no NPS calls
-      npsService
+      getNpsService()
         .warmParkTabSnapshots()
         .catch((err) => {
           console.warn(`⚠️ Park tab snapshot warm-up skipped: ${err.message}`);
         });
 
       const discoverCatalogService = require('./src/services/discoverCatalogService');
-      const snapshot = await npsService._loadSnapshot('discover-catalog', 7 * 24 * 60 * 60 * 1000);
+      const snapshot = await getNpsService()._loadSnapshot('discover-catalog', 7 * 24 * 60 * 60 * 1000);
       const needsRebuild =
         !snapshot?.data || !discoverCatalogService.catalogIndexesLookHealthy(snapshot.data);
 
@@ -108,13 +155,6 @@ connectDB().then(async () => {
   process.exit(1);
 });
 
-const PORT = process.env.PORT || 5001;
-
-server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
-  console.log(`📡 WebSocket server ready for real-time updates`);
-});
-
 // Graceful shutdown handler
 const gracefulShutdown = (signal) => {
   console.log(`\n🛑 ${signal} received — shutting down gracefully...`);
@@ -126,6 +166,12 @@ const gracefulShutdown = (signal) => {
     // Stop schedulers
     stopScheduler();
     stopDailyFeedScheduler();
+    stopAnalyticsSnapshotScheduler();
+
+    // Stop the shadow-review worker (drains any in-flight tick).
+    if (global.__trailieReviewWorker) {
+      Promise.resolve(global.__trailieReviewWorker.stop()).catch(() => {});
+    }
 
     // Stop WebSocket service
     if (wsService) {

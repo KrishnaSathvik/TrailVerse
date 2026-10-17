@@ -4,6 +4,7 @@ plan_trip business logic: validation helpers, message building, structured outpu
 from __future__ import annotations
 
 import re
+from copy import deepcopy
 from datetime import datetime
 from typing import Any
 
@@ -196,103 +197,9 @@ def build_plan_trip_form_data(payload: PlanTripInput) -> dict[str, Any]:
     return form
 
 
-def _parse_time_minutes(value: str | None) -> int | None:
-    if not value:
-        return None
-    text = value.strip().lower()
-    match = re.match(r"(\d{1,2})(?::(\d{2}))?\s*(am|pm)?", text)
-    if not match:
-        return None
-    hour = int(match.group(1))
-    minute = int(match.group(2) or 0)
-    meridiem = match.group(3)
-    if meridiem == "pm" and hour < 12:
-        hour += 12
-    if meridiem == "am" and hour == 12:
-        hour = 0
-    return hour * 60 + minute
-
-
-def _stop_to_block_item(stop: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "name": stop.get("name"),
-        "type": stop.get("type"),
-        "note": stop.get("note") or stop.get("why"),
-        "startTime": stop.get("startTime"),
-        "durationMinutes": stop.get("duration"),
-        "difficulty": stop.get("difficulty"),
-        "parkingNote": stop.get("parkingNote"),
-        "latitude": stop.get("latitude"),
-        "longitude": stop.get("longitude"),
-    }
-
-
-def _assign_stop_to_block(stop: dict[str, Any], blocks: dict[str, list]) -> None:
-    item = _stop_to_block_item(stop)
-    minutes = _parse_time_minutes(stop.get("startTime"))
-    if minutes is not None:
-        if minutes < 12 * 60:
-            blocks["morning"].append(item)
-        elif minutes < 17 * 60:
-            blocks["afternoon"].append(item)
-        else:
-            blocks["evening"].append(item)
-        return
-
-    stop_type = (stop.get("type") or "").lower()
-    if stop_type in ("lodging", "restaurant"):
-        blocks["evening"].append(item)
-    elif stop_type == "campground":
-        blocks["evening"].append(item)
-    else:
-        total = sum(len(blocks[k]) for k in blocks)
-        bucket = ["morning", "afternoon", "evening"][total % 3]
-        blocks[bucket].append(item)
-
-
 def transform_itinerary_days(itinerary: dict[str, Any] | None) -> list[dict[str, Any]]:
-    """Convert backend itinerary days into morning/afternoon/evening blocks."""
-    if not itinerary or not isinstance(itinerary.get("days"), list):
-        return []
-
-    structured_days: list[dict[str, Any]] = []
-    for day in itinerary["days"]:
-        blocks = {"morning": [], "afternoon": [], "evening": []}
-        stops = day.get("stops") or []
-        driving_minutes = 0
-        buffer_minutes = 0
-
-        for stop in stops:
-            _assign_stop_to_block(stop, blocks)
-            drive = stop.get("drivingTimeFromPreviousMin")
-            if isinstance(drive, (int, float)):
-                driving_minutes += int(drive)
-            duration = stop.get("duration")
-            if isinstance(duration, (int, float)):
-                buffer_minutes += max(0, int(duration) // 6)
-
-        structured_days.append({
-            "day": day.get("dayNumber") or day.get("day"),
-            "label": day.get("label"),
-            "morning": blocks["morning"],
-            "afternoon": blocks["afternoon"],
-            "evening": blocks["evening"],
-            "estimated_driving_minutes": driving_minutes or None,
-            "buffer_minutes": buffer_minutes or 60,
-            "mealAndRestPeriods": [
-                s for s in stops
-                if (s.get("type") or "").lower() in ("restaurant", "lodging", "visitor_center")
-            ],
-            "parkingNotes": [
-                s.get("parkingNote") or s.get("note")
-                for s in stops
-                if s.get("parkingNote") or (
-                    isinstance(s.get("note"), str) and "park" in s.get("note", "").lower()
-                )
-            ],
-        })
-
-    return structured_days
+    """Preserve accepted days verbatim. Planning belongs to Trailie, not MCP."""
+    return deepcopy(itinerary.get("days", [])) if isinstance(itinerary, dict) else []
 
 
 def slim_plan_trip_structured(structured: dict[str, Any]) -> dict[str, Any]:
@@ -310,14 +217,12 @@ def slim_plan_trip_structured(structured: dict[str, Any]) -> dict[str, Any]:
     if planner_mode:
         slim["planner_mode"] = planner_mode
         slim["plannerMode"] = planner_mode
-    if structured.get("days") is not None:
-        slim["days"] = structured["days"]
-    if "hasItinerary" in structured:
-        slim["hasItinerary"] = structured["hasItinerary"]
-    if structured.get("park"):
-        slim["park"] = structured["park"]
-    if structured.get("error"):
-        slim["error"] = structured["error"]
+    # Slim only presentation chrome. Never slim the planning or mutation contract.
+    for key in ("canonicalPlan", "itinerary", "days", "hasItinerary", "park", "error",
+                "artifactStatus", "mutationStatus", "mutationIssues", "correctionAttempted",
+                "correctionIssues", "replyStatus", "critical_notices", "unverified"):
+        if key in structured:
+            slim[key] = deepcopy(structured[key])
     return slim
 
 

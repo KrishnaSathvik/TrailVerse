@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import Header from '@/components/common/Header';
+import Footer from '@/components/common/Footer';
 import CompareLandingSeo from '@/components/compare/CompareLandingSeo';
 import ComparePageClient from '../ComparePageClient';
 import { COMPARE_LANDINGS, getCompareLanding } from '@/data/compareLandings';
@@ -62,6 +63,7 @@ export default async function CompareLandingPage({ params }) {
       >
         <ComparePageClient initialParkCodes={landing.codes} />
       </Suspense>
+      <Footer />
     </div>
   );
 }

@@ -1,13 +1,15 @@
-/** Trailie-voice intro for the guest 6th-message limit reply */
+/** Compact guest pause copy; trip context must come from an actual artifact. */
 
-export function buildGuestLimitIntro({ timeUntilReset } = {}) {
+export function buildGuestLimitReset({ timeUntilReset } = {}) {
   const resetWhen = timeUntilReset
     ? `in ${timeUntilReset}`
     : 'in about 48 hours';
 
-  return `You've reached the 5-message guest limit for now.
+  return `You’ll get 5 more guest messages ${resetWhen}.`;
+}
 
-Your trip plan is off to a good start. Sign in for free to keep planning from here — I'll save this chat, and you can share the itinerary or export a PDF when you're ready.
-
-Not ready to sign in? No worries. This conversation stays on your device, and you'll get 5 more guest messages ${resetWhen}.`;
+export function buildGuestLimitIntro({ hasTrip = false } = {}) {
+  return hasTrip
+    ? 'Your trip is ready to continue.\n\nSign in free to open your itinerary and map, save the trip, and keep planning.'
+    : 'You’ve used your 5 free messages.\n\nSign in to keep chatting and keep this conversation.';
 }

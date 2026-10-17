@@ -1,0 +1,214 @@
+{
+  "source": {
+    "capture": "trailie-core-final-funded-1.jsonl",
+    "row": 1
+  },
+  "prompt": "Give me four days in Zion.",
+  "response": "I couldn't complete this request. Please try again.",
+  "attempts": [
+    {
+      "stage": "stop_identity",
+      "reasonCodes": [
+        "stop_identity_unresolved"
+      ]
+    },
+    {
+      "stage": null,
+      "reasonCodes": []
+    }
+  ],
+  "outputs": [
+    {
+      "intro": "Four days gives you room to see Zion Canyon, the separate Kolob Canyons area, and the Zion\u2013Mt. Carmel Highway without rushing. I\u2019d keep the last canyon day flexible, since you haven\u2019t picked dates and some activities are seasonal.",
+      "days": [
+        {
+          "id": "zion-day-1",
+          "dayNumber": 1,
+          "label": "Zion Canyon orientation and museum views",
+          "stops": [
+            {
+              "id": "zion-canyon-vc",
+              "order": 1,
+              "type": "visitor_center",
+              "name": "Zion Canyon Visitor Center",
+              "note": "Start near the South Entrance, pick up a map, and ask rangers about access for your visit. Allow roughly 30 minutes.",
+              "timeWindow": "Morning",
+              "duration": 30,
+              "why": "It gives you a practical starting point before spending time with the canyon."
+            },
+            {
+              "id": "human-history-museum",
+              "order": 2,
+              "type": "museum",
+              "name": "Human History Museum",
+              "note": "Explore the exhibits on Zion\u2019s people and places; the orientation film runs 22 minutes. Allow roughly an hour for the visit.",
+              "timeWindow": "Late morning",
+              "duration": 60,
+              "why": "The exhibits add context to the landscapes you\u2019ll see over the next three days."
+            },
+            {
+              "id": "towers-of-the-virgin",
+              "order": 3,
+              "type": "viewpoint",
+              "name": "Towers of the Virgin",
+              "note": "Step outside the museum to take in the dramatic view of the Towers of the Virgin. Allow roughly 25 minutes.",
+              "timeWindow": "Early afternoon",
+              "duration": 25,
+              "why": "This gives the first day a memorable canyon view without committing you to a long hike."
+            },
+            {
+              "id": "bridge-mountain",
+              "order": 4,
+              "type": "viewpoint",
+              "name": "Bridge Mountain",
+              "note": "Look for Bridge Mountain from outside the museum; allow roughly 20 minutes to linger over the view.",
+              "timeWindow": "Early afternoon",
+              "duration": 20,
+              "why": "It\u2019s another named feature you can appreciate while you\u2019re already at the museum."
+            }
+          ],
+          "travelEdges": [
+            {
+              "sourceStopId": "zion-canyon-vc",
+              "targetStopId": "human-history-museum",
+              "relationship": "transfer"
+            }
+          ]
+        },
+        {
+          "id": "zion-day-2",
+          "dayNumber": 2,
+          "label": "Kolob Canyons landscape",
+          "stops": [
+            {
+              "id": "kolob-visitor-center",
+              "order": 1,
+              "type": "visitor_center",
+              "name": "Kolob Canyons Visitor Center",
+              "note": "Visit in the morning rather than between noon and 1 pm, when the center is closed; ask rangers what access is available that day. Allow roughly 30 minutes.",
+              "timeWindow": "Morning",
+              "duration": 30,
+              "why": "Kolob is a separate part of the park, so local guidance is useful before exploring."
+            },
+            {
+              "id": "kolob-canyons",
+              "order": 2,
+              "type": "landmark",
+              "name": "Kolob Canyons",
+              "note": "Give the landscape an unhurried couple of hours, choosing where to stop once you know the day's access conditions. No particular overlook or trail is assumed here.",
+              "timeWindow": "Late morning into afternoon",
+              "duration": 120,
+              "why": "A dedicated day lets you experience this part of Zion rather than treating its visitor center as a quick detour."
+            }
+          ],
+          "travelEdges": [
+            {
+              "sourceStopId": "kolob-visitor-center",
+              "targetStopId": "kolob-canyons",
+              "relationship": "transfer"
+            }
+          ]
+        },
+        {
+          "id": "zion-day-3",
+          "dayNumber": 3,
+          "label": "Zion\u2013Mt. Carmel Highway scenery",
+          "stops": [
+            {
+              "id": "zion-mt-carmel-highway",
+              "order": 1,
+              "type": "scenic_drive",
+              "name": "Zion-Mt. Carmel Highway",
+              "note": "If you're traveling by vehicle, set aside roughly two hours for a daylight outing with time to pause where stopping is permitted. Check road and tunnel conditions before setting out; vehicle-size restrictions apply on the section between Canyon Junction and the East Entrance.",
+              "timeWindow": "Daylight",
+              "duration": 120,
+              "why": "This puts the highway landscape on its own day instead of squeezing it between the two canyon areas."
+            }
+          ]
+        },
+        {
+          "id": "zion-day-4",
+          "dayNumber": 4,
+          "label": "An unhurried day in Zion Canyon",
+          "stops": [
+            {
+              "id": "zion-canyon",
+              "order": 1,
+              "type": "landmark",
+              "name": "Zion Canyon",
+              "note": "Spend a leisurely few hours with the canyon scenery, choosing your route and stopping points after checking access for your dates. This is flexible time to enjoy the canyon, not a promise of a particular trail or viewpoint.",
+              "timeWindow": "Morning into early afternoon",
+              "duration": 180,
+              "why": "After two days in other parts of the park, you can give the main canyon time without rushing to cover ground."
+            },
+            {
+              "id": "zion-nature-center",
+              "order": 2,
+              "type": "visitor_center",
+              "name": "Zion Nature Center",
+              "note": "If your visit is in summer and the center is operating, allow roughly 45 minutes for its interactive exhibits and ranger activities. Otherwise, keep that time for Zion Canyon.",
+              "timeWindow": "Afternoon \u00b7 summer only",
+              "duration": 45,
+              "why": "It adds a different perspective on Zion\u2019s habitats when your dates make it an option."
+            }
+          ],
+          "travelEdges": [
+            {
+              "sourceStopId": "zion-canyon",
+              "targetStopId": "zion-nature-center",
+              "relationship": "transfer"
+            }
+          ]
+        }
+      ],
+      "narrativeSections": [
+        {
+          "placement": "after_plan",
+          "markdown": "This sequence separates Kolob Canyons and the highway into their own outings, leaving the final day open for more time in Zion Canyon. I\u2019ve left out Watchman Trail because the NPS lists it as closed pending repairs. The highway day assumes you\u2019ll have a vehicle; if not, that day needs a different plan."
+        }
+      ]
+    }
+  ],
+  "priorPlan": null,
+  "acceptedPlan": null,
+  "constraints": {
+    "planningState": {
+      "preferences": {
+        "interests": [],
+        "fitness": null,
+        "pace": null,
+        "riskTolerance": null,
+        "avoidExposure": null,
+        "maxDailyDriveMinutes": null,
+        "minimizeDriving": null
+      },
+      "mobility": {
+        "maxWalkMilesPerSegment": null,
+        "maxWalkMinutesPerSegment": null,
+        "walkingTolerance": null,
+        "requiresFrequentBreaks": null,
+        "wheelchair": null,
+        "stroller": null,
+        "avoidStairs": null
+      },
+      "activityPreferences": {
+        "hiking": null,
+        "photography": null,
+        "photographyTiming": null,
+        "wildlife": null
+      },
+      "travelers": {
+        "count": null,
+        "travelParty": null,
+        "hasChildren": false,
+        "childrenCount": 0,
+        "pets": null,
+        "accessibilityNeeds": [],
+        "hasOlderTravelers": null
+      },
+      "time": {
+        "availableHours": null
+      }
+    }
+  }
+}

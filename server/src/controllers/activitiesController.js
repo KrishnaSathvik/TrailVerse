@@ -1,4 +1,4 @@
-const npsService = require('../services/npsService');
+const { getNpsService } = require('../services/npsService');
 
 // @desc    Get all activities across all parks
 // @route   GET /api/activities
@@ -17,7 +17,7 @@ exports.getAllActivities = async (req, res, next) => {
     console.log('🔍 Fetching all activities with filters:', { type, difficulty, duration, park, q });
     
     // Fetch all activities from NPS API
-    let activities = await npsService.getAllActivities(parseInt(limit));
+    let activities = await getNpsService().getAllActivities(parseInt(limit));
     
     // Apply filters
     if (type) {
@@ -118,7 +118,7 @@ exports.getActivityById = async (req, res, next) => {
     
     console.log(`🔍 Fetching activity: ${activityId}`);
     
-    const activity = await npsService.getActivityById(activityId);
+    const activity = await getNpsService().getActivityById(activityId);
     
     if (!activity) {
       return res.status(404).json({

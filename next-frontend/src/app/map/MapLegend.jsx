@@ -6,8 +6,56 @@ import {
   getPlaceMarkerColors,
 } from '@/lib/parkMapBasemap';
 
+function LegendDot({ color, compact, dimmed = false }) {
+  return (
+    <span
+      className={`inline-block shrink-0 rounded-full ${compact ? 'h-2 w-2' : 'h-2.5 w-2.5'}`}
+      style={{ backgroundColor: color, opacity: dimmed ? 0.35 : 1 }}
+    />
+  );
+}
+
+function FilterChip({
+  compact,
+  active,
+  onClick,
+  ariaLabel,
+  color,
+  label,
+  count,
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        'inline-flex items-center gap-1.5 rounded-full border whitespace-nowrap transition',
+        'active:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-green)]',
+        compact ? 'min-h-8 px-2.5 py-1 text-[11px]' : 'min-h-9 px-3 py-1.5 text-xs',
+      ].join(' ')}
+      style={{
+        borderColor: 'var(--border)',
+        backgroundColor: active ? 'var(--surface-hover)' : 'var(--bg-primary)',
+        color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+      }}
+      aria-pressed={active}
+      aria-label={ariaLabel}
+    >
+      <LegendDot color={color} compact={compact} dimmed={!active} />
+      {label}
+      {typeof count === 'number' && count > 0 && (
+        <span className="tabular-nums opacity-80">({count})</span>
+      )}
+    </button>
+  );
+}
+
 export default function MapLegend({
   isDark,
+  showNationalParks = true,
+  onToggleNationalParks,
+  showOtherSites = true,
+  onToggleOtherSites,
   showPlaces,
   onTogglePlaces,
   placeCount,
@@ -23,73 +71,51 @@ export default function MapLegend({
 
   return (
     <div
-      className={`flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 rounded-full border mx-auto w-fit ${className} ${
-        compact ? 'px-3 py-1 text-[11px]' : 'px-4 py-1.5 text-xs'
+      className={`mx-auto flex w-fit max-w-full flex-wrap items-center justify-center gap-1.5 rounded-2xl border ${className} ${
+        compact ? 'px-2 py-1.5' : 'px-2.5 py-2'
       }`}
       style={{
-        backgroundColor: compact ? 'var(--bg-secondary)' : 'color-mix(in srgb, var(--bg-secondary) 92%, transparent)',
+        backgroundColor: 'var(--bg-secondary)',
         borderColor: 'var(--border)',
         color: 'var(--text-secondary)',
       }}
+      role="group"
+      aria-label="Map filters"
     >
-      <span className="flex items-center gap-1.5">
-        <span
-          className={`inline-block rounded-full ${compact ? 'h-2 w-2' : 'h-2.5 w-2.5'}`}
-          style={{ backgroundColor: parkColors.nationalPark }}
-        />
-        National Parks
-      </span>
-      <span className="flex items-center gap-1.5">
-        <span
-          className={`inline-block rounded-full ${compact ? 'h-2 w-2' : 'h-2.5 w-2.5'}`}
-          style={{ backgroundColor: parkColors.otherSite }}
-        />
-        Other NPS Sites
-      </span>
-      <button
-        type="button"
+      <FilterChip
+        compact={compact}
+        active={showNationalParks}
+        onClick={onToggleNationalParks}
+        ariaLabel={showNationalParks ? 'Hide national parks on map' : 'Show national parks on map'}
+        color={parkColors.nationalPark}
+        label="National Parks"
+      />
+      <FilterChip
+        compact={compact}
+        active={showOtherSites}
+        onClick={onToggleOtherSites}
+        ariaLabel={showOtherSites ? 'Hide other NPS sites on map' : 'Show other NPS sites on map'}
+        color={parkColors.otherSite}
+        label="Other NPS Sites"
+      />
+      <FilterChip
+        compact={compact}
+        active={showPlaces}
         onClick={onTogglePlaces}
-        className="flex items-center gap-1.5 transition active:opacity-80"
-        style={{
-          color: showPlaces ? 'var(--text-primary)' : 'var(--text-secondary)',
-        }}
-        aria-pressed={showPlaces}
-        aria-label={showPlaces ? 'Hide What to See on map' : 'Show What to See on map'}
-      >
-        <span
-          className={`inline-block rounded-full ${compact ? 'h-2 w-2' : 'h-2.5 w-2.5'}`}
-          style={{
-            backgroundColor: placeColors.default,
-            opacity: showPlaces ? 1 : 0.35,
-          }}
-        />
-        What to See
-        {typeof placeCount === 'number' && placeCount > 0 && (
-          <span className="tabular-nums opacity-80">({placeCount})</span>
-        )}
-      </button>
-      <button
-        type="button"
+        ariaLabel={showPlaces ? 'Hide What to See on map' : 'Show What to See on map'}
+        color={placeColors.default}
+        label="What to See"
+        count={placeCount}
+      />
+      <FilterChip
+        compact={compact}
+        active={showCampgrounds}
         onClick={onToggleCampgrounds}
-        className="flex items-center gap-1.5 transition active:opacity-80"
-        style={{
-          color: showCampgrounds ? 'var(--text-primary)' : 'var(--text-secondary)',
-        }}
-        aria-pressed={showCampgrounds}
-        aria-label={showCampgrounds ? 'Hide campgrounds on map' : 'Show campgrounds on map'}
-      >
-        <span
-          className={`inline-block rounded-full ${compact ? 'h-2 w-2' : 'h-2.5 w-2.5'}`}
-          style={{
-            backgroundColor: campgroundColors.default,
-            opacity: showCampgrounds ? 1 : 0.35,
-          }}
-        />
-        Campgrounds
-        {typeof campgroundCount === 'number' && campgroundCount > 0 && (
-          <span className="tabular-nums opacity-80">({campgroundCount})</span>
-        )}
-      </button>
+        ariaLabel={showCampgrounds ? 'Hide campgrounds on map' : 'Show campgrounds on map'}
+        color={campgroundColors.default}
+        label="Campgrounds"
+        count={campgroundCount}
+      />
     </div>
   );
 }

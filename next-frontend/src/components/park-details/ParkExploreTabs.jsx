@@ -13,7 +13,7 @@ export default function ParkExploreTabs({
   permitCount = 0,
   reviewCount = 0,
   showParkBadges = true,
-  gridClassName = 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2',
+  gridClassName = 'public-selector public-selector--desktop-grid pt-2 lg:grid-cols-4 xl:grid-cols-5 gap-2',
   className = 'mb-6 sm:mb-8',
 }) {
   return (

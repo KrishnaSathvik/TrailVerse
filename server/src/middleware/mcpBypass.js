@@ -9,11 +9,11 @@ module.exports = function mcpBypass(req, res, next) {
   const presented = req.headers[HEADER];
   const expected = process.env.MCP_BYPASS_KEY;
 
-  if (expected && presented && presented.length === expected.length) {
+  if (expected && typeof presented === 'string' && presented) {
     const presentedBuf = Buffer.from(presented, 'utf8');
     const expectedBuf = Buffer.from(expected, 'utf8');
 
-    if (crypto.timingSafeEqual(presentedBuf, expectedBuf)) {
+    if (presentedBuf.length === expectedBuf.length && crypto.timingSafeEqual(presentedBuf, expectedBuf)) {
       req.isTrustedMcp = true;
       req.skipAnonymousRateLimit = true;
     }

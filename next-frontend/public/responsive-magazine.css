@@ -1,0 +1,35 @@
+/* The magazine keeps its immersive spreads, using the same desktop canvas. */
+.nav-dots {
+  width: min(980px, calc(100vw - 32px));
+  max-width: var(--public-shell-width);
+  gap: 0;
+  padding: 4px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  background: var(--paper);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.dot, .dot.active {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  min-height: var(--public-control-height);
+  border: 0;
+  background: transparent;
+  transform: none;
+  display: grid;
+  place-items: center;
+}
+.dot::after { content: ''; width: 7px; height: 7px; border: 1px solid var(--ink); border-radius: 50%; }
+.dot.active::after { background: var(--ink); transform: scale(1.25); }
+.dot:focus-visible { outline: 2px solid var(--ink); outline-offset: -4px; }
+.nav-back { display: inline-flex; align-items: center; min-height: var(--public-control-height); font-size: 12px; }
+:is(.nav-counter,.nav-hint,.masthead,.cover-top,.cover-bottom .features,.cat-tag,.back-bottom,.card-tag,.card-foot) { font-size: max(12px, .78vw); }
+@media (min-width: 1024px) {
+  .spread { padding-inline: max(var(--public-gutter), calc((100vw - var(--public-shell-width)) / 2 + var(--public-gutter))); }
+  .cover,.back { padding-inline: max(var(--public-gutter), calc((100vw - var(--public-shell-width)) / 2 + var(--public-gutter))); }
+  .cover-wordmark { font-size: min(16vw, 220px); }
+  .headline { font-size: clamp(40px, 4.8vw, 76px); }
+  .description { font-size: clamp(16px, 1.45vw, 22px); }
+}

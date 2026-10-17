@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
-  MapPin, Tag, Filter,
+  Filter, ChevronDown,
   Search, X, CalendarDays,
-  Sparkles, TrendingUp,
+  Sparkles,
   AlertCircle, Grid
 } from '@components/icons';
 import Button from '@/components/common/Button';
@@ -43,6 +43,7 @@ const EventsPage = ({ initialData }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('grid');
   const [showFilters, setShowFilters] = useState(false);
+  const categoryButtonRef = useRef(null);
   const [selectedMonthOffset, setSelectedMonthOffset] = useState(0);
 
   const [filters, setFilters] = useState({
@@ -361,15 +362,10 @@ const EventsPage = ({ initialData }) => {
     <>
       {/* Hero Section */}
       <section className="relative overflow-hidden border-b py-5 sm:py-8" style={{ borderColor: 'var(--border)' }}>
-        <div className="relative z-10 max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
+        <div className="relative z-10 public-shell">
 
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-4 backdrop-blur"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)'
-              }}
+            <div className="public-eyebrow"
             >
               <CalendarDays className="h-4 w-4" style={{ color: 'var(--text-secondary)' }} />
               <span className="text-xs font-medium uppercase tracking-wider"
@@ -379,12 +375,12 @@ const EventsPage = ({ initialData }) => {
               </span>
             </div>
 
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-semibold tracking-tighter leading-none mb-4"
+            <h1 className="public-page-title mb-4"
               style={{ color: 'var(--text-primary)' }}
             >
               Live National Parks Events
             </h1>
-            <p className="text-lg sm:text-xl max-w-3xl"
+            <p className="public-page-intro"
               style={{ color: 'var(--text-secondary)' }}
             >
               Join ranger programs, workshops, festivals, and special events at national parks.
@@ -393,212 +389,127 @@ const EventsPage = ({ initialData }) => {
 
           </div>
 
-          {/* Search Bar */}
-            <div className="mt-8 max-w-3xl">
-              <div className="relative">
-                <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5"
-                  style={{ color: 'var(--text-tertiary)' }}
-                />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search events by name, park, or description..."
-                  className="w-full pl-14 pr-14 py-5 rounded-2xl text-base font-medium outline-none transition"
-                  style={{
-                    backgroundColor: 'var(--surface)',
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text-primary)'
-                  }}
-                />
-                {searchTerm && (
-                  <button
-                    onClick={() => setSearchTerm('')}
-                    className="absolute right-5 top-1/2 -translate-y-1/2 p-1 rounded-lg hover:bg-white/5 transition"
-                    style={{ color: 'var(--text-tertiary)' }}
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-          {/* Quick Stats */}
-            <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {[
-                { label: 'Future Events', value: futureSummary.count || 0, icon: CalendarDays },
-                { label: selectedMonth?.label || 'Selected Month', value: filteredEvents.length, icon: TrendingUp },
-                { label: 'Categories', value: categories.length, icon: Tag },
-                { label: 'Parks This Month', value: new Set(filteredEvents.map(event => event.parkCode).filter(Boolean)).size, icon: MapPin }
-              ].map((stat, index) => {
-                const Icon = stat.icon;
-                return (
-                  <div
-                    key={index}
-                    className="rounded-2xl p-4 backdrop-blur text-center"
-                    style={{
-                      backgroundColor: 'var(--surface)',
-                      borderWidth: '1px',
-                      borderColor: 'var(--border)'
-                    }}
-                  >
-                    <Icon className="h-5 w-5 mx-auto mb-2" style={{ color: 'var(--text-secondary)' }} />
-                    <div className="text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
-                      {stat.value}
-                    </div>
-                    <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                      {stat.label}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+          <p className="mt-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>
+            {(futureSummary.count || 0).toLocaleString()} upcoming events across the national parks
+          </p>
         </div>
       </section>
 
       {/* Main Content */}
       <section className="pb-24">
-        <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
-          {/* Toolbar */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-            <div className="flex items-center gap-3">
-              {/* Mobile Filter Button */}
-                <Button
-                  onClick={() => setShowFilters(true)}
-                  variant="secondary"
-                  size="md"
-                  icon={Filter}
-                  className="sm:hidden"
-                >
-                  Filters
-                  {activeFiltersCount > 0 && (
-                    <span className="ml-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-500 text-white">
-                      {activeFiltersCount}
-                    </span>
-                  )}
-                </Button>
-
-              {/* Month Filter */}
-                <select
-                  value={selectedMonthOffset}
-                  onChange={(e) => setSelectedMonthOffset(Number(e.target.value))}
-                  className="px-4 py-2.5 pr-10 rounded-xl text-sm font-medium outline-none cursor-pointer transition appearance-none"
-                  style={{
-                    backgroundColor: 'var(--surface)',
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text-primary)',
-                    backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%236b7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'m6 8 4 4 4-4\'/%3e%3c/svg%3e")',
-                    backgroundPosition: 'right 0.75rem center',
-                    backgroundRepeat: 'no-repeat',
-                    backgroundSize: '1.5em 1.5em'
-                  }}
-                >
-                  {monthOptions.map(month => (
-                    <option key={month.offset} value={month.offset}>
-                      {month.label}
-                    </option>
-                  ))}
-                </select>
-
-              {/* Clear Button - Desktop only */}
-              {activeFiltersCount > 0 && (
-                <Button
-                  onClick={clearAllFilters}
-                  variant="ghost"
-                  size="sm"
-                  icon={X}
-                  className="hidden sm:flex"
-                >
-                  Clear
-                </Button>
-              )}
-        </div>
-
-            {/* View Toggle */}
-            <div className="flex items-center gap-2">
-              {[
-                { key: 'grid', label: 'Grid', Icon: Grid },
-                { key: 'calendar', label: 'Calendar', Icon: CalendarDays },
-              ].map(({ key, label, Icon }) => {
-                const isActive = viewMode === key;
-
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setViewMode(key)}
-                    className="inline-flex min-w-[112px] items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200"
-                    style={{
-                      backgroundColor: 'var(--surface)',
-                      borderWidth: '1px',
-                      borderStyle: 'solid',
-                      borderColor: isActive ? 'var(--border-hover)' : 'var(--border)',
-                      color: 'var(--text-primary)',
-                      boxShadow: isActive ? 'var(--shadow-lg)' : 'var(--shadow)',
-                    }}
-                  >
-                    <Icon className="h-4 w-4 flex-shrink-0" />
-                    <span>{label}</span>
+        <div className="public-shell">
+          <div className="py-6" role="search" aria-label="Find park events">
+            <div className="grid grid-cols-2 items-center gap-3 lg:grid-cols-[minmax(16rem,1fr)_auto_auto_auto]">
+              <div className="relative col-span-2 lg:col-span-1">
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2" style={{ color: 'var(--text-tertiary)' }} />
+                <input
+                  type="search"
+                  aria-label="Search events"
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder="Search events or parks"
+                  className="public-search w-full border py-3 pl-11 pr-12 text-base outline-none [&::-webkit-search-cancel-button]:appearance-none"
+                  style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                />
+                {searchTerm && (
+                  <button type="button" aria-label="Clear search" onClick={() => setSearchTerm('')}
+                    className="public-action absolute right-1 top-1/2 min-w-11 -translate-y-1/2"
+                    style={{ color: 'var(--text-secondary)' }}>
+                    <X className="h-4 w-4" />
                   </button>
-                );
-              })}
+                )}
+              </div>
+
+              <div className="relative min-w-0">
+                <select
+                  aria-label="Event month"
+                  value={selectedMonthOffset}
+                  onChange={(event) => setSelectedMonthOffset(Number(event.target.value))}
+                  className="public-action public-action-secondary w-full cursor-pointer appearance-none py-3 pl-3 pr-9 text-sm font-medium outline-none lg:min-w-44"
+                >
+                  {monthOptions.map(month => <option key={month.offset} value={month.offset}>{month.label}</option>)}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: 'var(--text-secondary)' }} />
+              </div>
+
+              <button
+                ref={categoryButtonRef}
+                type="button"
+                aria-expanded={showFilters}
+                aria-controls="event-category-filters"
+                onClick={() => setShowFilters(value => !value)}
+                className="public-action public-action-secondary gap-2 px-3 text-sm font-medium"
+              >
+                <Filter className="h-4 w-4 shrink-0" />
+                Categories
+                {activeFiltersCount > 0 && <span className="rounded-md px-1.5 text-xs" style={{ backgroundColor: 'var(--accent-green-light)', color: 'var(--accent-green)' }}>{activeFiltersCount}</span>}
+                <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+              </button>
+
+              <div role="group" aria-label="Event view" className="col-span-2 flex rounded-xl border p-0.5 lg:col-span-1"
+                style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-secondary)' }}>
+                {[
+                  { key: 'grid', label: 'Grid', Icon: Grid },
+                  { key: 'calendar', label: 'Calendar', Icon: CalendarDays },
+                ].map(({ key, label, Icon }) => (
+                  <button key={key} type="button" aria-pressed={viewMode === key} onClick={() => setViewMode(key)}
+                    className="public-action min-h-11 flex-1 gap-2 px-3 text-sm font-medium transition-colors"
+                    style={{
+                      minHeight: '2.75rem',
+                      backgroundColor: viewMode === key ? 'var(--text-primary)' : 'transparent',
+                      color: viewMode === key ? 'var(--bg-primary)' : 'var(--text-secondary)',
+                    }}>
+                    <Icon className="h-4 w-4" />{label}
+                  </button>
+                ))}
+              </div>
             </div>
+
+            {showFilters && (
+              <fieldset id="event-category-filters" className="mt-4 rounded-xl border px-4 pb-4"
+                style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-secondary)' }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') {
+                    setShowFilters(false);
+                    categoryButtonRef.current?.focus();
+                  }
+                }}>
+                <legend className="px-2 text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Event categories</legend>
+                <p className="mb-2 mt-1 text-sm" style={{ color: 'var(--text-secondary)' }}>Choose any that interest you. Results update automatically.</p>
+                <div className="grid gap-x-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {categories.map(category => (
+                    <label key={category.id} className="flex min-h-11 cursor-pointer items-center gap-3 text-sm" style={{ color: 'var(--text-primary)' }}>
+                      <input type="checkbox" checked={filters.categories.includes(category.id)} onChange={() => toggleCategoryFilter(category.id)}
+                        className="h-4 w-4 rounded accent-[var(--accent-green)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-green)]" />
+                      {category.label}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            )}
+
+            {(activeFiltersCount > 0 || searchTerm || selectedMonthOffset !== 0) && (
+              <div className="mt-3 flex flex-wrap items-center gap-2" aria-label="Active event filters">
+                {categories.filter(category => filters.categories.includes(category.id)).map(category => (
+                  <button key={category.id} type="button" onClick={() => toggleCategoryFilter(category.id)} aria-label={`Remove ${category.label} filter`}
+                    className="public-action public-action-secondary gap-2 px-3 text-xs font-medium">
+                    {category.label}<X className="h-3.5 w-3.5" />
+                  </button>
+                ))}
+                <button type="button" onClick={clearAllFilters} className="public-action px-3 text-sm font-medium underline underline-offset-4" style={{ color: 'var(--text-secondary)' }}>
+                  Reset filters
+                </button>
+              </div>
+            )}
           </div>
 
-          <div className="flex flex-col lg:flex-row gap-8">
-            {/* Sidebar Filters - Desktop */}
-            <aside className="hidden sm:block lg:w-80 flex-shrink-0">
-              <div className="sticky top-24 rounded-2xl p-6 backdrop-blur"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)'
-                }}
-              >
-                <h3 className="text-lg font-semibold mb-4"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  Filters
-                </h3>
-
-                {/* Categories */}
-                <div>
-                  <h4 className="text-sm font-semibold mb-3 uppercase tracking-wider"
-                    style={{ color: 'var(--text-secondary)' }}
-                  >
-                    Categories
-                  </h4>
-                  <div className="space-y-2">
-                    {categories.map(category => (
-                      <label key={category.id} className="flex items-center gap-2 cursor-pointer group">
-                        <input
-                          type="checkbox"
-                          checked={filters.categories.includes(category.id)}
-                          onChange={() => toggleCategoryFilter(category.id)}
-                          className="rounded border-2 w-4 h-4 text-purple-500 focus:ring-purple-500/50"
-                          style={{ borderColor: 'var(--border)' }}
-                        />
-                        <div className={`w-3 h-3 rounded-full ${category.color}`} />
-                        <span className="text-sm group-hover:text-purple-400 transition"
-                          style={{ color: 'var(--text-secondary)' }}
-                        >
-                          {category.label}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </aside>
-
+          <div>
             {/* Main Content Area */}
             <div className="flex-1 min-w-0">
               <div className="mb-4 flex items-center justify-between">
                 <div>
                   <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    Showing {startIndex + 1}-{Math.min(endIndex, filteredEvents.length)} of {filteredEvents.length} {filteredEvents.length === 1 ? 'event' : 'events'}
+                    Showing {filteredEvents.length ? startIndex + 1 : 0}-{Math.min(endIndex, filteredEvents.length)} of {filteredEvents.length} {filteredEvents.length === 1 ? 'event' : 'events'}
                     {searchTerm && ` for "${searchTerm}"`}
                   </p>
                   {totalPages > 1 && (
@@ -771,116 +682,6 @@ const EventsPage = ({ initialData }) => {
         </div>
       </section>
 
-      {/* Mobile Filters Modal */}
-      {showFilters && (
-        <div className="fixed inset-0 z-50 sm:hidden">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-            onClick={() => setShowFilters(false)}
-          />
-
-          <div className="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-y-auto rounded-t-3xl p-6"
-            style={{
-              backgroundColor: 'var(--bg-secondary)',
-              borderTopWidth: '1px',
-              borderColor: 'var(--border)'
-            }}
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                Filters
-              </h3>
-              <button
-                onClick={() => setShowFilters(false)}
-                className="p-2 rounded-lg hover:bg-white/5"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="space-y-6">
-              <div>
-                <h4 className="text-sm font-semibold mb-3"
-                  style={{ color: 'var(--text-secondary)' }}
-                >
-                  MONTH
-                </h4>
-                <select
-                  value={selectedMonthOffset}
-                  onChange={(e) => setSelectedMonthOffset(Number(e.target.value))}
-                  className="w-full px-4 py-3 pr-10 rounded-xl text-sm font-medium outline-none cursor-pointer transition appearance-none"
-                  style={{
-                    backgroundColor: 'var(--surface)',
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text-primary)',
-                    backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%236b7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'m6 8 4 4 4-4\'/%3e%3c/svg%3e")',
-                    backgroundPosition: 'right 0.75rem center',
-                    backgroundRepeat: 'no-repeat',
-                    backgroundSize: '1.5em 1.5em'
-                  }}
-                >
-                  {monthOptions.map(month => (
-                    <option key={month.offset} value={month.offset}>
-                      {month.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Categories */}
-              <div>
-                <h4 className="text-sm font-semibold mb-3"
-                  style={{ color: 'var(--text-secondary)' }}
-                >
-                  CATEGORIES
-                </h4>
-                <div className="space-y-2">
-                  {categories.map(category => (
-                    <label key={category.id} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={filters.categories.includes(category.id)}
-                        onChange={() => toggleCategoryFilter(category.id)}
-                        className="rounded border-2 w-5 h-5 text-purple-500 focus:ring-purple-500/50"
-                        style={{ borderColor: 'var(--border)' }}
-                      />
-                      <div className={`w-3 h-3 rounded-full ${category.color}`} />
-                      <span className="text-sm"
-                        style={{ color: 'var(--text-primary)' }}
-                      >
-                        {category.label}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-            </div>
-
-            <div className="mt-8 flex gap-3">
-              <Button
-                onClick={clearAllFilters}
-                variant="secondary"
-                size="lg"
-                className="flex-1"
-              >
-                Clear All
-              </Button>
-              <Button
-                onClick={() => setShowFilters(false)}
-                variant="secondary"
-                size="lg"
-                className="flex-1"
-              >
-                Apply
-              </Button>
-            </div>
-          </div>
-          </div>
-        )}
 
     </>
   );

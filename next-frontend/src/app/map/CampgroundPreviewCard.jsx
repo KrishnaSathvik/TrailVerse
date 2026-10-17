@@ -109,7 +109,7 @@ export default function CampgroundPreviewCard({
 
   return (
     <div
-      className={`overflow-hidden rounded-[32px] border shadow-[0_30px_90px_-30px_rgba(15,23,42,0.7)] backdrop-blur-xl ${className}`}
+      className={`overflow-hidden rounded-2xl border shadow-[0_30px_90px_-30px_rgba(15,23,42,0.7)] ${className}`}
       style={{
         borderColor: 'var(--border)',
         backgroundColor: 'var(--bg-secondary)',
@@ -151,7 +151,7 @@ export default function CampgroundPreviewCard({
           <OptimizedImage
             src={primaryImage.url}
             alt={primaryImage.altText || cg.name}
-            className="h-52 w-full rounded-[24px] object-cover"
+            className="h-52 w-full rounded-xl object-cover"
             loading="eager"
           />
         </div>
@@ -198,7 +198,7 @@ export default function CampgroundPreviewCard({
         <button
           type="button"
           onClick={() => onViewPark(campground)}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-[20px] bg-emerald-600 px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
         >
           View Camping on Park Page
           <ArrowRight className="h-4 w-4" />
@@ -209,7 +209,7 @@ export default function CampgroundPreviewCard({
             href={cg.reservationUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex w-full items-center justify-center gap-2 rounded-[20px] border px-4 py-3 text-sm font-semibold transition"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition"
             style={{
               color: 'var(--accent-green)',
               borderColor: 'color-mix(in srgb, var(--accent-green) 40%, var(--border) 60%)',

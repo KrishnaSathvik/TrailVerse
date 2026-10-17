@@ -26,6 +26,8 @@ export default function MobileMapLayout() {
   const router = useRouter();
   const returnPath = useReturnPath();
   const { isDark } = useTheme();
+  const [showNationalParks, setShowNationalParks] = useState(true);
+  const [showOtherSites, setShowOtherSites] = useState(true);
   const [showPlaces, setShowPlaces] = useState(true);
   const [showCampgrounds, setShowCampgrounds] = useState(true);
   const { data: allParksData, isLoading } = useAllParksLite(true);
@@ -55,9 +57,9 @@ export default function MobileMapLayout() {
 
   if (isLoading && allParks.length === 0) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+      <div className="public-map min-h-screen" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
         <Header />
-        <div className="flex h-[calc(100dvh-72px)] items-center justify-center">
+        <div className="flex h-[calc(100dvh-64px)] lg:h-[calc(100dvh-68px)] items-center justify-center">
           <div className="text-center">
             <LoadingSpinner size="lg" text="Loading parks…" />
           </div>
@@ -67,14 +69,16 @@ export default function MobileMapLayout() {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+    <div className="public-map min-h-screen" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
       <Header />
 
-      <div className="relative h-[calc(100dvh-72px)] overflow-hidden">
+      <div className="relative h-[calc(100dvh-64px)] lg:h-[calc(100dvh-68px)] overflow-hidden">
         <MapCanvas
           parks={allParks}
           places={allPlaces}
           showPlaces={showPlaces}
+          showNationalParks={showNationalParks}
+          showOtherSites={showOtherSites}
           campgrounds={allCampgrounds}
           showCampgrounds={showCampgrounds}
           selectedPark={mapState.selectedPark}
@@ -94,6 +98,10 @@ export default function MobileMapLayout() {
           <div className="mx-auto w-full max-w-sm">
             <MapLegend
               isDark={isDark}
+              showNationalParks={showNationalParks}
+              onToggleNationalParks={() => setShowNationalParks((value) => !value)}
+              showOtherSites={showOtherSites}
+              onToggleOtherSites={() => setShowOtherSites((value) => !value)}
               showPlaces={showPlaces}
               onTogglePlaces={() => setShowPlaces((value) => !value)}
               placeCount={allPlaces.length}

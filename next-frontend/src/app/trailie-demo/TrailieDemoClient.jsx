@@ -10,7 +10,7 @@ const TrailieInteractiveDemo = dynamic(
     loading: () => (
       <div className="space-y-5 sm:space-y-6">
         <div className="flex flex-wrap justify-center gap-2">
-          {[1, 2, 3, 4].map((i) => (
+          {[1, 2, 3, 4, 5].map((i) => (
             <div
               key={i}
               className="h-9 w-20 animate-pulse rounded-full sm:h-10 sm:w-24"

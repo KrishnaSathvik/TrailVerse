@@ -1,0 +1,433 @@
+{
+  "slug": "redwood",
+  "source": "artifacts/trailie-gate3-constructor-2026-08-24/conversation-A/A1-redwood-three-relaxed-days",
+  "constraints": {
+    "pace": "relaxed",
+    "avoidExposure": null,
+    "fitness": "easy",
+    "interests": [
+      "scenic-drives"
+    ],
+    "walkingTolerance": null,
+    "wheelchair": null,
+    "stroller": null,
+    "avoidStairs": null,
+    "requiresFrequentBreaks": null,
+    "mobilityRaw": {
+      "maxWalkMilesPerSegment": null,
+      "walkingTolerance": null,
+      "requiresFrequentBreaks": null,
+      "wheelchair": null,
+      "stroller": null,
+      "avoidStairs": null
+    },
+    "durationDays": 3,
+    "season": null,
+    "visitWindow": {
+      "startDate": null,
+      "endDate": null,
+      "durationDays": 3
+    },
+    "lodging": {
+      "type": null,
+      "stayPreference": null,
+      "baseTown": null,
+      "booked": null
+    },
+    "departureCity": null,
+    "destination": {
+      "parkCode": "redw",
+      "parkName": null,
+      "region": null,
+      "state": null
+    }
+  },
+  "terminalReason": null,
+  "attemptLadder": [
+    {
+      "attempt": 1,
+      "model": "gpt-5.6-terra",
+      "validationStatus": "pass",
+      "validationStage": null,
+      "reasonCodes": [],
+      "latencyMs": 21851,
+      "costUsd": 0.05091125
+    }
+  ],
+  "canonicalPlan": {
+    "intro": "I’d keep this deliberately loose: one coastal-and-Crescent City day, one northern redwoods day around Jedediah Smith, and one Prairie Creek day anchored by the Newton B. Drury Scenic Parkway. That gives you different landscapes without turning the trip into a checklist, and leaves room to linger when a grove or beach feels worth it. I couldn’t verify distances or difficulty for the two named Coastal Trail sections, so treat those as optional, self-paced walks rather than promised easy mileage; the visitor centers are good places to choose a same-day walk that suits you. Highway 101 currently has multiple construction-related traffic stops between Orick and Crescent City, so leave the order of the first and third days flexible and avoid stacking fixed-time plans around the drive.",
+    "narrativeSections": [
+      {
+        "placement": "before_plan",
+        "heading": "Keep the pace easy",
+        "markdown": "Start each park-focused day with the nearby visitor center, then make just one walk or outdoor anchor the priority. Visitor-center hours and individual trail access can vary, so confirm them on the day—especially if you are relying on a particular walk."
+      }
+    ],
+    "days": [
+      {
+        "id": "day-1",
+        "dayNumber": 1,
+        "label": "Crescent City and Crescent Beach",
+        "overnightLocation": null,
+        "stops": [
+          {
+            "id": "d1-crescent-info",
+            "order": 1,
+            "type": "visitor_center",
+            "name": "Crescent City Information Center",
+            "note": "Begin with park orientation and ask which nearby redwood and coastal options are most comfortable for an unhurried day.",
+            "parkCode": "redw",
+            "parkName": "Redwood National and State Parks",
+            "startTime": "",
+            "timeWindow": "Morning",
+            "physicalDifficulty": "easy",
+            "exposureLevel": "low",
+            "duration": 45,
+            "why": "A simple start before choosing how much walking feels right.",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown"
+          },
+          {
+            "id": "d1-crescent-beach",
+            "order": 2,
+            "type": "trail",
+            "name": "Coastal Trail: Crescent Beach",
+            "note": "Make this your one outdoor anchor and walk only the portion that feels enjoyable; no distance or difficulty details were verified here, so keep the turnaround flexible.",
+            "parkCode": "redw",
+            "parkName": "Redwood National and State Parks",
+            "startTime": "",
+            "timeWindow": "Late morning through afternoon",
+            "physicalDifficulty": null,
+            "exposureLevel": null,
+            "duration": 120,
+            "latitude": 41.72719863826378,
+            "longitude": -124.15022100715568,
+            "why": "A named coastal outing near Crescent City that gives the day a scenic focus without needing a packed schedule.",
+            "coordinateSource": "tool"
+          },
+          {
+            "id": "d1-picnic",
+            "order": 3,
+            "type": "picnic",
+            "name": "Crescent City Information Center picnic area",
+            "note": "Use the picnic area for a relaxed break rather than adding another destination.",
+            "parkCode": "redw",
+            "parkName": "Redwood National and State Parks",
+            "startTime": "",
+            "timeWindow": "Midday or whenever you return from the coast",
+            "physicalDifficulty": "easy",
+            "exposureLevel": "low",
+            "duration": 45,
+            "why": "Keeps the day spacious.",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown"
+          }
+        ],
+        "parkCodes": [
+          "redw"
+        ]
+      },
+      {
+        "id": "day-2",
+        "dayNumber": 2,
+        "label": "Northern redwoods near Jedediah Smith",
+        "overnightLocation": null,
+        "stops": [
+          {
+            "id": "d2-hiouchi",
+            "order": 1,
+            "type": "visitor_center",
+            "name": "Hiouchi Visitor Center",
+            "note": "Start with exhibits on Tolowa culture, redwood ecology, and park information; it is 9 miles east of Crescent City on Highway 199. Ask for a short, current walking recommendation in the Jedediah Smith area.",
+            "parkCode": "redw",
+            "parkName": "Redwood National and State Parks",
+            "startTime": "",
+            "timeWindow": "Morning",
+            "physicalDifficulty": "easy",
+            "exposureLevel": "low",
+            "duration": 60,
+            "why": "It gives you local context and a practical way to select a walk that matches your relaxed pace.",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown"
+          },
+          {
+            "id": "d2-jedediah",
+            "order": 2,
+            "type": "landmark",
+            "name": "Jedediah Smith Redwoods State Park campground area",
+            "note": "Spend the main part of the day in this northern redwoods setting, using the campground-area visitor center for information before deciding on any walk. Specific trail distances and difficulty were not verified, so do not commit to a route until you check locally.",
+            "parkCode": "redw",
+            "parkName": "Redwood National and State Parks",
+            "startTime": "",
+            "timeWindow": "Late morning through afternoon",
+            "physicalDifficulty": null,
+            "exposureLevel": null,
+            "duration": 180,
+            "why": "This is the best place in this plan to slow down and make the big-tree experience the point rather than adding more driving.",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown"
+          },
+          {
+            "id": "d2-jed-vc",
+            "order": 3,
+            "type": "visitor_center",
+            "name": "Jedediah Smith Visitor Center",
+            "note": "Stop for park information and exhibits near the campground amphitheater. Its operations are seasonal, so confirm it is open before relying on it.",
+            "parkCode": "redw",
+            "parkName": "Redwood National and State Parks",
+            "startTime": "",
+            "timeWindow": "Afternoon, if operating",
+            "physicalDifficulty": "easy",
+            "exposureLevel": "low",
+            "duration": 30,
+            "why": "A low-key finish that helps with next-day planning.",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown"
+          }
+        ],
+        "parkCodes": [
+          "redw"
+        ]
+      },
+      {
+        "id": "day-3",
+        "dayNumber": 3,
+        "label": "Prairie Creek and the Newton B. Drury Scenic Parkway",
+        "overnightLocation": null,
+        "stops": [
+          {
+            "id": "d3-prairie-vc",
+            "order": 1,
+            "type": "visitor_center",
+            "name": "Prairie Creek Visitor Center",
+            "note": "Begin with the exhibits on CCC history and redwood ecology, then ask about a short, suitable walk or pullout for the day.",
+            "parkCode": "redw",
+            "parkName": "Redwood National and State Parks",
+            "startTime": "",
+            "timeWindow": "Morning",
+            "physicalDifficulty": "easy",
+            "exposureLevel": "low",
+            "duration": 60,
+            "why": "It places you in the heart of Prairie Creek and lets you tailor the outdoor portion to that day’s conditions.",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown"
+          },
+          {
+            "id": "d3-newton",
+            "order": 2,
+            "type": "scenic_drive",
+            "name": "Newton B. Drury Scenic Parkway",
+            "note": "Let the parkway be today’s primary scenic experience, with time to stop only where access and conditions allow. No verified drive duration or specific pullouts were provided, so keep this unhurried and flexible.",
+            "parkCode": "redw",
+            "parkName": "Redwood National and State Parks",
+            "startTime": "",
+            "timeWindow": "Late morning through afternoon",
+            "physicalDifficulty": "easy",
+            "exposureLevel": "low",
+            "duration": 150,
+            "why": "A scenic-drive anchor fits your preference for seeing the redwoods without rushing between long hikes.",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown"
+          },
+          {
+            "id": "d3-demartin",
+            "order": 3,
+            "type": "trail",
+            "name": "Coastal Trail: DeMartin",
+            "note": "If you still want a second outdoor stop, take a self-paced look at this named Coastal Trail section. Its distance and difficulty were not verified, so it is optional rather than a required hike.",
+            "parkCode": "redw",
+            "parkName": "Redwood National and State Parks",
+            "startTime": "",
+            "timeWindow": "Late afternoon",
+            "physicalDifficulty": null,
+            "exposureLevel": null,
+            "duration": 90,
+            "latitude": 41.60390538103923,
+            "longitude": -124.09972513833685,
+            "why": "It adds a distinct coastal finish only if you still have energy after the parkway.",
+            "coordinateSource": "tool"
+          }
+        ],
+        "parkCodes": [
+          "redw"
+        ]
+      }
+    ],
+    "alternatives": []
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "modelTier": "gpt-5.6-terra",
+      "rawPlan": {
+        "intro": "I’d keep this deliberately loose: one coastal-and-Crescent City day, one northern redwoods day around Jedediah Smith, and one Prairie Creek day anchored by the Newton B. Drury Scenic Parkway. That gives you different landscapes without turning the trip into a checklist, and leaves room to linger when a grove or beach feels worth it. I couldn’t verify distances or difficulty for the two named Coastal Trail sections, so treat those as optional, self-paced walks rather than promised easy mileage; the visitor centers are good places to choose a same-day walk that suits you. Highway 101 currently h",
+        "narrativeSections": [
+          {
+            "placement": "before_plan",
+            "heading": "Keep the pace easy",
+            "markdown": "Start each park-focused day with the nearby visitor center, then make just one walk or outdoor anchor the priority. Visitor-center hours and individual trail access can vary, so confirm them on the day—especially if you are relying on a particular walk."
+          }
+        ],
+        "days": [
+          {
+            "day": 1,
+            "label": "Crescent City and Crescent Beach",
+            "stops": [
+              {
+                "name": "Crescent City Information Center",
+                "type": "visitor_center",
+                "order": 1,
+                "startTime": "",
+                "timeWindow": "Morning",
+                "duration": 45,
+                "exposureLevel": "low",
+                "difficulty": "easy",
+                "note": "Begin with park orientation and ask which nearby redwood and coastal options are most comfortable for an unhurried day.",
+                "why": "A simple start before choosing how much walking feels right.",
+                "alternatives": [],
+                "backupOptions": []
+              },
+              {
+                "name": "Coastal Trail: Crescent Beach",
+                "type": "trail",
+                "order": 2,
+                "startTime": "",
+                "timeWindow": "Late morning through afternoon",
+                "duration": 120,
+                "exposureLevel": null,
+                "difficulty": null,
+                "note": "Make this your one outdoor anchor and walk only the portion that feels enjoyable; no distance or difficulty details were verified here, so keep the turnaround flexible.",
+                "why": "A named coastal outing near Crescent City that gives the day a scenic focus without needing a packed schedule.",
+                "alternatives": [],
+                "backupOptions": []
+              },
+              {
+                "name": "Crescent City Information Center picnic area",
+                "type": "picnic",
+                "order": 3,
+                "startTime": "",
+                "timeWindow": "Midday or whenever you return from the coast",
+                "duration": 45,
+                "exposureLevel": "low",
+                "difficulty": "easy",
+                "note": "Use the picnic area for a relaxed break rather than adding another destination.",
+                "why": "Keeps the day spacious.",
+                "alternatives": [],
+                "backupOptions": []
+              }
+            ]
+          },
+          {
+            "day": 2,
+            "label": "Northern redwoods near Jedediah Smith",
+            "stops": [
+              {
+                "name": "Hiouchi Visitor Center",
+                "type": "visitor_center",
+                "order": 1,
+                "startTime": "",
+                "timeWindow": "Morning",
+                "duration": 60,
+                "exposureLevel": "low",
+                "difficulty": "easy",
+                "note": "Start with exhibits on Tolowa culture, redwood ecology, and park information; it is 9 miles east of Crescent City on Highway 199. Ask for a short, current walking recommendation in the Jedediah Smith area.",
+                "why": "It gives you local context and a practical way to select a walk that matches your relaxed pace.",
+                "alternatives": [],
+                "backupOptions": []
+              },
+              {
+                "name": "Jedediah Smith Redwoods State Park campground area",
+                "type": "landmark",
+                "order": 2,
+                "startTime": "",
+                "timeWindow": "Late morning through afternoon",
+                "duration": 180,
+                "exposureLevel": null,
+                "difficulty": null,
+                "note": "Spend the main part of the day in this northern redwoods setting, using the campground-area visitor center for information before deciding on any walk. Specific trail distances and difficulty were not verified, so do not commit to a route u",
+                "why": "This is the best place in this plan to slow down and make the big-tree experience the point rather than adding more driving.",
+                "alternatives": [],
+                "backupOptions": []
+              },
+              {
+                "name": "Jedediah Smith Visitor Center",
+                "type": "visitor_center",
+                "order": 3,
+                "startTime": "",
+                "timeWindow": "Afternoon, if operating",
+                "duration": 30,
+                "exposureLevel": "low",
+                "difficulty": "easy",
+                "note": "Stop for park information and exhibits near the campground amphitheater. Its operations are seasonal, so confirm it is open before relying on it.",
+                "why": "A low-key finish that helps with next-day planning.",
+                "alternatives": [],
+                "backupOptions": []
+              }
+            ]
+          },
+          {
+            "day": 3,
+            "label": "Prairie Creek and the Newton B. Drury Scenic Parkway",
+            "stops": [
+              {
+                "name": "Prairie Creek Visitor Center",
+                "type": "visitor_center",
+                "order": 1,
+                "startTime": "",
+                "timeWindow": "Morning",
+                "duration": 60,
+                "exposureLevel": "low",
+                "difficulty": "easy",
+                "note": "Begin with the exhibits on CCC history and redwood ecology, then ask about a short, suitable walk or pullout for the day.",
+                "why": "It places you in the heart of Prairie Creek and lets you tailor the outdoor portion to that day’s conditions.",
+                "alternatives": [],
+                "backupOptions": []
+              },
+              {
+                "name": "Newton B. Drury Scenic Parkway",
+                "type": "scenic_drive",
+                "order": 2,
+                "startTime": "",
+                "timeWindow": "Late morning through afternoon",
+                "duration": 150,
+                "exposureLevel": "low",
+                "difficulty": "easy",
+                "note": "Let the parkway be today’s primary scenic experience, with time to stop only where access and conditions allow. No verified drive duration or specific pullouts were provided, so keep this unhurried and flexible.",
+                "why": "A scenic-drive anchor fits your preference for seeing the redwoods without rushing between long hikes.",
+                "alternatives": [],
+                "backupOptions": []
+              },
+              {
+                "name": "Coastal Trail: DeMartin",
+                "type": "trail",
+                "order": 3,
+                "startTime": "",
+                "timeWindow": "Late afternoon",
+                "duration": 90,
+                "exposureLevel": null,
+                "difficulty": null,
+                "note": "If you still want a second outdoor stop, take a self-paced look at this named Coastal Trail section. Its distance and difficulty were not verified, so it is optional rather than a required hike.",
+                "why": "It adds a distinct coastal finish only if you still have energy after the parkway.",
+                "alternatives": [],
+                "backupOptions": []
+              }
+            ]
+          }
+        ],
+        "alternatives": [],
+        "backupOptions": [],
+        "contingency": [],
+        "fallback": []
+      },
+      "reasonCodes": [],
+      "dayDiagnostics": []
+    }
+  ]
+}

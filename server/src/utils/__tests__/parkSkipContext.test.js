@@ -57,4 +57,17 @@ describe('filterParksNotSkipOnly', () => {
     const filtered = filterParksNotSkipOnly(text, parks);
     expect(filtered.map((p) => p.parkCode)).toEqual(['olym']);
   });
+
+  test('keeps park when park identity is primary and a subordinate landmark is avoided', () => {
+    const text = 'Plan Zion, but avoid Angels Landing';
+    const parks = [
+      {
+        parkCode: 'zion',
+        parkName: 'Zion',
+        mentionedPlaces: [{ name: 'Angels Landing', key: 'angels landing' }],
+      },
+    ];
+    const filtered = filterParksNotSkipOnly(text, parks);
+    expect(filtered.map((p) => p.parkCode)).toEqual(['zion']);
+  });
 });

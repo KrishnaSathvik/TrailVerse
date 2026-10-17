@@ -1,17 +1,14 @@
+import { stripItineraryArtifacts } from './itineraryArtifacts';
+import { sanitizeTrailieCitations } from './sanitizeTrailieCitations';
+
 /**
- * Hide [ITINERARY_JSON] blocks while tokens stream so the UI matches post-processed text.
+ * Hide [ITINERARY_JSON] blocks and internal citation tokens while tokens
+ * stream so the UI matches the server's canonical content.
+ *
+ * Stage 8: itinerary-artifact stripping is isomorphic with the server
+ * (shared/itineraryArtifacts.fixtures.json). Citation wrappers use the
+ * same traveler-facing boundary as persist/reload.
  */
 export function stripItineraryJsonForDisplay(content) {
-  if (!content || typeof content !== 'string') return content || '';
-
-  let output = content
-    .replace(/\[ITINERARY_JSON\][\s\S]*?\[\/ITINERARY_JSON\]/gi, '')
-    .replace(/\n{3,}/g, '\n\n');
-
-  const openIdx = output.toUpperCase().lastIndexOf('[ITINERARY_JSON]');
-  if (openIdx !== -1) {
-    output = output.slice(0, openIdx);
-  }
-
-  return output.replace(/\n{3,}/g, '\n\n').trimEnd();
+  return sanitizeTrailieCitations(stripItineraryArtifacts(content).content).content;
 }

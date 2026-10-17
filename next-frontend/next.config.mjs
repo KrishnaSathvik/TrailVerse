@@ -148,6 +148,11 @@ const nextConfig = {
   async headers() {
     const noindex = [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }];
     return [
+      // Only content-addressed brand assets may receive immutable caching.
+      {
+        source: '/brand/trailverse-logo-:size(40|80|120).:hash([a-f0-9]{12}).webp',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
       { source: '/_next/static/:path*', headers: noindex },
       { source: '/_next/image/:path*', headers: noindex },
       { source: '/favicon.ico', headers: noindex },
@@ -160,9 +165,15 @@ const nextConfig = {
     ];
   },
   async rewrites() {
-    const backendOrigin = process.env.NODE_ENV === 'production'
-      ? 'https://trailverse.onrender.com'
-      : 'http://localhost:5001';
+    // Stage 14.8A live retest — an acceptance run must not be able to reach the
+    // ordinary backend through a SERVER-SIDE rewrite. That hop never appears in
+    // the browser, so a network policy watching the page cannot see it: the
+    // request would look same-origin while actually landing on :5001. When the
+    // acceptance origin is set, every /api and /uploads path is pinned to it.
+    const backendOrigin = process.env.NEXT_ACCEPTANCE_BACKEND_ORIGIN
+      || (process.env.NODE_ENV === 'production'
+        ? 'https://trailverse.onrender.com'
+        : 'http://localhost:5001');
 
     return [
       {

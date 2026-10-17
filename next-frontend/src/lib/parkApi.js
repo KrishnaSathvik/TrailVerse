@@ -31,22 +31,22 @@ export async function getParkDetailsBySlug(slug) {
 }
 
 export async function getParkDetails(parkCode) {
+  if (!parkSlugsData.some(park => park.parkCode === parkCode)) return null;
   try {
     const res = await fetch(`${getApiBaseUrl()}/parks/${parkCode}/details`, {
       next: { revalidate: PARK_PAGE_REVALIDATE_SECONDS },
     });
 
     if (!res.ok) {
-      if (res.status !== 404) {
-        console.error(`Failed to fetch park details for ${parkCode}: ${res.status}`);
-      }
-      return null;
+      if (res.status === 404) return null;
+      // A transient API error must not replace a valid ISR page with a cached 404.
+      throw new Error(`Failed to fetch park details for ${parkCode}: ${res.status}`);
     }
 
     const json = await res.json();
     return json.data;
   } catch (error) {
     console.error(`Error fetching park details for ${parkCode}:`, error);
-    return null;
+    throw error;
   }
 }

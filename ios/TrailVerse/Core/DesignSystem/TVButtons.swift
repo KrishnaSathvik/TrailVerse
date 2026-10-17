@@ -4,7 +4,6 @@ import SwiftUI
 
 struct TVPrimaryButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
-    @Environment(\.colorScheme) private var colorScheme
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -52,10 +51,7 @@ struct TVOutlineButtonStyle: ButtonStyle {
 }
 
 struct TVGhostButtonStyle: ButtonStyle {
-    @Environment(\.colorScheme) private var colorScheme
-
     func makeBody(configuration: Configuration) -> some View {
-        let palette = TVColorPalette.palette(for: colorScheme)
         configuration.label
             .font(TVTypography.button)
             .foregroundStyle(TVColors.accentGreen)

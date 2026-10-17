@@ -3,13 +3,14 @@ import { Send } from '@components/icons';
 
 const INPUT_MIN_HEIGHT = 54;
 const INPUT_MAX_HEIGHT = 132;
-const SEND_SIZE = 54;
+const SEND_SIZE = 44;
 
 const ChatInput = ({
   onSend,
   disabled = false,
   placeholder = 'Type your message...',
   initialValue = '',
+  draft = null,
 }) => {
   const [message, setMessage] = useState(initialValue);
   const [isComposing, setIsComposing] = useState(false);
@@ -17,6 +18,11 @@ const ChatInput = ({
   const [isMultiline, setIsMultiline] = useState(false);
   const inputRef = useRef(null);
   const singleLineHeightRef = useRef(INPUT_MIN_HEIGHT);
+  useEffect(() => {
+    if (!draft) return;
+    setMessage(previous => draft.preserveExisting && previous.trim() ? previous : draft.text);
+    inputRef.current?.focus();
+  }, [draft]);
 
   const measureInput = useCallback(() => {
     const el = inputRef.current;
@@ -88,12 +94,18 @@ const ChatInput = ({
   const canSend = Boolean(message.trim()) && !disabled;
 
   return (
-    <form onSubmit={handleSubmit} className="relative w-full" aria-label="Chat composer">
+    <form onSubmit={handleSubmit} className="trailie-composer relative w-full" aria-label="Chat composer">
       <label htmlFor="chat-input" className="sr-only">
         Message
       </label>
       <div
-        className={`flex gap-2 sm:gap-3 ${isMultiline ? 'items-end' : 'items-center'}`}
+        className={`trailie-composer__surface flex gap-2 rounded-[22px] border p-1.5 transition-[border-color,box-shadow,background-color] focus-within:ring-2 focus-within:ring-offset-0 sm:p-2 ${isMultiline ? 'items-end' : 'items-center'}`}
+        style={{
+          backgroundColor: 'var(--surface)',
+          borderColor: 'color-mix(in srgb, var(--text-primary) 16%, var(--border))',
+          boxShadow: '0 10px 30px rgba(31, 41, 35, 0.08)',
+          '--tw-ring-color': 'color-mix(in srgb, var(--accent-green) 36%, transparent)',
+        }}
       >
         <textarea
           id="chat-input"
@@ -106,32 +118,27 @@ const ChatInput = ({
           disabled={disabled}
           placeholder={placeholder}
           rows={1}
-          className="box-border min-w-0 flex-1 resize-none rounded-2xl px-4 py-3 text-sm leading-normal outline-none transition-all duration-200 disabled:opacity-50 scrollbar-thin focus:ring-2 focus:ring-offset-0 sm:px-5 sm:text-base"
+          className="box-border min-w-0 flex-1 resize-none border-0 bg-transparent px-3 py-3 text-sm leading-normal outline-none shadow-none ring-0 transition-colors disabled:cursor-not-allowed disabled:opacity-100 scrollbar-thin focus:border-0 focus:outline-none focus:ring-0 sm:px-4 sm:text-base"
           style={{
-            backgroundColor: 'var(--surface)',
-            borderWidth: '1px',
-            borderStyle: 'solid',
-            borderColor: 'var(--border)',
             color: 'var(--text-primary)',
             height: `${inputHeight}px`,
             minHeight: `${INPUT_MIN_HEIGHT}px`,
             maxHeight: `${INPUT_MAX_HEIGHT}px`,
             boxShadow: 'none',
-            '--tw-ring-color': 'var(--accent-green)',
-            '--tw-ring-opacity': '0.3',
           }}
         />
 
         <button
           type="submit"
           disabled={!canSend}
-          className="box-border flex shrink-0 items-center justify-center rounded-2xl font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 hover:opacity-90 touch-manipulation"
+          className="box-border flex shrink-0 items-center justify-center rounded-2xl font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70 hover:opacity-90 touch-manipulation"
           style={{
             width: `${SEND_SIZE}px`,
             height: `${SEND_SIZE}px`,
             backgroundColor: canSend ? 'var(--accent-green)' : 'var(--surface-hover)',
             color: canSend ? 'white' : 'var(--text-tertiary)',
             boxShadow: canSend ? '0 10px 24px rgba(67, 160, 106, 0.22)' : 'none',
+            '--tw-ring-color': 'var(--accent-green)',
           }}
           aria-label="Send message"
         >

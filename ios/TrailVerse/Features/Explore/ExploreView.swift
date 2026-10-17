@@ -90,7 +90,3 @@ struct ParkSummaryDTO: Decodable {
     let slug: String?
     let images: [ParkImageDTO]?
 }
-
-struct ParkImageDTO: Decodable {
-    let url: String
-}

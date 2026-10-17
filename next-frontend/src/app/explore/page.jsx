@@ -1,15 +1,14 @@
 import { Suspense } from 'react';
 import Header from '@/components/common/Header';
-import LoadingSpinner from '@/components/common/LoadingSpinner';
+import Link from 'next/link';
+import { parkToSlug } from '@/utils/parkSlug';
 import ExploreSeoShell from '@/components/seo/ExploreSeoShell';
 import ExplorePageClient from './ExplorePageClient';
 import { getApiBaseUrl } from '@/lib/apiBase';
 import { canonicalPageMetadata } from '@/lib/seo';
 
-export async function generateMetadata({ searchParams }) {
-  const params = await searchParams;
-  return canonicalPageMetadata('/explore', params);
-}
+export const revalidate = 86400;
+export const metadata = canonicalPageMetadata('/explore');
 
 async function getInitialParks() {
   try {
@@ -18,12 +17,14 @@ async function getInitialParks() {
     });
 
     if (!response.ok) {
-      return undefined;
+      throw new Error(`Park directory upstream failed: ${response.status}`);
     }
 
-    return response.json();
-  } catch {
-    return undefined;
+    const json = await response.json();
+    if (json?.success === false || !Array.isArray(json?.data)) throw new Error('Invalid park directory');
+    return json;
+  } catch (error) {
+    throw error;
   }
 }
 
@@ -35,13 +36,14 @@ async function getTotalSitesCount() {
     );
 
     if (!response.ok) {
-      return undefined;
+      throw new Error(`Park directory upstream failed: ${response.status}`);
     }
 
     const json = await response.json();
+    if (json?.success === false || !Number.isFinite(json?.total)) throw new Error('Invalid park count');
     return json.total;
-  } catch {
-    return undefined;
+  } catch (error) {
+    throw error;
   }
 }
 
@@ -63,9 +65,17 @@ export default async function ExplorePage() {
       />
       <Suspense
         fallback={
-          <div className="flex min-h-[50vh] items-center justify-center">
-            <LoadingSpinner size="lg" text="Loading parks…" />
-          </div>
+          <section className="public-shell py-8" aria-label="Park directory">
+            <h2 className="text-xl font-semibold mb-4">Browse park details</h2>
+            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {initialPaginatedData.data.map(park => (
+                <li key={park.parkCode}>
+                  <Link href={`/parks/${parkToSlug(park.fullName)}`} className="underline">{park.fullName}</Link>
+                  <p>{park.states}</p>
+                </li>
+              ))}
+            </ul>
+          </section>
         }
       >
         <ExplorePageClient

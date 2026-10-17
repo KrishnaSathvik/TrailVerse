@@ -8,32 +8,33 @@ export default function TrailieDemoPage() {
       <Header />
 
       <main>
-        <section className="px-4 pt-6 pb-6 sm:px-6 sm:pt-8 sm:pb-8 lg:px-8">
-          <div className="mx-auto max-w-4xl text-center">
+        <section className="public-shell pt-6 pb-5 sm:pt-8 sm:pb-6">
+          <div className="public-reading text-center">
             <p
-              className="mb-4 text-xs font-semibold uppercase tracking-wider"
+              className="mb-2 text-xs font-semibold uppercase tracking-wider"
               style={{ color: 'var(--accent-green)' }}
             >
               Trailie demo
             </p>
             <h1
-              className="mb-6 text-4xl font-bold tracking-tight text-balance sm:text-5xl"
+              className="mb-3 text-2xl font-semibold tracking-tight text-balance sm:text-3xl"
               style={{ color: 'var(--text-primary)' }}
             >
-              Outdoor & national park trip planning
+              See how Trailie plans in real conversations.
             </h1>
             <p
-              className="mx-auto max-w-3xl text-lg leading-relaxed text-pretty sm:text-xl"
+              className="mx-auto max-w-[var(--public-rich-width)] text-sm leading-relaxed text-pretty sm:text-base"
               style={{ color: 'var(--text-secondary)' }}
             >
-              Watch Trailie answer real outdoor trip questions — national parks, state parks outside NPS, drive times,
-              comparisons, and multi-day itineraries — then try your own plan free.
+              Explore five real Trailie conversations: choosing a park, combining Zion and Bryce,
+              weighing a packed road trip, and refining Yellowstone and Glacier plans.
+              These are recorded answers — try your own trip when you’re ready.
             </p>
           </div>
         </section>
 
-        <section className="px-4 pb-10 sm:px-6 sm:pb-12 lg:px-8 lg:pb-16">
-          <div className="mx-auto w-full max-w-6xl">
+        <section className="public-shell pb-10 sm:pb-12 lg:pb-16">
+          <div className="public-full">
             <TrailieDemoClient showHeader={false} showCta />
           </div>
         </section>

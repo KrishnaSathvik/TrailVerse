@@ -42,7 +42,9 @@ Search category: ${category}
 Web snippets:
 ${sourcesBlock}`;
 
-  const { text, provider } = await trailieLiteComplete({ system, user, maxTokens: 220 });
+  const { text, provider } = await trailieLiteComplete({
+    system, user, maxTokens: 220, purpose: 'fact_processing',
+  });
   if (text) {
     console.log(`[WebSearch] TrailVerse digest via ${provider || 'unknown'}`);
   }

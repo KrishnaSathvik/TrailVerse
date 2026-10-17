@@ -1,6 +1,7 @@
 import { truncatePlainText } from '@/utils/stripMarkdown';
 import { MY_RECOMMENDATIONS_PERSONALIZED_SUBTITLE } from '@/lib/planAiWelcomeCopy';
 import { intentPlanAiHeaderTitle } from '@/lib/intentPlanAi';
+import { selectTravelerOwnedFormData } from '@/lib/formDataProvenance';
 
 export const PLAN_AI_ENTRY = {
   GENERAL: 'general',
@@ -36,7 +37,17 @@ function buildDateSubtitle(formData, currentPlan) {
   const parts = [];
   if (dates) parts.push(dates);
   if (dayCount > 0) parts.push(`${dayCount}-day plan`);
-  else if (formData?.groupSize > 1) parts.push(`${formData.groupSize} travelers`);
+  else {
+    // P0-4 (formDataProvenance.js) — a wizard/Quick Fill default (e.g. a
+    // stock groupSize of 2) is not a traveler statement. Only a
+    // traveler-OWNED groupSize may render as "N travelers"; the same
+    // selector already used before formData reaches the model. Form data
+    // with no provenance map (saved trips, restored sessions, server
+    // echoes) passes through unchanged, so a restored owned count still
+    // renders correctly.
+    const owned = selectTravelerOwnedFormData(formData);
+    if (owned?.groupSize > 1) parts.push(`${owned.groupSize} travelers`);
+  }
   if (parts.length) return parts.join(' · ');
   return null;
 }
@@ -67,12 +78,32 @@ export function isFromComparePage(searchParams) {
 }
 
 /**
- * Best park label for shell header — URL/prop first, then latest assistant turn.
+ * Best park label for shell header.
+ *
+ * WP-TU Phase 3 Task 8 — primary source is the AUTHORITATIVE active-trip
+ * destination (`activeTripPresentation.destination`, Task 7B's field on
+ * each turn's response — sourced from the backend's already preserve/set
+ * -gated `planningState.destination`, Task 7). This replaces the old
+ * "URL/prop wins forever" precedence, which made `selectedParkName` sticky
+ * across the whole session regardless of what the conversation was actually
+ * about. `parkName` (`selectedParkName`/URL/wizard) is now a FALLBACK only,
+ * for the genuinely-empty-turn case where no turn has produced an
+ * authoritative destination yet (e.g. an initial park_cta entry) — the same
+ * shape as the backend's own tripScope→allExtractedParks→entry fallback
+ * chain (Task 5).
  */
 export function resolvePlanningParkName({ parkName = '', messages = [] } = {}) {
-  const fromProp = parkName?.trim();
-  if (fromProp) return fromProp;
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const msg = messages[i];
+    if (msg.role !== 'assistant') continue;
+    const destName = msg.activeTripPresentation?.destination?.parkName?.trim();
+    if (destName) return destName;
+  }
 
+  // Backward-compat fallback: conversations persisted/restored from before
+  // Task 7B carry no `activeTripPresentation` at all. Never treated as
+  // MORE authoritative than activeTripPresentation, only as a substitute
+  // when it is absent everywhere in the conversation.
   for (let i = messages.length - 1; i >= 0; i -= 1) {
     const msg = messages[i];
     if (msg.role !== 'assistant') continue;
@@ -86,6 +117,11 @@ export function resolvePlanningParkName({ parkName = '', messages = [] } = {}) {
       return names[0].trim();
     }
   }
+
+  // Genuinely empty turn — no authoritative or legacy destination anywhere
+  // in the conversation yet. selectedParkName/URL/wizard seeds the header.
+  const fromProp = parkName?.trim();
+  if (fromProp) return fromProp;
 
   return '';
 }
@@ -177,7 +213,7 @@ export function derivePlanAiHeaderMeta({
         };
       }
       return {
-        title: 'Outdoor trip planning',
+        title: 'Trailie',
         subtitle: dateSubtitle || null,
         showSubHeader: true,
       };

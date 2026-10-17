@@ -1,0 +1,829 @@
+{
+  "generatedAt": "2026-06-30T21:08:44.112Z",
+  "api": "http://127.0.0.1:5001/api",
+  "results": [
+    {
+      "id": "3-acadia-seniors-accessibility",
+      "label": "Acadia seniors accessibility",
+      "turns": [
+        {
+          "question": "Plan 2 days in Acadia for my parents. They can walk only 10-15 minutes at a time, no steep trails, but they still want the best views.",
+          "answer": "Got it — two relaxed days with big views and short walks. Good news: Acadia's actually built for this, since most of the showstopper spots are roadside pull-offs, not hikes you have to earn.\n\n## At a glance\n- Base in Bar Harbor — puts you 10-15 min from the Park Loop Road entrance for both days\n- Acadia's on track for record crowds in 2026, and there's no park-wide timed entry confirmed — that means no crowd control, so hit the big stops before 9am or they're packed by mid-morning\n- Cadillac Summit Road may need a $6 timed-entry reservation — check [Recreation.gov](https://www.recreation.gov) before you go, don't assume it's required\n- Several steep trails (Beehive, Precipice, Jordan Cliffs) are closed right now for peregrine falcon nesting — no loss for you since those were never on the table anyway\n- Expect warm, humid, partly cloudy days (73-83°F) — comfortable for short walks, but cloud cover means sunrise at Cadillac is a gamble\n\n## Day 1 — Park Loop Road, the easy version\n- **Sand Beach** — short boardwalk down, ocean views right at the rail, no real walking required\n- **Thunder Hole** — paved path, ~5-10 min, the wave-crash show is the payoff (best 1-2 hrs before high tide)\n- **Otter Cliffs / Otter Point** — pull off and walk 5 minutes to dramatic granite cliffs over the Atlantic — one of the best views in the park for basically zero effort\n- **Jordan Pond House** for lunch — popovers + a flat lawn stroll with the Bubbles mountains reflected in the pond. This is the postcard shot and it's stroller/cane-friendly\n- Get the loop started by 8:30am — parking lots here are gone by 10 most days this summer\n\n## Day 2 — Cadillac + Bar Harbor\n- **Cadillac Mountain summit** — drive straight up, then a flat 0.3-mile paved loop at the top gives you 360° views over Frenchman Bay and the islands. Zero climbing, biggest payoff in the park\n- **Bar Harbor Shore Path** — flat paved/gravel path along the water, lined with benches every few minutes so your parents can sit and take in the harbor and Porcupine Islands at their own pace\n- **Compass Harbor or Sieur de Monts** — quiet, flat, and far less crowded than the main loop — good slow afternoon spot with marsh and shoreline views\n- Skip the stairs down at **Bass Harbor Head Light** — the view from the road-level overlook is honestly just as good and saves the knees\n\nNo permits needed for any of this — the only permit in the live data is for group rock climbing at Otter Cliffs, not relevant here.",
+          "meta": {
+            "provider": "claude",
+            "model": "claude-sonnet-5",
+            "hasItinerary": true,
+            "hasLiveData": true,
+            "hasWebSearch": false,
+            "parkName": "Acadia",
+            "activeDestination": "Acadia",
+            "resolutionSource": "explicit_message"
+          }
+        }
+      ],
+      "evaluation": {
+        "pass": true,
+        "note": "senior-friendly Acadia plan"
+      },
+      "flags": [],
+      "context": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Plan 2 days in Acadia for my parents. They can walk only 10-15 minutes at a time, no steep trails, but they still want the best views."
+          },
+          {
+            "role": "assistant",
+            "content": "Got it — two relaxed days with big views and short walks. Good news: Acadia's actually built for this, since most of the showstopper spots are roadside pull-offs, not hikes you have to earn.\n\n## At a glance\n- Base in Bar Harbor — puts you 10-15 min from the Park Loop Road entrance for both days\n- Acadia's on track for record crowds in 2026, and there's no park-wide timed entry confirmed — that means no crowd control, so hit the big stops before 9am or they're packed by mid-morning\n- Cadillac Summit Road may need a $6 timed-entry reservation — check [Recreation.gov](https://www.recreation.gov) before you go, don't assume it's required\n- Several steep trails (Beehive, Precipice, Jordan Cliffs) are closed right now for peregrine falcon nesting — no loss for you since those were never on the table anyway\n- Expect warm, humid, partly cloudy days (73-83°F) — comfortable for short walks, but cloud cover means sunrise at Cadillac is a gamble\n\n## Day 1 — Park Loop Road, the easy version\n- **Sand Beach** — short boardwalk down, ocean views right at the rail, no real walking required\n- **Thunder Hole** — paved path, ~5-10 min, the wave-crash show is the payoff (best 1-2 hrs before high tide)\n- **Otter Cliffs / Otter Point** — pull off and walk 5 minutes to dramatic granite cliffs over the Atlantic — one of the best views in the park for basically zero effort\n- **Jordan Pond House** for lunch — popovers + a flat lawn stroll with the Bubbles mountains reflected in the pond. This is the postcard shot and it's stroller/cane-friendly\n- Get the loop started by 8:30am — parking lots here are gone by 10 most days this summer\n\n## Day 2 — Cadillac + Bar Harbor\n- **Cadillac Mountain summit** — drive straight up, then a flat 0.3-mile paved loop at the top gives you 360° views over Frenchman Bay and the islands. Zero climbing, biggest payoff in the park\n- **Bar Harbor Shore Path** — flat paved/gravel path along the water, lined with benches every few minutes so your parents can sit and take in the harbor and Porcupine Islands at their own pace\n- **Compass Harbor or Sieur de Monts** — quiet, flat, and far less crowded than the main loop — good slow afternoon spot with marsh and shoreline views\n- Skip the stairs down at **Bass Harbor Head Light** — the view from the road-level overlook is honestly just as good and saves the knees\n\nNo permits needed for any of this — the only permit in the live data is for group rock climbing at Otter Cliffs, not relevant here."
+          }
+        ],
+        "metadata": {
+          "activeTripContext": {
+            "primaryDestination": {
+              "name": "Acadia",
+              "parkCode": "acad",
+              "type": "nps",
+              "lat": 44.409,
+              "lon": -68.247,
+              "source": "user_message",
+              "confidence": "high",
+              "ordinal": null
+            },
+            "lockedPlanDestination": {
+              "name": "Acadia",
+              "parkCode": "acad",
+              "type": "nps",
+              "lat": 44.409,
+              "lon": -68.247,
+              "source": "user_message",
+              "confidence": "high",
+              "ordinal": null
+            },
+            "mentionedDestinations": [
+              {
+                "name": "Acadia",
+                "parkCode": "acad",
+                "type": "nps",
+                "lat": 44.409,
+                "lon": -68.247,
+                "source": "user_message",
+                "confidence": "high",
+                "ordinal": null
+              }
+            ],
+            "lastRecommendationList": [
+              {
+                "name": "Cadillac Mountain",
+                "parkCode": "acad",
+                "lat": 44.409,
+                "lon": -68.247,
+                "type": "nps",
+                "source": "assistant_park_extractor",
+                "confidence": "high"
+              },
+              {
+                "name": "Skip the stairs down at **Bass Harbor Head Light** — the view from the",
+                "source": "assistant_numbered",
+                "confidence": "medium"
+              },
+              {
+                "name": "Get the loop started by 8",
+                "source": "assistant_numbered",
+                "confidence": "medium"
+              },
+              {
+                "name": "Expect warm, humid, partly cloudy days (73-83°F) — comfortable for shor",
+                "source": "assistant_numbered",
+                "confidence": "medium"
+              },
+              {
+                "name": "Several steep trails (Beehive, Precipice, Jordan Cliffs) are closed rig",
+                "source": "assistant_numbered",
+                "confidence": "medium"
+              },
+              {
+                "name": "Cadillac Summit Road may need a $6 timed-entry reservation — check [Rec",
+                "source": "assistant_numbered",
+                "confidence": "medium"
+              }
+            ],
+            "lastComparedOptions": [],
+            "recommendedOption": null,
+            "resolutionSource": "explicit_message",
+            "lowConfidenceClarification": null,
+            "lastUserOverrideAt": "2026-06-30T21:01:14.702Z"
+          }
+        }
+      }
+    },
+    {
+      "id": "4-smokies-dog",
+      "label": "Smokies with dog",
+      "turns": [
+        {
+          "question": "Plan a weekend in Great Smoky Mountains with my dog. I want waterfalls, scenic drives, and easy trails.",
+          "answer": "Dogs and the Smokies have a complicated relationship — worth flagging before you build around waterfall hikes. Great Smoky Mountains is one of the most restrictive parks in the system for pets: dogs aren't allowed on the vast majority of trails (that includes basically every named waterfall trail — Abrams Falls, Laurel Falls, Rainbow Falls, all off-limits to pets). They're only permitted on two trails park-wide — the **Gatlinburg Trail** and the **Oconaluftee River Trail** — plus roads, parking areas, campgrounds, and picnic areas.\n\nGood news: that still gives you a really solid easy, dog-friendly weekend built around scenic drives, roadside waterfalls you can view without setting foot on a closed trail, and the two trails dogs *can* join you on. Weather's cooperating too — clear skies and 85-87°F highs, so plan water and shade breaks for the dog.\n\n## At a glance\n- Base yourself near Gatlinburg or Cherokee — both put you within 20-40 min of everything below\n- You'll need a parking tag for most stops (available at visitor centers or online)\n- Cades Cove Loop Road is closed to vehicles every Wednesday — fine for a weekend trip\n- Park Headquarters Road and the Balsam Mountain/Straight Fork area are currently closed — this plan avoids both\n- No entrance fee for the park itself, just the parking tag\n- Keep the dog leashed everywhere — required, and there's bear activity in the backcountry\n\n## Day 1 — Cades Cove side\n**9:00 AM — Cades Cove Loop Road.** 11-mile one-way scenic loop through open valley, historic cabins, and good wildlife viewing (bear, deer, turkey). Dog's welcome in the car and at pull-offs, just not on the side trails branching off it (like Abrams Falls). Budget 2.5 hours with stops — it's slow-moving and that's the point.\n\n**Late morning — The Sinks.** A roadside waterfall on Little River Road, no trail required — you pull off, walk a few yards to the viewpoint, dog included. One of the few \"waterfall fixes\" in the park you can actually do together.\n\n**Early afternoon — Gatlinburg Trail.** Flat, easy, partly paved path running 1.9 miles one-way along the Little Pigeon River from Sugarlands Visitor Center toward Gatlinburg — and it's dog-legal. Out-and-back gives you a relaxed 2-hour walk with plenty of stopping for the dog to sniff around and wade in the shallows.\n\n## Day 2 — Newfound Gap side\n**9:30 AM — Oconaluftee Visitor Center + River Trail.** Start at the visitor center (historic farm museum on-site, easy poke-around), then walk the Oconaluftee River Trail — the other dog-legal trail in the park. Flat, 1.5 miles one-way along the river, shaded.\n\n**Midday — Newfound Gap Road scenic drive.** Drive the spine of the park up to Newfound Gap (5,046 ft) for sweeping ridge views straight along the NC/TN line. Several pull-offs along the way for the dog to stretch — keep these short given the afternoon heat.\n\n**Mid-afternoon — Roaring Fork Motor Nature Trail.** A narrow, one-way loop through old-growth forest with a roadside stop at Place of a Thousand Drips — a multi-strand waterfall you view right from the pull-off, no trail walking needed.\n\n## Don't Forget\n- Leash (6 ft max, required everywhere pets are allowed)\n- Water bowl and extra water — humidity's high and there's no shade at some overlooks\n- Parking tag (grab at any visitor center or buy online ahead)\n- Waste bags — pack it out\n- Paw protection if pavement gets hot on the Gatlinburg Trail in afternoon sun\n\nCamping note: if you want to stay inside the park, Cades Cove, Elkmont, and Smokemont campgrounds are all pet-friendly and run $30/night, but need booking on Recreation.gov — six months out is the lead time the park lists, so for this weekend you're looking at gateway-town lodging instead unless something's open last-minute.",
+          "meta": {
+            "provider": "claude",
+            "model": "claude-sonnet-5",
+            "hasItinerary": true,
+            "hasLiveData": true,
+            "hasWebSearch": false,
+            "parkName": "Great Smoky Mountains",
+            "activeDestination": "Great Smoky Mountains",
+            "resolutionSource": "explicit_message"
+          }
+        }
+      ],
+      "evaluation": {
+        "pass": true,
+        "note": "Smokies plan with pet awareness"
+      },
+      "flags": [],
+      "context": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Plan a weekend in Great Smoky Mountains with my dog. I want waterfalls, scenic drives, and easy trails."
+          },
+          {
+            "role": "assistant",
+            "content": "Dogs and the Smokies have a complicated relationship — worth flagging before you build around waterfall hikes. Great Smoky Mountains is one of the most restrictive parks in the system for pets: dogs aren't allowed on the vast majority of trails (that includes basically every named waterfall trail — Abrams Falls, Laurel Falls, Rainbow Falls, all off-limits to pets). They're only permitted on two trails park-wide — the **Gatlinburg Trail** and the **Oconaluftee River Trail** — plus roads, parking areas, campgrounds, and picnic areas.\n\nGood news: that still gives you a really solid easy, dog-friendly weekend built around scenic drives, roadside waterfalls you can view without setting foot on a closed trail, and the two trails dogs *can* join you on. Weather's cooperating too — clear skies and 85-87°F highs, so plan water and shade breaks for the dog.\n\n## At a glance\n- Base yourself near Gatlinburg or Cherokee — both put you within 20-40 min of everything below\n- You'll need a parking tag for most stops (available at visitor centers or online)\n- Cades Cove Loop Road is closed to vehicles every Wednesday — fine for a weekend trip\n- Park Headquarters Road and the Balsam Mountain/Straight Fork area are currently closed — this plan avoids both\n- No entrance fee for the park itself, just the parking tag\n- Keep the dog leashed everywhere — required, and there's bear activity in the backcountry\n\n## Day 1 — Cades Cove side\n**9:00 AM — Cades Cove Loop Road.** 11-mile one-way scenic loop through open valley, historic cabins, and good wildlife viewing (bear, deer, turkey). Dog's welcome in the car and at pull-offs, just not on the side trails branching off it (like Abrams Falls). Budget 2.5 hours with stops — it's slow-moving and that's the point.\n\n**Late morning — The Sinks.** A roadside waterfall on Little River Road, no trail required — you pull off, walk a few yards to the viewpoint, dog included. One of the few \"waterfall fixes\" in the park you can actually do together.\n\n**Early afternoon — Gatlinburg Trail.** Flat, easy, partly paved path running 1.9 miles one-way along the Little Pigeon River from Sugarlands Visitor Center toward Gatlinburg — and it's dog-legal. Out-and-back gives you a relaxed 2-hour walk with plenty of stopping for the dog to sniff around and wade in the shallows.\n\n## Day 2 — Newfound Gap side\n**9:30 AM — Oconaluftee Visitor Center + River Trail.** Start at the visitor center (historic farm museum on-site, easy poke-around), then walk the Oconaluftee River Trail — the other dog-legal trail in the park. Flat, 1.5 miles one-way along the river, shaded.\n\n**Midday — Newfound Gap Road scenic drive.** Drive the spine of the park up to Newfound Gap (5,046 ft) for sweeping ridge views straight along the NC/TN line. Several pull-offs along the way for the dog to stretch — keep these short given the afternoon heat.\n\n**Mid-afternoon — Roaring Fork Motor Nature Trail.** A narrow, one-way loop through old-growth forest with a roadside stop at Place of a Thousand Drips — a multi-strand waterfall you view right from the pull-off, no trail walking needed.\n\n## Don't Forget\n- Leash (6 ft max, required everywhere pets are allowed)\n- Water bowl and extra water — humidity's high and there's no shade at some overlooks\n- Parking tag (grab at any visitor center or buy online ahead)\n- Waste bags — pack it out\n- Paw protection if pavement gets hot on the Gatlinburg Trail in afternoon sun\n\nCamping note: if you want to stay inside the park, Cades Cove, Elkmont, and Smokemont campgrounds are all pet-friendly and run $30/night, but need booking on Recreation.gov — six months out is the lead time the park lists, so for this weekend you're looking at gateway-town lodging instead unless something's open last-minute."
+          }
+        ],
+        "metadata": {
+          "activeTripContext": {
+            "primaryDestination": {
+              "name": "Great Smoky Mountains",
+              "parkCode": "grsm",
+              "type": "nps",
+              "lat": 35.611,
+              "lon": -83.489,
+              "source": "user_message",
+              "confidence": "high",
+              "ordinal": null
+            },
+            "lockedPlanDestination": {
+              "name": "Great Smoky Mountains",
+              "parkCode": "grsm",
+              "type": "nps",
+              "lat": 35.611,
+              "lon": -83.489,
+              "source": "user_message",
+              "confidence": "high",
+              "ordinal": null
+            },
+            "mentionedDestinations": [
+              {
+                "name": "Great Smoky Mountains",
+                "parkCode": "grsm",
+                "type": "nps",
+                "lat": 35.611,
+                "lon": -83.489,
+                "source": "user_message",
+                "confidence": "high",
+                "ordinal": null
+              }
+            ],
+            "lastRecommendationList": [
+              {
+                "name": "Great Smoky Mountains",
+                "parkCode": "grsm",
+                "lat": 35.611,
+                "lon": -83.489,
+                "type": "nps",
+                "source": "assistant_park_extractor",
+                "confidence": "high"
+              },
+              {
+                "name": "Paw protection if pavement gets hot on the Gatlinburg Trail in afternoo",
+                "source": "assistant_numbered",
+                "confidence": "medium"
+              },
+              {
+                "name": "Waste bags — pack it out",
+                "source": "assistant_numbered",
+                "confidence": "medium"
+              },
+              {
+                "name": "Parking tag (grab at any visitor center or buy online ahead)",
+                "source": "assistant_numbered",
+                "confidence": "medium"
+              },
+              {
+                "name": "Leash (6 ft max, required everywhere pets are allowed)",
+                "source": "assistant_numbered",
+                "confidence": "medium"
+              },
+              {
+                "name": "Keep the dog leashed everywhere — required, and there's bear activity i",
+                "source": "assistant_numbered",
+                "confidence": "medium"
+              }
+            ],
+            "lastComparedOptions": [],
+            "recommendedOption": null,
+            "resolutionSource": "explicit_message",
+            "lowConfidenceClarification": null,
+            "lastUserOverrideAt": "2026-06-30T21:02:20.469Z"
+          }
+        }
+      }
+    },
+    {
+      "id": "5-yosemite-permits",
+      "label": "Yosemite permits pushback",
+      "turns": [
+        {
+          "question": "Plan Yosemite for next weekend. I want Half Dome, Glacier Point, Mariposa Grove, and no reservations or permits.",
+          "answer": "Heads up on a few things before I plan this — July 4 and 5 are fee-free entrance days, so no entrance fee either day, but that also means even heavier crowds on top of an already-packed holiday weekend.\n\nBigger issue: **Half Dome requires a permit**, no way around it. It's a lottery system through Recreation.gov, and rangers check for it at the subdome — hiking past that point without one gets you turned back (or fined). So \"no permits\" and \"Half Dome\" don't fit together this weekend. If you don't already have one, swap it for **Sentinel Dome** (2.2mi, 1,000ft gain, ~2hr, Moderate) — same panoramic payoff, zero permit needed, and it's right near Glacier Point.\n\nSecond problem: your RV plan. Yosemite Valley campgrounds (Upper Pines, North Pines, etc.) are reservation-only, and slots for a July 4 weekend in peak season would've been booked back in February when that block released — there's basically zero chance anything opens up now. Realistic move is an RV site outside the park in El Portal or Mariposa (first-come-first-served options exist there) and day-tripping in, or checking Recreation.gov directly for last-minute cancellations on Hodgdon Meadow or Crane Flat.\n\nAlso worth knowing: Yosemite has no timed-entry requirement this year, which sounds convenient but actually means zero crowd control — expect full parking lots at Glacier Point and Mariposa Grove by 8-9am on a holiday weekend. Get there at dawn or skip mid-day entirely.\n\nThe good news: **Glacier Point** and **Mariposa Grove** are both permit-free and totally doable in 2 days. Mariposa Grove requires the shuttle (no permit, just a short wait), and Glacier Point is a straight drive-up with knockout Half Dome views — honestly a better photo op than the actual Half Dome trail for most people.\n\nBefore I lock in the day-by-day: how many of you are going, and roughly what fitness level? That changes whether I add a hike like Sentinel Dome or keep it to viewpoints and the Grove.",
+          "meta": {
+            "provider": "claude",
+            "model": "claude-sonnet-5",
+            "hasItinerary": false,
+            "hasLiveData": true,
+            "hasWebSearch": false,
+            "parkName": "Mariposa Grove",
+            "activeDestination": "Mariposa Grove",
+            "resolutionSource": null
+          }
+        }
+      ],
+      "evaluation": {
+        "pass": true,
+        "note": "permits/reservations pushback"
+      },
+      "flags": [],
+      "context": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Plan Yosemite for next weekend. I want Half Dome, Glacier Point, Mariposa Grove, and no reservations or permits."
+          },
+          {
+            "role": "assistant",
+            "content": "Heads up on a few things before I plan this — July 4 and 5 are fee-free entrance days, so no entrance fee either day, but that also means even heavier crowds on top of an already-packed holiday weekend.\n\nBigger issue: **Half Dome requires a permit**, no way around it. It's a lottery system through Recreation.gov, and rangers check for it at the subdome — hiking past that point without one gets you turned back (or fined). So \"no permits\" and \"Half Dome\" don't fit together this weekend. If you don't already have one, swap it for **Sentinel Dome** (2.2mi, 1,000ft gain, ~2hr, Moderate) — same panoramic payoff, zero permit needed, and it's right near Glacier Point.\n\nSecond problem: your RV plan. Yosemite Valley campgrounds (Upper Pines, North Pines, etc.) are reservation-only, and slots for a July 4 weekend in peak season would've been booked back in February when that block released — there's basically zero chance anything opens up now. Realistic move is an RV site outside the park in El Portal or Mariposa (first-come-first-served options exist there) and day-tripping in, or checking Recreation.gov directly for last-minute cancellations on Hodgdon Meadow or Crane Flat.\n\nAlso worth knowing: Yosemite has no timed-entry requirement this year, which sounds convenient but actually means zero crowd control — expect full parking lots at Glacier Point and Mariposa Grove by 8-9am on a holiday weekend. Get there at dawn or skip mid-day entirely.\n\nThe good news: **Glacier Point** and **Mariposa Grove** are both permit-free and totally doable in 2 days. Mariposa Grove requires the shuttle (no permit, just a short wait), and Glacier Point is a straight drive-up with knockout Half Dome views — honestly a better photo op than the actual Half Dome trail for most people.\n\nBefore I lock in the day-by-day: how many of you are going, and roughly what fitness level? That changes whether I add a hike like Sentinel Dome or keep it to viewpoints and the Grove."
+          }
+        ],
+        "metadata": {
+          "activeTripContext": {
+            "primaryDestination": {
+              "name": "Mariposa Grove",
+              "parkCode": "yose",
+              "type": "nps",
+              "lat": 37.865,
+              "lon": -119.538,
+              "source": "turn_resolution",
+              "confidence": "high",
+              "ordinal": null
+            },
+            "lockedPlanDestination": null,
+            "mentionedDestinations": [
+              {
+                "name": "Mariposa Grove",
+                "parkCode": "yose",
+                "type": "nps",
+                "lat": 37.865,
+                "lon": -119.538,
+                "source": "user_message",
+                "confidence": "high",
+                "ordinal": null
+              },
+              {
+                "name": "Glacier",
+                "parkCode": "glac",
+                "type": "nps",
+                "lat": 48.696,
+                "lon": -113.718,
+                "source": "user_message",
+                "confidence": "high",
+                "ordinal": null
+              }
+            ],
+            "lastRecommendationList": [
+              {
+                "name": "Glacier",
+                "parkCode": "glac",
+                "lat": 48.696,
+                "lon": -113.718,
+                "type": "nps",
+                "source": "assistant_park_extractor",
+                "confidence": "high"
+              },
+              {
+                "name": "Mariposa Grove",
+                "parkCode": "yose",
+                "lat": 37.865,
+                "lon": -119.538,
+                "type": "nps",
+                "source": "assistant_park_extractor",
+                "confidence": "high"
+              }
+            ],
+            "lastComparedOptions": [],
+            "recommendedOption": null,
+            "resolutionSource": null,
+            "lowConfidenceClarification": null,
+            "lastUserOverrideAt": null
+          }
+        }
+      }
+    },
+    {
+      "id": "6-vegas-5-park-driving",
+      "label": "Vegas 5-park driving realism",
+      "turns": [
+        {
+          "question": "Plan 3 days from Las Vegas covering Grand Canyon South Rim, Antelope Canyon, Monument Valley, Arches, and Bryce. I don't want long drives.",
+          "answer": "Heads up — this is way too much ground for 3 days without long drives. Grand Canyon, Antelope Canyon, Monument Valley, Arches, and Bryce are spread across 400+ miles in different directions from Vegas. Doing all five would mean 15+ hours of driving crammed into 3 days — more time in the car than on the trails.\n\n**Here's the realistic version:** Grand Canyon South Rim + Page (Antelope Canyon + Horseshoe Bend) is the tightest loop that still delivers two bucket-list icons. It's about 4.5hrs Vegas→GC, 2.5hrs GC→Page, and 4.5hrs Page→Vegas to close the loop — roughly 11.5 hours of driving spread over 3 days, which is as light as this trip gets.\n\nI'm cutting Arches and Bryce entirely — Moab is a separate 7+ hour detour east, and Bryce pulls you north away from Page. Both deserve their own trip, not a tacked-on day. Monument Valley is *close* to Page (about 2hrs round trip extra) — doable if you don't mind one heavier driving day, but it pushes Day 2 into a 7-hour driving day, so I left it out of the core plan below. Let me know if you want it swapped in.\n\n## At a glance\n- No timed-entry requirement at Grand Canyon right now — that means zero crowd control, so hit the rim before 9am or expect packed lots by mid-morning.\n- Coconino County is running hot and dry this week — highs in the 89-92°F range with low humidity, so carry way more water than you think you need on any rim trail.\n- Antelope Canyon requires a guided tour booking in advance — you can't walk in independently, so lock that in before you leave Vegas.\n- Mather Campground on the South Rim is $30/night, but peak-season sites need a reservation — [book on Recreation.gov](https://www.recreation.gov/camping/campgrounds/232490) or grab one of the 15 first-come sites that release at 8am.\n- South Rim's clear skies right now make Lipan Point worth a stop even if you're not into photography — it's a certified dark-sky spot.\n\n## Day 1 — Vegas to the Rim\n- Drive Vegas → Grand Canyon South Rim (~4.5hrs)\n- Mather Point for your first canyon view, then walk the paved Rim Trail toward Yavapai — easy, flat, no elevation gain\n- Sunset at Lipan Point — quieter than Mather, better light, one of the best overlooks on the South Rim\n- Camp at Mather Campground or grab in-park lodging if you booked ahead\n\n## Day 2 — Canyon Morning, Page Afternoon\n- Sunrise at the rim, then hike Bright Angel Trail down to 1.5 Mile Resthouse and back — 3mi round trip, ~1,100ft gain, ~2.5hrs, Moderate. Start by 7am — it gets brutal fast in this heat\n- Drive to Page (~2.5hrs)\n- Horseshoe Bend — short easy walk (1.5mi round trip) to the overlook, go for golden hour\n- Guided Antelope Canyon tour in the evening — book this before you go, slots fill fast and you can't enter without a guide\n- Overnight in Page\n\n## Day 3 — Last Look, Drive Home\n- Morning at Antelope Canyon area or a relaxed Page breakfast before the long haul\n- Drive back to Vegas (~4.5hrs) — leave by late morning to avoid arriving exhausted at night",
+          "meta": {
+            "provider": "claude",
+            "model": "claude-sonnet-5",
+            "hasItinerary": true,
+            "hasLiveData": true,
+            "hasWebSearch": false,
+            "parkName": "Grand Canyon",
+            "activeDestination": "Grand Canyon",
+            "resolutionSource": "explicit_message"
+          }
+        }
+      ],
+      "evaluation": {
+        "pass": true,
+        "note": "scope reduced or driving realism"
+      },
+      "flags": [],
+      "context": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Plan 3 days from Las Vegas covering Grand Canyon South Rim, Antelope Canyon, Monument Valley, Arches, and Bryce. I don't want long drives."
+          },
+          {
+            "role": "assistant",
+            "content": "Heads up — this is way too much ground for 3 days without long drives. Grand Canyon, Antelope Canyon, Monument Valley, Arches, and Bryce are spread across 400+ miles in different directions from Vegas. Doing all five would mean 15+ hours of driving crammed into 3 days — more time in the car than on the trails.\n\n**Here's the realistic version:** Grand Canyon South Rim + Page (Antelope Canyon + Horseshoe Bend) is the tightest loop that still delivers two bucket-list icons. It's about 4.5hrs Vegas→GC, 2.5hrs GC→Page, and 4.5hrs Page→Vegas to close the loop — roughly 11.5 hours of driving spread over 3 days, which is as light as this trip gets.\n\nI'm cutting Arches and Bryce entirely — Moab is a separate 7+ hour detour east, and Bryce pulls you north away from Page. Both deserve their own trip, not a tacked-on day. Monument Valley is *close* to Page (about 2hrs round trip extra) — doable if you don't mind one heavier driving day, but it pushes Day 2 into a 7-hour driving day, so I left it out of the core plan below. Let me know if you want it swapped in.\n\n## At a glance\n- No timed-entry requirement at Grand Canyon right now — that means zero crowd control, so hit the rim before 9am or expect packed lots by mid-morning.\n- Coconino County is running hot and dry this week — highs in the 89-92°F range with low humidity, so carry way more water than you think you need on any rim trail.\n- Antelope Canyon requires a guided tour booking in advance — you can't walk in independently, so lock that in before you leave Vegas.\n- Mather Campground on the South Rim is $30/night, but peak-season sites need a reservation — [book on Recreation.gov](https://www.recreation.gov/camping/campgrounds/232490) or grab one of the 15 first-come sites that release at 8am.\n- South Rim's clear skies right now make Lipan Point worth a stop even if you're not into photography — it's a certified dark-sky spot.\n\n## Day 1 — Vegas to the Rim\n- Drive Vegas → Grand Canyon South Rim (~4.5hrs)\n- Mather Point for your first canyon view, then walk the paved Rim Trail toward Yavapai — easy, flat, no elevation gain\n- Sunset at Lipan Point — quieter than Mather, better light, one of the best overlooks on the South Rim\n- Camp at Mather Campground or grab in-park lodging if you booked ahead\n\n## Day 2 — Canyon Morning, Page Afternoon\n- Sunrise at the rim, then hike Bright Angel Trail down to 1.5 Mile Resthouse and back — 3mi round trip, ~1,100ft gain, ~2.5hrs, Moderate. Start by 7am — it gets brutal fast in this heat\n- Drive to Page (~2.5hrs)\n- Horseshoe Bend — short easy walk (1.5mi round trip) to the overlook, go for golden hour\n- Guided Antelope Canyon tour in the evening — book this before you go, slots fill fast and you can't enter without a guide\n- Overnight in Page\n\n## Day 3 — Last Look, Drive Home\n- Morning at Antelope Canyon area or a relaxed Page breakfast before the long haul\n- Drive back to Vegas (~4.5hrs) — leave by late morning to avoid arriving exhausted at night"
+          }
+        ],
+        "metadata": {
+          "activeTripContext": {
+            "primaryDestination": {
+              "name": "Grand Canyon",
+              "parkCode": "grca",
+              "type": "nps",
+              "lat": 36.106,
+              "lon": -112.113,
+              "source": "user_message",
+              "confidence": "high",
+              "ordinal": null
+            },
+            "lockedPlanDestination": {
+              "name": "Grand Canyon",
+              "parkCode": "grca",
+              "type": "nps",
+              "lat": 36.106,
+              "lon": -112.113,
+              "source": "user_message",
+              "confidence": "high",
+              "ordinal": null
+            },
+            "mentionedDestinations": [
+              {
+                "name": "Grand Canyon",
+                "parkCode": "grca",
+                "type": "nps",
+                "lat": 36.106,
+                "lon": -112.113,
+                "source": "user_message",
+                "confidence": "high",
+                "ordinal": null
+              },
+              {
+                "name": "Arches",
+                "parkCode": "arch",
+                "type": "nps",
+                "lat": 38.733,
+                "lon": -109.592,
+                "source": "user_message",
+                "confidence": "high",
+                "ordinal": null
+              },
+              {
+                "name": "Bryce",
+                "parkCode": "brca",
+                "type": "nps",
+                "lat": 37.593,
+                "lon": -112.187,
+                "source": "user_message",
+                "confidence": "high",
+                "ordinal": null
+              }
+            ],
+            "lastRecommendationList": [
+              {
+                "name": "Horseshoe Bend",
+                "parkCode": "hobe",
+                "lat": 32.97668879,
+                "lon": -85.73413589,
+                "type": "nps",
+                "source": "assistant_park_extractor",
+                "confidence": "high"
+              },
+              {
+                "name": "Bryce",
+                "parkCode": "brca",
+                "lat": 37.593,
+                "lon": -112.187,
+                "type": "nps",
+                "source": "assistant_park_extractor",
+                "confidence": "high"
+              },
+              {
+                "name": "Arches",
+                "parkCode": "arch",
+                "lat": 38.733,
+                "lon": -109.592,
+                "type": "nps",
+                "source": "assistant_park_extractor",
+                "confidence": "high"
+              },
+              {
+                "name": "Bright Angel Trail",
+                "parkCode": "grca",
+                "lat": 36.106,
+                "lon": -112.113,
+                "type": "nps",
+                "source": "assistant_park_extractor",
+                "confidence": "high"
+              },
+              {
+                "name": "Drive back to Vegas (~4.5hrs) — leave by late morning to avoid arriving",
+                "source": "assistant_numbered",
+                "confidence": "medium"
+              },
+              {
+                "name": "Morning at Antelope Canyon area or a relaxed Page breakfast before the",
+                "source": "assistant_numbered",
+                "confidence": "medium"
+              }
+            ],
+            "lastComparedOptions": [],
+            "recommendedOption": null,
+            "resolutionSource": "explicit_message",
+            "lowConfidenceClarification": null,
+            "lastUserOverrideAt": "2026-06-30T21:04:02.600Z"
+          }
+        }
+      }
+    },
+    {
+      "id": "7-rmnp-crowds-no-early",
+      "label": "RMNP crowds vs no early mornings",
+      "turns": [
+        {
+          "question": "Plan a peaceful no-crowds weekend in Rocky Mountain National Park in peak summer. I want no early mornings.",
+          "answer": "Peak summer plus \"no early mornings\" is a real tension at Rocky Mountain — there's no timed-entry system in place right now, which means **no crowd control**: Bear Lake and Sky Pond area parking lots fill by 6-7am and stay slammed all day. Sleeping in means you're not fighting for parking at sunrise, but it also means you're not getting first access either. The fix is routing around the famous corridor entirely and leaning into the quieter east-side (Wild Basin) and west-side (Kawuneeche Valley) trails that don't get swarmed the same way, then saving the alpine tundra stretch for early evening when both the crowds and the afternoon thunderstorms have cleared out.\n\n## At a glance\n- Base in Estes Park puts you 20 minutes from Wild Basin and under an hour from Trail Ridge Road — Grand Lake works too if you'd rather anchor west, just adds drive time crossing the park.\n- Entrance runs $30/vehicle (some stations show $35) — no timed entry is currently required, so arrive at any trailhead other than Bear Lake/Sky Pond before 11am if you want a spot.\n- Stage 2 fire restrictions are active park-wide — no campfires, no charcoal grills. Bring an enclosed gas stove if you want hot food.\n- Colorado summer afternoons build thunderstorms fast, usually by early-to-mid afternoon, especially above treeline. Since you're starting late, we're keeping midday on forested, lower-elevation trails and pushing Trail Ridge Road / Alpine Visitor Center to evening, when storms typically clear and the light gets really good.\n- No wilderness permit needed for day hikes — that's only for backcountry camping ([permit info](https://www.recreation.gov/permits/4675320) if you want to add a night out there later).\n- Typically July highs sit around 72°F with lows near 45°F at lower elevations — it's noticeably colder and windier up at 11,796 ft, so bring a real layer even midday.\n\n## Day 1 — Wild Basin + evening alpine drive\n**9:30am** — Leisurely breakfast in Estes Park.\n**11:00am** — Wild Basin Trailhead, hike to Ouzel Falls (5.4mi RT, ~950ft gain, moderate, ~3hrs). This corridor sees a fraction of Bear Lake's traffic and still delivers waterfalls and quiet forest.\n**2:15pm** — Picnic lunch near the trailhead (pack-in only, no fires given the Stage 2 ban).\n**4:00pm** — Drive Trail Ridge Road up to the Alpine Visitor Center. By late afternoon the morning thunderstorm risk has usually passed and the day-tripper crowds are heading down. This is the highest visitor center in the park system at 11,796 ft — bring a jacket.\n**7:00pm** — Dinner back in Estes Park.\n\n## Day 2 — West side, easy and quiet\n**9:30am** — Late breakfast.\n**11:00am** — Coyote Valley Trail in Kawuneeche Valley (easy, ~2mi, flat) — one of the least-trafficked walks in the park, good moose-spotting odds, no early start required.\n**1:00pm** — Picnic lunch in the Kawuneeche Valley (again, no open flame).\n**3:00pm** — Sprague Lake Loop (0.8mi, easy, wheelchair-accessible) — peaceful lake views without the Bear Lake mob.\n**5:00pm** — Wind down at Lily Lake, a short, flat, quiet loop most people skip entirely.\n**6:30pm** — Dinner in Estes Park before heading out.\n\n**Don't forget:** layered clothing (it's cold up top even in July), rain shell for afternoon pop-up storms, sun protection at altitude, plenty of water, an enclosed camp stove if you want hot food (no open flames allowed), and cash/card for the entrance fee.\n\n**Rough costs for two days:** entrance $30 (per vehicle), food around $50-70/day depending on group size, no camping fees if you're basing in town — lodging in Estes Park or Grand Lake will be your biggest variable cost in peak July, so book that as early as you can.",
+          "meta": {
+            "provider": "claude",
+            "model": "claude-sonnet-5",
+            "hasItinerary": true,
+            "hasLiveData": true,
+            "hasWebSearch": false,
+            "parkName": "Rocky Mountain National Park",
+            "activeDestination": "Rocky Mountain National Park",
+            "resolutionSource": "explicit_message"
+          }
+        }
+      ],
+      "evaluation": {
+        "pass": true,
+        "note": "crowd vs no-early-mornings tension addressed"
+      },
+      "flags": [],
+      "context": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Plan a peaceful no-crowds weekend in Rocky Mountain National Park in peak summer. I want no early mornings."
+          },
+          {
+            "role": "assistant",
+            "content": "Peak summer plus \"no early mornings\" is a real tension at Rocky Mountain — there's no timed-entry system in place right now, which means **no crowd control**: Bear Lake and Sky Pond area parking lots fill by 6-7am and stay slammed all day. Sleeping in means you're not fighting for parking at sunrise, but it also means you're not getting first access either. The fix is routing around the famous corridor entirely and leaning into the quieter east-side (Wild Basin) and west-side (Kawuneeche Valley) trails that don't get swarmed the same way, then saving the alpine tundra stretch for early evening when both the crowds and the afternoon thunderstorms have cleared out.\n\n## At a glance\n- Base in Estes Park puts you 20 minutes from Wild Basin and under an hour from Trail Ridge Road — Grand Lake works too if you'd rather anchor west, just adds drive time crossing the park.\n- Entrance runs $30/vehicle (some stations show $35) — no timed entry is currently required, so arrive at any trailhead other than Bear Lake/Sky Pond before 11am if you want a spot.\n- Stage 2 fire restrictions are active park-wide — no campfires, no charcoal grills. Bring an enclosed gas stove if you want hot food.\n- Colorado summer afternoons build thunderstorms fast, usually by early-to-mid afternoon, especially above treeline. Since you're starting late, we're keeping midday on forested, lower-elevation trails and pushing Trail Ridge Road / Alpine Visitor Center to evening, when storms typically clear and the light gets really good.\n- No wilderness permit needed for day hikes — that's only for backcountry camping ([permit info](https://www.recreation.gov/permits/4675320) if you want to add a night out there later).\n- Typically July highs sit around 72°F with lows near 45°F at lower elevations — it's noticeably colder and windier up at 11,796 ft, so bring a real layer even midday.\n\n## Day 1 — Wild Basin + evening alpine drive\n**9:30am** — Leisurely breakfast in Estes Park.\n**11:00am** — Wild Basin Trailhead, hike to Ouzel Falls (5.4mi RT, ~950ft gain, moderate, ~3hrs). This corridor sees a fraction of Bear Lake's traffic and still delivers waterfalls and quiet forest.\n**2:15pm** — Picnic lunch near the trailhead (pack-in only, no fires given the Stage 2 ban).\n**4:00pm** — Drive Trail Ridge Road up to the Alpine Visitor Center. By late afternoon the morning thunderstorm risk has usually passed and the day-tripper crowds are heading down. This is the highest visitor center in the park system at 11,796 ft — bring a jacket.\n**7:00pm** — Dinner back in Estes Park.\n\n## Day 2 — West side, easy and quiet\n**9:30am** — Late breakfast.\n**11:00am** — Coyote Valley Trail in Kawuneeche Valley (easy, ~2mi, flat) — one of the least-trafficked walks in the park, good moose-spotting odds, no early start required.\n**1:00pm** — Picnic lunch in the Kawuneeche Valley (again, no open flame).\n**3:00pm** — Sprague Lake Loop (0.8mi, easy, wheelchair-accessible) — peaceful lake views without the Bear Lake mob.\n**5:00pm** — Wind down at Lily Lake, a short, flat, quiet loop most people skip entirely.\n**6:30pm** — Dinner in Estes Park before heading out.\n\n**Don't forget:** layered clothing (it's cold up top even in July), rain shell for afternoon pop-up storms, sun protection at altitude, plenty of water, an enclosed camp stove if you want hot food (no open flames allowed), and cash/card for the entrance fee.\n\n**Rough costs for two days:** entrance $30 (per vehicle), food around $50-70/day depending on group size, no camping fees if you're basing in town — lodging in Estes Park or Grand Lake will be your biggest variable cost in peak July, so book that as early as you can."
+          }
+        ],
+        "metadata": {
+          "activeTripContext": {
+            "primaryDestination": {
+              "name": "Rocky Mountain National Park",
+              "parkCode": "romo",
+              "type": "nps",
+              "lat": 40.343,
+              "lon": -105.684,
+              "source": "user_message",
+              "confidence": "high",
+              "ordinal": null
+            },
+            "lockedPlanDestination": {
+              "name": "Rocky Mountain National Park",
+              "parkCode": "romo",
+              "type": "nps",
+              "lat": 40.343,
+              "lon": -105.684,
+              "source": "user_message",
+              "confidence": "high",
+              "ordinal": null
+            },
+            "mentionedDestinations": [
+              {
+                "name": "Rocky Mountain National Park",
+                "parkCode": "romo",
+                "type": "nps",
+                "lat": 40.343,
+                "lon": -105.684,
+                "source": "user_message",
+                "confidence": "high",
+                "ordinal": null
+              }
+            ],
+            "lastRecommendationList": [
+              {
+                "name": "Colorado",
+                "parkCode": "colm",
+                "lat": 39.05045016,
+                "lon": -108.6920709,
+                "type": "nps",
+                "source": "assistant_park_extractor",
+                "confidence": "high"
+              },
+              {
+                "name": "Rocky Mountain",
+                "parkCode": "romo",
+                "lat": 40.343,
+                "lon": -105.684,
+                "type": "nps",
+                "source": "assistant_park_extractor",
+                "confidence": "high"
+              },
+              {
+                "name": "Typically July highs sit around 72°F with lows near 45°F at lower eleva",
+                "source": "assistant_numbered",
+                "confidence": "medium"
+              },
+              {
+                "name": "No wilderness permit needed for day hikes — that's only for backcountry",
+                "source": "assistant_numbered",
+                "confidence": "medium"
+              },
+              {
+                "name": "Colorado",
+                "source": "assistant_numbered",
+                "confidence": "high",
+                "parkCode": "colm",
+                "lat": 39.05045016,
+                "lon": -108.6920709,
+                "type": "nps"
+              },
+              {
+                "name": "Stage 2 fire restrictions are active park-wide — no campfires, no charc",
+                "source": "assistant_numbered",
+                "confidence": "medium"
+              }
+            ],
+            "lastComparedOptions": [],
+            "recommendedOption": null,
+            "resolutionSource": "explicit_message",
+            "lowConfidenceClarification": null,
+            "lastUserOverrideAt": "2026-06-30T21:05:41.109Z"
+          }
+        }
+      }
+    },
+    {
+      "id": "9-olympic-ambiguous",
+      "label": "Olympic ambiguous name",
+      "turns": [
+        {
+          "question": "Plan 2 days in Olympic. I want beaches, rainforest, and easy hikes, but no snow driving.",
+          "answer": "Two days, easy trails only, beaches and rainforest — Olympic's coastal side is basically built for this and you'll never touch a foot of snow doing it. I'm skipping Hurricane Ridge entirely (high elevation, lingering snow possible even now, plus Hurricane Hill Road is closed Mon–Thu through July 2 anyway) — the coast and lowland rainforest give you the better payoff for zero driving risk.\n\n## At a glance\n- Base in Forks, WA — sits right between the Hoh Rainforest and the coast, ~1hr to either\n- Weather's mild and cool this week (mid-40s to mid-50s, overcast/broken clouds) — pack a light rain shell, this is rainforest after all\n- Rialto Beach has limited parking — get there before 9am or you'll be circling\n- Mora Road construction/closure starts July 8, so you're fine now but don't push the trip past that date\n- No park-wide timed entry, so trailheads can still fill by mid-morning in peak summer — early starts win\n- Entrance is $30/vehicle; no permit needed for day hikes (only backcountry overnight requires the wilderness permit)\n\n## Day 1 — Rainforest morning, coast sunset\n- **Hall of Mosses** — 0.8mi loop, ~50ft gain, ~45min, Easy. The iconic mossy-canopy walk, go right when the visitor center opens to get it quiet\n- **Spruce Nature Trail** — 1.2mi loop, Easy, ~45min — fewer crowds than Hall of Mosses, same rainforest magic\n- Lunch in Forks, then drive ~1hr to **Ruby Beach** for the afternoon/evening — flat beach walk, sea stacks, best light right before sunset\n- Stay in Forks\n\n## Day 2 — Rialto Beach + Lake Crescent on the way out\n- **Rialto Beach to Hole-in-the-Wall** — 3mi round trip, flat sand/cobble, Easy, ~2hrs. Check tide tables before you go — at high tide the route narrows\n- Grab coffee/lunch in Forks, then drive toward Port Angeles\n- **Madison Falls** — 0.2mi paved, wheelchair-accessible, Easy, 15min — quick waterfall stop near Lake Crescent, perfect low-effort closer before you head out",
+          "meta": {
+            "provider": "claude",
+            "model": "claude-sonnet-5",
+            "hasItinerary": true,
+            "hasLiveData": true,
+            "hasWebSearch": false,
+            "parkName": "Olympic",
+            "activeDestination": "Olympic",
+            "resolutionSource": "explicit_message"
+          }
+        }
+      ],
+      "evaluation": {
+        "pass": true,
+        "note": "Olympic NP inferred with beaches + rainforest"
+      },
+      "flags": [],
+      "context": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Plan 2 days in Olympic. I want beaches, rainforest, and easy hikes, but no snow driving."
+          },
+          {
+            "role": "assistant",
+            "content": "Two days, easy trails only, beaches and rainforest — Olympic's coastal side is basically built for this and you'll never touch a foot of snow doing it. I'm skipping Hurricane Ridge entirely (high elevation, lingering snow possible even now, plus Hurricane Hill Road is closed Mon–Thu through July 2 anyway) — the coast and lowland rainforest give you the better payoff for zero driving risk.\n\n## At a glance\n- Base in Forks, WA — sits right between the Hoh Rainforest and the coast, ~1hr to either\n- Weather's mild and cool this week (mid-40s to mid-50s, overcast/broken clouds) — pack a light rain shell, this is rainforest after all\n- Rialto Beach has limited parking — get there before 9am or you'll be circling\n- Mora Road construction/closure starts July 8, so you're fine now but don't push the trip past that date\n- No park-wide timed entry, so trailheads can still fill by mid-morning in peak summer — early starts win\n- Entrance is $30/vehicle; no permit needed for day hikes (only backcountry overnight requires the wilderness permit)\n\n## Day 1 — Rainforest morning, coast sunset\n- **Hall of Mosses** — 0.8mi loop, ~50ft gain, ~45min, Easy. The iconic mossy-canopy walk, go right when the visitor center opens to get it quiet\n- **Spruce Nature Trail** — 1.2mi loop, Easy, ~45min — fewer crowds than Hall of Mosses, same rainforest magic\n- Lunch in Forks, then drive ~1hr to **Ruby Beach** for the afternoon/evening — flat beach walk, sea stacks, best light right before sunset\n- Stay in Forks\n\n## Day 2 — Rialto Beach + Lake Crescent on the way out\n- **Rialto Beach to Hole-in-the-Wall** — 3mi round trip, flat sand/cobble, Easy, ~2hrs. Check tide tables before you go — at high tide the route narrows\n- Grab coffee/lunch in Forks, then drive toward Port Angeles\n- **Madison Falls** — 0.2mi paved, wheelchair-accessible, Easy, 15min — quick waterfall stop near Lake Crescent, perfect low-effort closer before you head out"
+          }
+        ],
+        "metadata": {
+          "activeTripContext": {
+            "primaryDestination": {
+              "name": "Olympic",
+              "parkCode": "olym",
+              "type": "nps",
+              "lat": 47.802,
+              "lon": -123.604,
+              "source": "user_message",
+              "confidence": "high",
+              "ordinal": null
+            },
+            "lockedPlanDestination": {
+              "name": "Olympic",
+              "parkCode": "olym",
+              "type": "nps",
+              "lat": 47.802,
+              "lon": -123.604,
+              "source": "user_message",
+              "confidence": "high",
+              "ordinal": null
+            },
+            "mentionedDestinations": [
+              {
+                "name": "Olympic",
+                "parkCode": "olym",
+                "type": "nps",
+                "lat": 47.802,
+                "lon": -123.604,
+                "source": "user_message",
+                "confidence": "high",
+                "ordinal": null
+              }
+            ],
+            "lastRecommendationList": [
+              {
+                "name": "Olympic",
+                "parkCode": "olym",
+                "lat": 47.802,
+                "lon": -123.604,
+                "type": "nps",
+                "source": "assistant_park_extractor",
+                "confidence": "high"
+              },
+              {
+                "name": "Grab coffee/lunch in Forks, then drive toward Port Angeles",
+                "source": "assistant_numbered",
+                "confidence": "medium"
+              },
+              {
+                "name": "Stay in Forks",
+                "source": "assistant_numbered",
+                "confidence": "medium"
+              },
+              {
+                "name": "Lunch in Forks, then drive ~1hr to **Ruby Beach** for the afternoon/eve",
+                "source": "assistant_numbered",
+                "confidence": "medium"
+              },
+              {
+                "name": "Entrance is $30/vehicle; no permit needed for day hikes (only backcount",
+                "source": "assistant_numbered",
+                "confidence": "medium"
+              },
+              {
+                "name": "No park-wide timed entry, so trailheads can still fill by mid-morning i",
+                "source": "assistant_numbered",
+                "confidence": "medium"
+              }
+            ],
+            "lastComparedOptions": [],
+            "recommendedOption": null,
+            "resolutionSource": "explicit_message",
+            "lowConfidenceClarification": null,
+            "lastUserOverrideAt": "2026-06-30T21:07:09.286Z"
+          }
+        }
+      }
+    },
+    {
+      "id": "12-grand-canyon-beginner",
+      "label": "Grand Canyon beginner / no below-rim",
+      "turns": [
+        {
+          "question": "Plan 2 days in Grand Canyon for beginners. No hikes below the rim, no exposed trails, no long walks, and no sunrise wakeups.",
+          "answer": "Easy, flat, no-drama Grand Canyon — that's the move for beginners, and the rim delivers the wow factor without ever going near an edge.\n\n## At a glance\n- Base in Grand Canyon Village on the South Rim — the North Rim just reopened after last year's fire but has zero lodging, water, or visitor center right now, so skip it entirely this trip.\n- There's no timed entry required this year, which means no crowd control — lots fill by mid-morning, so even without a sunrise wakeup, aim to be in the village area by 9am.\n- Highs near 90°F both days with humidity under 20% — flat rim walks still dehydrate you fast in that dry air, carry more water than feels necessary.\n- $35/vehicle entrance fee, no permits needed since you're staying rim-side (no backcountry).\n- The paved Rim Trail is your best friend — flat, mostly guardrailed, and the free shuttle covers any stretch you'd rather not walk.\n\n## Day 1 — South Rim Village + Hermit Road\n- Mather Point — short paved walk from the visitor center, the classic first \"whoa\" view, zero exposure.\n- Yavapai Geology Museum — glassed-in canyon view plus AC, perfect for the midday heat.\n- A flat stretch of the Rim Trail toward Hopi Point — pavement the whole way, no scrambling.\n- Free Hermit Road shuttle for the rest — Hopi Point, Powell Point, Pima Point are all drive-up/shuttle-up viewpoints, no hiking required.\n- Sunset (not sunrise) at Hopi Point — same dramatic light, no alarm clock.\n\n## Day 2 — Desert View Drive (East Rim)\n- Sleep in, then cruise Desert View Drive — every stop is a pull-off, no trail needed.\n- Grandview Point and Lipan Point — Lipan's one of the widest, most photogenic canyon views in the whole park, and it's a parking-lot view.\n- Desert View Watchtower — climb the indoor stairs for a 360° payoff, no exposed ledges.\n- Tusayan Museum — quick, easy stop on Ancestral Puebloan history.\n- Early dinner back in the village before evening heat and traffic peak.\n\nIf you want to stay overnight, Mather Campground (tent/RV, $30/night, book on Recreation.gov) is steps from the Rim Trail, or the village lodges put you right in walking distance of everything above — let me know which fits and I can fold it in.",
+          "meta": {
+            "provider": "claude",
+            "model": "claude-sonnet-5",
+            "hasItinerary": true,
+            "hasLiveData": true,
+            "hasWebSearch": false,
+            "parkName": "Grand Canyon",
+            "activeDestination": "Grand Canyon",
+            "resolutionSource": "explicit_message"
+          }
+        }
+      ],
+      "evaluation": {
+        "pass": true,
+        "note": "rim-safe beginner plan"
+      },
+      "flags": [],
+      "context": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Plan 2 days in Grand Canyon for beginners. No hikes below the rim, no exposed trails, no long walks, and no sunrise wakeups."
+          },
+          {
+            "role": "assistant",
+            "content": "Easy, flat, no-drama Grand Canyon — that's the move for beginners, and the rim delivers the wow factor without ever going near an edge.\n\n## At a glance\n- Base in Grand Canyon Village on the South Rim — the North Rim just reopened after last year's fire but has zero lodging, water, or visitor center right now, so skip it entirely this trip.\n- There's no timed entry required this year, which means no crowd control — lots fill by mid-morning, so even without a sunrise wakeup, aim to be in the village area by 9am.\n- Highs near 90°F both days with humidity under 20% — flat rim walks still dehydrate you fast in that dry air, carry more water than feels necessary.\n- $35/vehicle entrance fee, no permits needed since you're staying rim-side (no backcountry).\n- The paved Rim Trail is your best friend — flat, mostly guardrailed, and the free shuttle covers any stretch you'd rather not walk.\n\n## Day 1 — South Rim Village + Hermit Road\n- Mather Point — short paved walk from the visitor center, the classic first \"whoa\" view, zero exposure.\n- Yavapai Geology Museum — glassed-in canyon view plus AC, perfect for the midday heat.\n- A flat stretch of the Rim Trail toward Hopi Point — pavement the whole way, no scrambling.\n- Free Hermit Road shuttle for the rest — Hopi Point, Powell Point, Pima Point are all drive-up/shuttle-up viewpoints, no hiking required.\n- Sunset (not sunrise) at Hopi Point — same dramatic light, no alarm clock.\n\n## Day 2 — Desert View Drive (East Rim)\n- Sleep in, then cruise Desert View Drive — every stop is a pull-off, no trail needed.\n- Grandview Point and Lipan Point — Lipan's one of the widest, most photogenic canyon views in the whole park, and it's a parking-lot view.\n- Desert View Watchtower — climb the indoor stairs for a 360° payoff, no exposed ledges.\n- Tusayan Museum — quick, easy stop on Ancestral Puebloan history.\n- Early dinner back in the village before evening heat and traffic peak.\n\nIf you want to stay overnight, Mather Campground (tent/RV, $30/night, book on Recreation.gov) is steps from the Rim Trail, or the village lodges put you right in walking distance of everything above — let me know which fits and I can fold it in."
+          }
+        ],
+        "metadata": {
+          "activeTripContext": {
+            "primaryDestination": {
+              "name": "Grand Canyon",
+              "parkCode": "grca",
+              "type": "nps",
+              "lat": 36.106,
+              "lon": -112.113,
+              "source": "user_message",
+              "confidence": "high",
+              "ordinal": null
+            },
+            "lockedPlanDestination": {
+              "name": "Grand Canyon",
+              "parkCode": "grca",
+              "type": "nps",
+              "lat": 36.106,
+              "lon": -112.113,
+              "source": "user_message",
+              "confidence": "high",
+              "ordinal": null
+            },
+            "mentionedDestinations": [
+              {
+                "name": "Grand Canyon",
+                "parkCode": "grca",
+                "type": "nps",
+                "lat": 36.106,
+                "lon": -112.113,
+                "source": "user_message",
+                "confidence": "high",
+                "ordinal": null
+              }
+            ],
+            "lastRecommendationList": [
+              {
+                "name": "Grand Canyon",
+                "parkCode": "grca",
+                "lat": 36.106,
+                "lon": -112.113,
+                "type": "nps",
+                "source": "assistant_park_extractor",
+                "confidence": "high"
+              },
+              {
+                "name": "Early dinner back in the village before evening heat and traffic peak.",
+                "source": "assistant_numbered",
+                "confidence": "medium"
+              },
+              {
+                "name": "Tusayan Museum — quick, easy stop on Ancestral Puebloan history.",
+                "source": "assistant_numbered",
+                "confidence": "medium"
+              },
+              {
+                "name": "Desert View Watchtower — climb the indoor stairs for a 360° payoff, no",
+                "source": "assistant_numbered",
+                "confidence": "medium"
+              },
+              {
+                "name": "Grandview Point and Lipan Point — Lipan's one of the widest, most photo",
+                "source": "assistant_numbered",
+                "confidence": "medium"
+              },
+              {
+                "name": "Sleep in, then cruise Desert View Drive — every stop is a pull-off, no",
+                "source": "assistant_numbered",
+                "confidence": "medium"
+              }
+            ],
+            "lastComparedOptions": [],
+            "recommendedOption": null,
+            "resolutionSource": "explicit_message",
+            "lowConfidenceClarification": null,
+            "lastUserOverrideAt": "2026-06-30T21:07:51.855Z"
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,503 @@
+{
+  "responseId": "1ed62dd5-14e3-481d-b974-02c4e7641284",
+  "responseVersion": 2,
+  "content": "The second day is shorter.",
+  "contentHash": "a6003d2b4b6a601690d4bdd439219544feadb1ae22cc3adf22fdd408798418c8",
+  "itineraryData": {
+    "parkName": null,
+    "intro": "Two days",
+    "days": [
+      {
+        "id": "d1",
+        "dayNumber": 1,
+        "label": "A morning",
+        "stops": [
+          {
+            "id": "s1",
+            "order": 1,
+            "type": "viewpoint",
+            "name": "Recorded viewpoint",
+            "evidenceRef": "place",
+            "duration": 30,
+            "note": "",
+            "startTime": "",
+            "timeWindow": "Morning",
+            "canonicalPlaceName": "Recorded viewpoint",
+            "displayName": "Recorded viewpoint",
+            "canonicalPlaceId": "official-place",
+            "resolutionStatus": "resolved",
+            "location": {
+              "lat": 40,
+              "lon": -110,
+              "source": "resolved_metadata",
+              "authority": "official_owner",
+              "status": "resolved",
+              "sourceRef": "place",
+              "sourceEntity": "official-place"
+            },
+            "sourceReferences": [
+              {
+                "evidenceId": "place",
+                "url": null,
+                "observedAt": "2026-10-17T20:39:50.248Z"
+              }
+            ],
+            "operationalCaveats": []
+          }
+        ],
+        "dayStructure": {
+          "type": "rest",
+          "startPeriod": "morning",
+          "endPeriod": "evening",
+          "summary": "A short outing with a quiet afternoon.",
+          "blocks": [
+            {
+              "kind": "outing",
+              "periods": [
+                "morning"
+              ],
+              "label": "Morning outing",
+              "note": "Take time at the viewpoints.",
+              "stopIds": [
+                "s1"
+              ]
+            },
+            {
+              "kind": "downtime",
+              "periods": [
+                "midday",
+                "evening"
+              ],
+              "label": "Lunch and rest",
+              "note": "Lunch, a free afternoon and dinner.",
+              "stopIds": []
+            }
+          ]
+        },
+        "travelEdges": []
+      },
+      {
+        "id": "d2",
+        "dayNumber": 2,
+        "label": "A morning",
+        "stops": [
+          {
+            "id": "s2",
+            "order": 1,
+            "type": "viewpoint",
+            "name": "Recorded viewpoint",
+            "evidenceRef": "place",
+            "duration": 15,
+            "note": "",
+            "startTime": "",
+            "revisitReason": "Return for the traveler’s second photography session.",
+            "timeWindow": "Morning",
+            "canonicalPlaceName": "Recorded viewpoint",
+            "displayName": "Recorded viewpoint",
+            "canonicalPlaceId": "official-place",
+            "resolutionStatus": "resolved",
+            "location": {
+              "lat": 40,
+              "lon": -110,
+              "source": "resolved_metadata",
+              "authority": "official_owner",
+              "status": "resolved",
+              "sourceRef": "place",
+              "sourceEntity": "official-place"
+            },
+            "sourceReferences": [
+              {
+                "evidenceId": "place",
+                "url": null,
+                "observedAt": "2026-10-17T20:39:50.248Z"
+              }
+            ],
+            "operationalCaveats": []
+          }
+        ],
+        "dayStructure": {
+          "type": "rest",
+          "startPeriod": "morning",
+          "endPeriod": "evening",
+          "summary": "A short outing with a quiet afternoon.",
+          "blocks": [
+            {
+              "kind": "outing",
+              "periods": [
+                "morning"
+              ],
+              "label": "Morning outing",
+              "note": "Take time at the viewpoints.",
+              "stopIds": [
+                "s2"
+              ]
+            },
+            {
+              "kind": "downtime",
+              "periods": [
+                "midday",
+                "evening"
+              ],
+              "label": "Lunch and rest",
+              "note": "Lunch, a free afternoon and dinner.",
+              "stopIds": []
+            }
+          ]
+        },
+        "travelEdges": []
+      }
+    ],
+    "canonicalContract": "trailie.itinerary.v2",
+    "tripSchemaVersion": 1
+  },
+  "itineraryHash": "071ce8c7f8404241754111cc805dc6a83f5a3faba7e2e4317e652a9f82cf4894",
+  "planScore": null,
+  "corrections": [],
+  "feasibilityIssues": [],
+  "provider": "openai",
+  "model": "gpt-6-sol",
+  "reviewMeta": null,
+  "createdAt": "2026-10-17T20:39:50.268Z",
+  "rawStreamContentHash": null,
+  "presentation": {
+    "schemaVersion": 1,
+    "presentationKind": "itinerary",
+    "primaryArtifact": {
+      "kind": "itinerary",
+      "source": "canonicalPlan"
+    },
+    "refinement": {
+      "isRefinement": true,
+      "changes": [
+        "trip_updated"
+      ],
+      "changedDayNumbers": [
+        2
+      ]
+    },
+    "supportingModules": [],
+    "prosePolicy": "full",
+    "ending": {
+      "caveat": null,
+      "beforeYouGo": null,
+      "followups": []
+    }
+  },
+  "mutationStatus": "accepted",
+  "mutationIssues": [],
+  "correctionAttempted": false,
+  "correctionIssues": [],
+  "canonicalPlan": {
+    "type": "itinerary",
+    "version": 1,
+    "generatedAt": "2026-10-17T20:39:50.269Z",
+    "createdFrom": "ai",
+    "parkName": null,
+    "parkCode": null,
+    "responseId": "1ed62dd5-14e3-481d-b974-02c4e7641284",
+    "responseVersion": 2,
+    "contentHash": "a6003d2b4b6a601690d4bdd439219544feadb1ae22cc3adf22fdd408798418c8",
+    "itineraryHash": "071ce8c7f8404241754111cc805dc6a83f5a3faba7e2e4317e652a9f82cf4894",
+    "intro": "Two days",
+    "days": [
+      {
+        "id": "d1",
+        "dayNumber": 1,
+        "label": "A morning",
+        "stops": [
+          {
+            "id": "s1",
+            "order": 1,
+            "type": "viewpoint",
+            "name": "Recorded viewpoint",
+            "evidenceRef": "place",
+            "duration": 30,
+            "note": "",
+            "startTime": "",
+            "timeWindow": "Morning",
+            "canonicalPlaceName": "Recorded viewpoint",
+            "displayName": "Recorded viewpoint",
+            "canonicalPlaceId": "official-place",
+            "resolutionStatus": "resolved",
+            "location": {
+              "lat": 40,
+              "lon": -110,
+              "source": "resolved_metadata",
+              "authority": "official_owner",
+              "status": "resolved",
+              "sourceRef": "place",
+              "sourceEntity": "official-place"
+            },
+            "sourceReferences": [
+              {
+                "evidenceId": "place",
+                "url": null,
+                "observedAt": "2026-10-17T20:39:50.248Z"
+              }
+            ],
+            "operationalCaveats": []
+          }
+        ],
+        "dayStructure": {
+          "type": "rest",
+          "startPeriod": "morning",
+          "endPeriod": "evening",
+          "summary": "A short outing with a quiet afternoon.",
+          "blocks": [
+            {
+              "kind": "outing",
+              "periods": [
+                "morning"
+              ],
+              "label": "Morning outing",
+              "note": "Take time at the viewpoints.",
+              "stopIds": [
+                "s1"
+              ]
+            },
+            {
+              "kind": "downtime",
+              "periods": [
+                "midday",
+                "evening"
+              ],
+              "label": "Lunch and rest",
+              "note": "Lunch, a free afternoon and dinner.",
+              "stopIds": []
+            }
+          ]
+        },
+        "travelEdges": []
+      },
+      {
+        "id": "d2",
+        "dayNumber": 2,
+        "label": "A morning",
+        "stops": [
+          {
+            "id": "s2",
+            "order": 1,
+            "type": "viewpoint",
+            "name": "Recorded viewpoint",
+            "evidenceRef": "place",
+            "duration": 15,
+            "note": "",
+            "startTime": "",
+            "revisitReason": "Return for the traveler’s second photography session.",
+            "timeWindow": "Morning",
+            "canonicalPlaceName": "Recorded viewpoint",
+            "displayName": "Recorded viewpoint",
+            "canonicalPlaceId": "official-place",
+            "resolutionStatus": "resolved",
+            "location": {
+              "lat": 40,
+              "lon": -110,
+              "source": "resolved_metadata",
+              "authority": "official_owner",
+              "status": "resolved",
+              "sourceRef": "place",
+              "sourceEntity": "official-place"
+            },
+            "sourceReferences": [
+              {
+                "evidenceId": "place",
+                "url": null,
+                "observedAt": "2026-10-17T20:39:50.248Z"
+              }
+            ],
+            "operationalCaveats": []
+          }
+        ],
+        "dayStructure": {
+          "type": "rest",
+          "startPeriod": "morning",
+          "endPeriod": "evening",
+          "summary": "A short outing with a quiet afternoon.",
+          "blocks": [
+            {
+              "kind": "outing",
+              "periods": [
+                "morning"
+              ],
+              "label": "Morning outing",
+              "note": "Take time at the viewpoints.",
+              "stopIds": [
+                "s2"
+              ]
+            },
+            {
+              "kind": "downtime",
+              "periods": [
+                "midday",
+                "evening"
+              ],
+              "label": "Lunch and rest",
+              "note": "Lunch, a free afternoon and dinner.",
+              "stopIds": []
+            }
+          ]
+        },
+        "travelEdges": []
+      }
+    ],
+    "canonicalContract": "trailie.itinerary.v2",
+    "tripSchemaVersion": 1,
+    "feasibilityIssues": []
+  },
+  "itinerary": {
+    "parkName": null,
+    "intro": "Two days",
+    "days": [
+      {
+        "id": "d1",
+        "dayNumber": 1,
+        "label": "A morning",
+        "stops": [
+          {
+            "id": "s1",
+            "order": 1,
+            "type": "viewpoint",
+            "name": "Recorded viewpoint",
+            "evidenceRef": "place",
+            "duration": 30,
+            "note": "",
+            "startTime": "",
+            "timeWindow": "Morning",
+            "canonicalPlaceName": "Recorded viewpoint",
+            "displayName": "Recorded viewpoint",
+            "canonicalPlaceId": "official-place",
+            "resolutionStatus": "resolved",
+            "location": {
+              "lat": 40,
+              "lon": -110,
+              "source": "resolved_metadata",
+              "authority": "official_owner",
+              "status": "resolved",
+              "sourceRef": "place",
+              "sourceEntity": "official-place"
+            },
+            "sourceReferences": [
+              {
+                "evidenceId": "place",
+                "url": null,
+                "observedAt": "2026-10-17T20:39:50.248Z"
+              }
+            ],
+            "operationalCaveats": []
+          }
+        ],
+        "dayStructure": {
+          "type": "rest",
+          "startPeriod": "morning",
+          "endPeriod": "evening",
+          "summary": "A short outing with a quiet afternoon.",
+          "blocks": [
+            {
+              "kind": "outing",
+              "periods": [
+                "morning"
+              ],
+              "label": "Morning outing",
+              "note": "Take time at the viewpoints.",
+              "stopIds": [
+                "s1"
+              ]
+            },
+            {
+              "kind": "downtime",
+              "periods": [
+                "midday",
+                "evening"
+              ],
+              "label": "Lunch and rest",
+              "note": "Lunch, a free afternoon and dinner.",
+              "stopIds": []
+            }
+          ]
+        },
+        "travelEdges": []
+      },
+      {
+        "id": "d2",
+        "dayNumber": 2,
+        "label": "A morning",
+        "stops": [
+          {
+            "id": "s2",
+            "order": 1,
+            "type": "viewpoint",
+            "name": "Recorded viewpoint",
+            "evidenceRef": "place",
+            "duration": 15,
+            "note": "",
+            "startTime": "",
+            "revisitReason": "Return for the traveler’s second photography session.",
+            "timeWindow": "Morning",
+            "canonicalPlaceName": "Recorded viewpoint",
+            "displayName": "Recorded viewpoint",
+            "canonicalPlaceId": "official-place",
+            "resolutionStatus": "resolved",
+            "location": {
+              "lat": 40,
+              "lon": -110,
+              "source": "resolved_metadata",
+              "authority": "official_owner",
+              "status": "resolved",
+              "sourceRef": "place",
+              "sourceEntity": "official-place"
+            },
+            "sourceReferences": [
+              {
+                "evidenceId": "place",
+                "url": null,
+                "observedAt": "2026-10-17T20:39:50.248Z"
+              }
+            ],
+            "operationalCaveats": []
+          }
+        ],
+        "dayStructure": {
+          "type": "rest",
+          "startPeriod": "morning",
+          "endPeriod": "evening",
+          "summary": "A short outing with a quiet afternoon.",
+          "blocks": [
+            {
+              "kind": "outing",
+              "periods": [
+                "morning"
+              ],
+              "label": "Morning outing",
+              "note": "Take time at the viewpoints.",
+              "stopIds": [
+                "s2"
+              ]
+            },
+            {
+              "kind": "downtime",
+              "periods": [
+                "midday",
+                "evening"
+              ],
+              "label": "Lunch and rest",
+              "note": "Lunch, a free afternoon and dinner.",
+              "stopIds": []
+            }
+          ]
+        },
+        "travelEdges": []
+      }
+    ],
+    "canonicalContract": "trailie.itinerary.v2",
+    "tripSchemaVersion": 1
+  },
+  "hasItinerary": true,
+  "planningState": {},
+  "persisted": true,
+  "tripId": null,
+  "anonymousId": "guest_v2_d416ca93-2ff3-405e-8507-c0ac95f1eed5",
+  "sessionId": "guest_v2_d416ca93-2ff3-405e-8507-c0ac95f1eed5",
+  "messageCount": 2,
+  "remainingAllowance": 3,
+  "canSendMore": true
+}

@@ -118,10 +118,11 @@ def test_transform_itinerary_blocks():
         ]
     }
     days = transform_itinerary_days(itinerary)
-    assert len(days) == 1
-    assert len(days[0]["morning"]) >= 1
-    assert len(days[0]["afternoon"]) >= 1
-    assert len(days[0]["evening"]) >= 1
+    assert days == itinerary["days"]
+    assert days is not itinerary["days"]
+    assert "morning" not in days[0]
+    assert "buffer_minutes" not in days[0]
+
 
 
 def test_slim_plan_trip_structured_includes_session_and_planner_mode():

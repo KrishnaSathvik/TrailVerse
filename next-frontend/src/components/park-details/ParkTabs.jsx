@@ -56,12 +56,12 @@ const ParkTabs = ({
   }, [activeTab]);
 
   return (
-    <div className="sticky top-16 z-20 backdrop-blur-xl"
+    <div className="sticky top-16 z-20 "
       style={{
         backgroundColor: 'var(--surface)',
       }}
     >
-      <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 border-b"
+      <div className="public-shell border-b"
         style={{ borderColor: 'var(--border)' }}
       >
         {/* Scroll hint — visible when at start and tabs overflow */}

@@ -140,8 +140,8 @@ blogPostSchema.index({
   content: 'text'
 }, {
   weights: {
-    title: 10,
-    excerpt: 5,
+    title: 1,
+    excerpt: 1,
     content: 1
   }
 });

@@ -1,31 +1,15 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
+import { getSharedTrip } from '@/lib/sharedTrips';
 import SharedTripPageClient from '@/components/shared-trip/SharedTripPageClient';
 import { privatePageRobots } from '@/lib/seo';
 import {
   getSampleItineraryByShareId,
+  getSampleItineraryHref,
   softenSampleConversation,
 } from '@/data/sampleItineraries';
 
 /** Shared chats update as the owner keeps planning — always fetch live trip data. */
 export const dynamic = 'force-dynamic';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ||
-  (process.env.NODE_ENV === 'production'
-    ? 'https://trailverse.onrender.com/api'
-    : 'http://localhost:5001/api');
-
-async function getSharedTrip(shareId) {
-  try {
-    const res = await fetch(`${API_URL}/trips/shared/${shareId}`, {
-      cache: 'no-store',
-    });
-    if (!res.ok) return null;
-    const json = await res.json();
-    return json.success ? json.data : null;
-  } catch {
-    return null;
-  }
-}
 
 function prepareSharedTrip(trip, shareId) {
   const sample = getSampleItineraryByShareId(shareId);
@@ -39,7 +23,10 @@ function prepareSharedTrip(trip, shareId) {
 export async function generateMetadata({ params }) {
   const { shareId } = await params;
   const trip = await getSharedTrip(shareId);
-  if (!trip) return { title: '404 - Page Not Found | TrailVerse' };
+  if (!trip) {
+    const sample = getSampleItineraryByShareId(shareId);
+    return { title: sample ? `${sample.title} | TrailVerse` : '404 - Page Not Found | TrailVerse', robots: privatePageRobots };
+  }
 
   const title = trip.title || `${trip.parkName || 'National Park'} Trip Plan`;
 
@@ -53,7 +40,7 @@ export async function generateMetadata({ params }) {
     description: `Shared ${trip.parkName || 'national park'} trip plan created with Trailie on TrailVerse.`,
     openGraph: {
       title,
-      description: `A ${trip.parkName || 'national park'} trip plan made with TrailVerse AI`,
+      description: `A ${trip.parkName || 'national park'} trip planned with Trailie`,
       url: `https://www.nationalparksexplorerusa.com/plan-ai/shared/${shareId}`,
       siteName: 'TrailVerse',
       type: 'article',
@@ -62,7 +49,7 @@ export async function generateMetadata({ params }) {
     twitter: {
       card: 'summary_large_image',
       title,
-      description: `A ${trip.parkName || 'national park'} trip plan made with TrailVerse AI`,
+      description: `A ${trip.parkName || 'national park'} trip planned with Trailie`,
       images: [ogImage],
     },
     robots: privatePageRobots,
@@ -72,7 +59,11 @@ export async function generateMetadata({ params }) {
 export default async function SharedTripPage({ params }) {
   const { shareId } = await params;
   const trip = await getSharedTrip(shareId);
-  if (!trip) notFound();
+  if (!trip) {
+    const sample = getSampleItineraryByShareId(shareId);
+    if (sample) redirect(getSampleItineraryHref({ ...sample, shareId: null }));
+    notFound();
+  }
 
   return <SharedTripPageClient trip={prepareSharedTrip(trip, shareId)} shareId={shareId} />;
 }

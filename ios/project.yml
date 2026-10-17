@@ -28,6 +28,7 @@ targets:
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: TrailVerse uses your location to show nearby parks and estimate drive times during your trip.
         GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsLocalNetworking: YES
         CURRENT_PROJECT_VERSION: 1
         MARKETING_VERSION: 0.1.0
     entitlements:

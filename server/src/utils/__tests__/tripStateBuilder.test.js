@@ -107,7 +107,8 @@ describe('tripState precedence', () => {
 
     expect(state.destination.parkCode).toBe('yell');
     expect(state.travelers.count).toBe(3);
-    expect(state.lodging.type).toBe('lodge');
+    expect(state.lodging.type).toBe('lodging');
+    expect(state.lodging.stayPreference).toBe('lodge');
     expect(state.preferences.fitness).toBe('moderate');
   });
 

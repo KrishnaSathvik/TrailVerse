@@ -6,14 +6,19 @@
   "scripts": {
     "start": "node --max-old-space-size=1536 server.js",
     "dev": "nodemon --legacy-watch --watch server.js --watch src --ext js,mjs,cjs,json server.js",
+    "dev:mongo": "bash scripts/dev-mongo.sh",
     "seed": "node scripts/seed.js",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
+    "test": "npm run test:non-network",
+    "test:non-network": "node scripts/run-provider-disabled-tests.js",
+    "test:repair-offline": "node scripts/test-trailie-repair-offline.js",
+    "test:eval-isolated": "TRAILIE_REQUIRE_EVAL_MONGO=1 node scripts/run-provider-disabled-tests.js src/eval/stage14_7/__tests__/realSubprocessLaunch.test.js",
+    "test:live": "node scripts/run-live-tests.js",
+    "test:watch": "node scripts/run-provider-disabled-tests.js --watch",
+    "test:coverage": "node scripts/run-provider-disabled-tests.js --coverage",
     "test:integration": "jest --testPathPattern=integration",
-    "test:web-search": "jest src/services/__tests__/webSearchClassifier.test.js src/services/__tests__/factsWebSearchPolicy.test.js src/services/__tests__/factsWebSearch.live.test.js",
-    "test:web-search:live": "node scripts/test-web-search-live.js",
-    "test:web-search:full": "node scripts/test-web-search-live.js --full",
+    "test:web-search": "node scripts/run-provider-disabled-tests.js src/services/__tests__/webSearchClassifier.test.js src/services/__tests__/factsWebSearchPolicy.test.js",
+    "test:web-search:live": "node scripts/run-live-tests.js src/services/__tests__/factsWebSearch.live.test.js",
+    "test:web-search:full": "node scripts/run-live-tests.js",
     "verify:trailie-live": "node scripts/verify-trailie-live-responses.js --save-report",
     "verify:plan-ai-flows": "node scripts/test-plan-ai-flows.js",
     "test:email": "node test-email-system.js",
@@ -25,42 +30,48 @@
     "bump:blog-views": "node scripts/bump-blog-views.js",
     "bump:blog-views:apply": "node scripts/bump-blog-views.js --apply",
     "bump:blog-recent": "node scripts/bump-recent-blog-views.js",
-    "bump:blog-recent:apply": "node scripts/bump-recent-blog-views.js --apply"
+    "bump:blog-recent:apply": "node scripts/bump-recent-blog-views.js --apply",
+    "test:evidence-persistence": "TRAILIE_TRANSACTIONAL_MONGO=1 jest src/services/__tests__/evidenceStorePersistenceTopology.test.js",
+    "indexes:inventory": "node scripts/provision-application-indexes.js --inventory",
+    "indexes:check": "node scripts/provision-application-indexes.js --check",
+    "indexes:apply": "node scripts/provision-application-indexes.js --apply",
+    "verify:release-transport": "node scripts/verify-release-transport.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.65.0",
-    "@babel/core": "^7.28.4",
+    "@babel/core": "^7.29.7",
     "@babel/preset-react": "^7.27.1",
     "@babel/register": "^7.28.3",
     "@react-email/components": "^0.5.7",
     "@react-email/render": "^1.4.0",
-    "axios": "^1.16.0",
+    "axios": "^1.20.0",
     "bcryptjs": "^2.4.3",
     "cheerio": "^1.2.0",
-    "compression": "^1.8.1",
+    "compression": "^1.8.2",
     "cors": "^2.8.5",
-    "csv-parse": "^6.2.1",
+    "csv-parse": "^7.0.2",
     "dotenv": "^16.3.1",
-    "express": "^4.18.2",
+    "express": "^4.22.3",
     "express-rate-limit": "^7.5.1",
     "express-validator": "^7.2.1",
-    "handlebars": "^4.7.8",
+    "handlebars": "^4.7.10",
     "helmet": "^7.1.0",
-    "jsonwebtoken": "^9.0.2",
+    "jsonwebtoken": "^9.0.3",
     "mongodb": "^6.10.0",
-    "mongoose": "^7.6.0",
-    "morgan": "^1.10.0",
-    "multer": "^2.0.2",
+    "mongoose": "^7.8.12",
+    "morgan": "^1.12.1",
+    "multer": "^2.4.0",
     "node-cache": "^5.1.2",
-    "nodemailer": "^7.0.9",
-    "openai": "^4.24.1",
+    "node-fetch": "2.7.0",
+    "nodemailer": "10.1.1",
+    "openai": "7.4.0",
     "resend": "^6.1.2",
-    "sharp": "^0.34.4",
-    "socket.io": "^4.8.1",
+    "sharp": "^0.35.5",
+    "socket.io": "^4.8.3",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "unzipper": "^0.12.3",
-    "uuid": "^8.3.2"
+    "uuid": "11.1.1"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
@@ -71,9 +82,15 @@
     "validator": "^13.15.15"
   },
   "overrides": {
+    "@istanbuljs/load-nyc-config": {
+      "js-yaml": "4.3.2"
+    },
     "validator": "^13.15.15",
     "express-validator": {
       "validator": "^13.15.15"
     }
+  },
+  "engines": {
+    "node": "24.x"
   }
 }

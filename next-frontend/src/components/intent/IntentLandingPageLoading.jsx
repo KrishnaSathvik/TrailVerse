@@ -7,7 +7,7 @@ export default function IntentLandingPageLoading() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
-      <main className="max-w-[100rem] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-12 lg:py-16">
+      <main className="public-shell py-12 lg:py-16">
         <div
           className="mb-10 rounded-[2rem] border px-5 py-8 sm:px-8 animate-pulse"
           style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}

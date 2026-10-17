@@ -7,10 +7,15 @@ services:
     region: oregon
     plan: standard
     rootDir: server
-    buildCommand: npm install
+    buildCommand: npm ci
     startCommand: npm start
     envVars:
+      - key: NODE_VERSION
+        value: "24"
       - key: NODE_ENV
         value: production
       - key: NODE_OPTIONS
         value: --max-old-space-size=1536
+      # Match the secret configured on trailverse-mcp. Never commit the value.
+      - key: MCP_BYPASS_KEY
+        sync: false

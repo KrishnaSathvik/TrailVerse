@@ -2,13 +2,13 @@ import React from 'react';
 import { Globe } from '@components/icons';
 import TrailieAvatar from '@components/plan-ai/TrailieAvatar';
 
-const TypingIndicator = ({ text = 'AI is thinking...', sources = [], inlineAvatarLayout = false }) => {
+const TypingIndicator = ({ text = 'Working on that…', sources = [], inlineAvatarLayout = false }) => {
   const isSearching = sources?.includes('web');
 
   const brandHeader = (
     <span
-      className="text-[11px] font-semibold uppercase tracking-[0.2em]"
-      style={{ color: 'var(--accent-green)' }}
+      className="text-sm font-semibold leading-none"
+      style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}
     >
       Trailie
     </span>
@@ -44,57 +44,23 @@ const TypingIndicator = ({ text = 'AI is thinking...', sources = [], inlineAvata
     </div>
   );
 
-  const sourceBadges =
-    sources && sources.length > 0 ? (
-      <div className="mt-2 flex items-center gap-1.5">
-        {sources.includes('nps') && (
-          <span
-            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium"
-            style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', color: 'var(--accent-green)' }}
-          >
-            NPS Data
-          </span>
-        )}
-        {sources.includes('weather') && (
-          <span
-            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium"
-            style={{ backgroundColor: 'rgba(14, 165, 233, 0.1)', color: 'var(--accent-blue, #0ea5e9)' }}
-          >
-            Weather
-          </span>
-        )}
-        {sources.includes('web') && (
-          <span
-            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium"
-            style={{ backgroundColor: 'rgba(168, 85, 247, 0.1)', color: '#a855f7' }}
-          >
-            Web Search
-          </span>
-        )}
-      </div>
-    ) : null;
+  // Phase 6A — the NPS Data / Weather / Web Search source badges are removed
+  // deliberately: evidence infrastructure (which providers are being
+  // consulted) must stay invisible during generation, not just unnamed.
+  // `sources` itself is still accepted (it still drives the searching-globe
+  // vs. bouncing-dots icon above) — only the labeled badge row is gone.
 
   if (inlineAvatarLayout) {
     return (
-      <div className="group w-full" role="status" aria-live="polite" aria-label={text}>
-        <div
-          className="chat-message-bubble chat-message-bubble--assistant chat-message-bubble--inline w-full rounded-[24px] px-4 py-3.5 sm:px-5 sm:py-4"
-          style={{
-            backgroundColor: 'var(--surface)',
-            borderWidth: '1px',
-            borderColor: 'var(--border)',
-            boxShadow: '0 18px 38px rgba(15, 23, 42, 0.06)',
-          }}
-        >
-          <div
-            className="mb-3 flex items-center gap-2.5 border-b pb-2.5 sm:gap-3"
-            style={{ borderColor: 'var(--border)' }}
-          >
+      <div className="trailie-status-row group w-full max-w-[var(--public-rich-width)] py-1" role="status" aria-live="polite" aria-label={text}>
+        <div className="flex items-start gap-3">
+          <div className="pt-0.5">
             <TrailieAvatar className="!h-8 !w-8 shrink-0 sm:!h-9 sm:!w-9" />
-            {brandHeader}
           </div>
-          {typingBody}
-          {sourceBadges}
+          <div className="min-w-0 pt-0.5">
+            {brandHeader}
+            <div className="mt-2">{typingBody}</div>
+          </div>
         </div>
       </div>
     );
@@ -114,7 +80,6 @@ const TypingIndicator = ({ text = 'AI is thinking...', sources = [], inlineAvata
           }}
         >
           {typingBody}
-          {sourceBadges}
         </div>
       </div>
     </div>

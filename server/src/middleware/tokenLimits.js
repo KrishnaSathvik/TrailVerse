@@ -6,6 +6,19 @@ const DAILY_TOKEN_LIMITS = {
   admin: 50000   // 50,000 tokens per day for admin users
 };
 
+// Explicit local demo allowance; never changes deployed product policy.
+function dailyTokenLimitFor(user, env = process.env) {
+  const standard = DAILY_TOKEN_LIMITS[user?.role] || DAILY_TOKEN_LIMITS.user;
+  if (env.NODE_ENV !== 'development' || !env.TRAILIE_DAILY_TOKEN_LIMIT_EMAIL ||
+      user?.email?.toLowerCase() !== env.TRAILIE_DAILY_TOKEN_LIMIT_EMAIL.toLowerCase()) return standard;
+  try {
+    const target = new URL(env.MONGODB_URI);
+    if (!['localhost', '127.0.0.1', '[::1]'].includes(target.hostname)) return standard;
+  } catch { return standard; }
+  const override = Number(env.TRAILIE_DAILY_TOKEN_LIMIT);
+  return Number.isSafeInteger(override) && override > 0 ? override : standard;
+}
+
 /**
  * Middleware to check if user has exceeded their daily token limit
  */
@@ -17,7 +30,7 @@ exports.checkTokenLimit = async (req, res, next) => {
     }
 
     // Get user's token limit based on role
-    const dailyLimit = DAILY_TOKEN_LIMITS[req.user?.role] || DAILY_TOKEN_LIMITS.user;
+    const dailyLimit = dailyTokenLimitFor(req.user);
 
     // Check if user has exceeded their daily limit
     if (req.user && await req.user.hasExceededTokenLimit(dailyLimit)) {
@@ -81,7 +94,7 @@ exports.trackTokenUsage = async (req, res, next) => {
 exports.getTokenUsage = async (req, res) => {
   try {
     const user = req.user;
-    const dailyLimit = DAILY_TOKEN_LIMITS[user.role] || DAILY_TOKEN_LIMITS.user;
+    const dailyLimit = dailyTokenLimitFor(user);
     
     const remainingTokens = await user.getRemainingDailyTokens(dailyLimit);
     
@@ -109,5 +122,6 @@ module.exports = {
   checkTokenLimit: exports.checkTokenLimit,
   trackTokenUsage: exports.trackTokenUsage,
   getTokenUsage: exports.getTokenUsage,
-  DAILY_TOKEN_LIMITS
+  DAILY_TOKEN_LIMITS,
+  dailyTokenLimitFor
 };

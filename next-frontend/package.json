@@ -3,13 +3,16 @@
   "version": "0.4.1",
   "private": true,
   "scripts": {
+    "prepare:maplibre": "node scripts/prepare-maplibre-worker.mjs",
+    "predev": "npm run prepare:maplibre",
     "dev": "next dev",
-    "prebuild": "node scripts/generate-park-slugs.mjs",
-    "build": "next build",
+    "prebuild": "npm run prepare:maplibre && node scripts/generate-park-slugs.mjs",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run --coverage",
     "test:watch": "vitest",
+    "test:eval-isolated": "TRAILIE_REQUIRE_EVAL_MONGO=1 vitest run src/__tests__/integration/stage14_7f*.test.js src/__tests__/integration/stage14_7g*.test.js src/__tests__/integration/stage14_7p*.test.js src/__tests__/integration/stage14_7r*.test.js",
     "test:e2e": "npx playwright test",
     "test:e2e:headed": "npx playwright test --headed",
     "lighthouse": "lhci autorun",
@@ -41,10 +44,10 @@
     "@types/node": "^24.3.0",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
-    "axios": "^1.14.0",
+    "axios": "^1.20.0",
     "idb-keyval": "^6.2.2",
-    "maplibre-gl": "^5.24.0",
-    "next": "16.2.1",
+    "maplibre-gl": "^6.4.1",
+    "next": "16.3.8",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-dropzone": "^15.0.0",
@@ -62,13 +65,32 @@
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
     "@types/react": "19.2.14",
-    "@vitest/coverage-v8": "^3.2.4",
+    "@vitest/coverage-v8": "4.1.11",
     "esbuild": "^0.28.0",
     "eslint": "^9",
-    "eslint-config-next": "16.2.1",
+    "eslint-config-next": "16.3.8",
     "jsdom": "^25.0.1",
     "serwist": "^9.5.7",
     "tailwindcss": "^4",
-    "vitest": "^3.2.4"
+    "vite-node": "3.2.4",
+    "vitest": "4.1.11"
+  },
+  "engines": {
+    "node": "24.x"
+  },
+  "overrides": {
+    "@tailwindcss/typography": {
+      "postcss-selector-parser": "7.1.6"
+    },
+    "@serwist/turbopack": {
+      "browserslist": "4.29.3"
+    },
+    "@lhci/cli": {
+      "uuid": "11.1.1"
+    },
+    "get-uri": {
+      "basic-ftp": "6.2.3"
+    },
+    "tmp": "0.2.7"
   }
 }

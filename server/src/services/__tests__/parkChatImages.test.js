@@ -1,15 +1,17 @@
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../../../.env') });
 
-const npsService = require('../npsService');
+const { getNpsService } = require('../npsService');
 
 const HAS_NPS_KEY = !!process.env.NPS_API_KEY;
+// Non-network suite (deny_live) must not hit live NPS HTTP.
+const ALLOW_LIVE_NPS = HAS_NPS_KEY && process.env.TRAILIE_TEST_PROVIDER_MODE !== 'deny_live';
 
 /** Mirror collectParkImagesForChat in ai.js */
 async function collectParkImagesForChat(parkCode, need) {
   const [gallery, parkRecord] = await Promise.all([
-    npsService.getParkGalleryPhotos(parkCode),
-    npsService.getParkImages(parkCode),
+    getNpsService().getParkGalleryPhotos(parkCode),
+    getNpsService().getParkImages(parkCode),
   ]);
   const seen = new Set();
   const pool = [];
@@ -24,10 +26,10 @@ async function collectParkImagesForChat(parkCode, need) {
   return pool.slice(0, need);
 }
 
-(HAS_NPS_KEY ? describe : describe.skip)('park chat images (Photos tab parity)', () => {
+(ALLOW_LIVE_NPS ? describe : describe.skip)('park chat images (Photos tab parity)', () => {
   test('Grand Canyon park record has <4 but gallery fills 4 for chat', async () => {
-    const record = await npsService.getParkImages('grca');
-    const gallery = await npsService.getParkGalleryPhotos('grca');
+    const record = await getNpsService().getParkImages('grca');
+    const gallery = await getNpsService().getParkGalleryPhotos('grca');
     expect(record.length).toBeLessThan(4);
     expect(gallery.length).toBeGreaterThanOrEqual(4);
 

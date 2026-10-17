@@ -1,0 +1,4696 @@
+{
+  "provenance": {
+    "plans": "/tmp/trailie-core-zion-one-turn.jsonl",
+    "anchor": "/tmp/trailie-zion-public-evidence.json",
+    "note": "Captured model outputs and provider record; no live fetch. Other catalogue entries in tests are synthetic.",
+    "evidence": "Offline normalization of the saved activities and visitor_services provider payload; other live topics were not captured. Evidence IDs are fixture-local."
+  },
+  "plans": [
+    {
+      "intro": "Four days give you room to see Zion Canyon, the Zion–Mt. Carmel Highway, and the separate Kolob Canyons area without rushing. I’ve kept walks flexible rather than suggesting trails whose distances or current access I can’t verify, and left time for the canyon’s named views on your final day.",
+      "days": [
+        {
+          "id": "zion-1",
+          "dayNumber": 1,
+          "label": "Zion Canyon history and first views",
+          "stops": [
+            {
+              "id": "z1-visitor",
+              "order": 1,
+              "type": "visitor_center",
+              "name": "Zion Canyon Visitor Center",
+              "note": "Start at the South Entrance area and use the outdoor exhibits to get oriented; ask rangers about current canyon access if they are available.",
+              "duration": 45,
+              "timeWindow": "Morning",
+              "why": "A straightforward first stop before settling into the canyon’s scenery."
+            },
+            {
+              "id": "z1-museum",
+              "order": 2,
+              "type": "museum",
+              "name": "Human History Museum",
+              "note": "Explore the exhibits on Zion’s people and places and allow time for the 22-minute orientation film if it is showing.",
+              "duration": 75,
+              "timeWindow": "Late morning to early afternoon",
+              "why": "It gives you the story behind the landscapes you’ll see over the next few days."
+            }
+          ],
+          "travelEdges": [
+            {
+              "sourceStopId": "z1-visitor",
+              "targetStopId": "z1-museum",
+              "relationship": "transfer"
+            }
+          ]
+        },
+        {
+          "id": "zion-2",
+          "dayNumber": 2,
+          "label": "Zion–Mt. Carmel Highway scenery",
+          "stops": [
+            {
+              "id": "z2-junction",
+              "order": 1,
+              "type": "landmark",
+              "name": "Canyon Junction",
+              "note": "Begin the highway outing here; check the day’s road status before continuing toward the East Entrance.",
+              "duration": 20,
+              "timeWindow": "Morning",
+              "why": "It marks the start of a different side of Zion from yesterday’s museum visit."
+            },
+            {
+              "id": "z2-highway",
+              "order": 2,
+              "type": "scenic_drive",
+              "name": "Zion-Mt. Carmel Highway",
+              "note": "Take the highway toward the East Entrance at an unhurried pace; stop only where parking is designated. Treat the driving time as flexible rather than counting on a fixed schedule.",
+              "duration": 150,
+              "timeWindow": "Late morning to afternoon",
+              "why": "This is the day’s main landscape experience, distinct from exploring Zion Canyon on foot."
+            },
+            {
+              "id": "z2-east",
+              "order": 3,
+              "type": "landmark",
+              "name": "East Entrance",
+              "note": "Use the eastern end of the highway as your turnaround point if road conditions and your plans allow; confirm the route before setting out.",
+              "duration": 20,
+              "timeWindow": "Afternoon",
+              "why": "It gives the scenic outing a clear endpoint without inventing an unverified hike or overlook."
+            }
+          ],
+          "activityGroups": [
+            {
+              "id": "highway-outing",
+              "stopIds": [
+                "z2-junction",
+                "z2-highway",
+                "z2-east"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "zion-3",
+          "dayNumber": 3,
+          "label": "Kolob Canyons landscapes",
+          "stops": [
+            {
+              "id": "z3-kolob",
+              "order": 1,
+              "type": "landmark",
+              "name": "Kolob Canyons",
+              "note": "Make this separate area of Zion your main outing. Take time with the scenery where access is permitted; ask locally about suitable places to stop rather than assuming a particular route or trail is available.",
+              "duration": 120,
+              "timeWindow": "Morning to early afternoon",
+              "why": "It puts a different part of the park at the center of the day instead of repeating the main canyon."
+            },
+            {
+              "id": "z3-center",
+              "order": 2,
+              "type": "visitor_center",
+              "name": "Kolob Canyons Visitor Center",
+              "note": "Explore the exhibits on local geology, vegetation, and wildlife and ask rangers about conditions. The center has a listed daily closure from noon to 1 p.m., so plan this visit outside that hour.",
+              "duration": 45,
+              "timeWindow": "Afternoon, after 1 PM",
+              "why": "The exhibits add context to the Kolob landscape while giving you a natural pause before leaving the area."
+            }
+          ],
+          "travelEdges": [
+            {
+              "sourceStopId": "z3-kolob",
+              "targetStopId": "z3-center",
+              "relationship": "transfer"
+            }
+          ]
+        },
+        {
+          "id": "zion-4",
+          "dayNumber": 4,
+          "label": "Towers of the Virgin and Bridge Mountain views",
+          "stops": [
+            {
+              "id": "z4-towers",
+              "order": 1,
+              "type": "photography",
+              "name": "Towers of the Virgin",
+              "note": "Spend an unhurried morning with the view outside the Human History Museum; adjust how long you stay to the light and weather.",
+              "duration": 60,
+              "timeWindow": "Morning",
+              "why": "A slower look at one of the named canyon views makes a fitting last-day focus."
+            },
+            {
+              "id": "z4-bridge",
+              "order": 2,
+              "type": "photography",
+              "name": "Bridge Mountain",
+              "note": "From outside the same museum, turn your attention to Bridge Mountain and the changing light across the canyon.",
+              "duration": 45,
+              "timeWindow": "Late morning",
+              "why": "It gives the photo session a second distinct subject without requiring an unverified trail."
+            },
+            {
+              "id": "z4-exhibits",
+              "order": 3,
+              "type": "museum",
+              "name": "Human History Museum",
+              "note": "If open, take another look at the rotating exhibits or regional artwork you skipped on the first day.",
+              "duration": 45,
+              "timeWindow": "Early afternoon",
+              "why": "An easy indoor finish after a scenery-focused morning."
+            }
+          ],
+          "activityGroups": [
+            {
+              "id": "museum-exterior-views",
+              "stopIds": [
+                "z4-towers",
+                "z4-bridge"
+              ]
+            }
+          ],
+          "travelEdges": [
+            {
+              "sourceStopId": "z4-bridge",
+              "targetStopId": "z4-exhibits",
+              "relationship": "transfer"
+            }
+          ]
+        }
+      ],
+      "narrativeSections": [
+        {
+          "placement": "after_plan",
+          "markdown": "Your dates aren’t set yet. Before committing to the highway day, check road conditions: NPS reports possible Zion–Mt. Carmel Tunnel closures overnight between September 21 and 30, from 9 p.m. to 6 a.m. when active. The fourth day is deliberately gentle; the named views are outside the same museum you visit on day one, rather than a claim that there’s another verified trail or scenic route to fill it."
+        }
+      ]
+    },
+    {
+      "intro": "Four days give you room for Zion Canyon, the Kolob Canyons area, and the east-side scenery without turning every day into a string of hikes. I’ve kept the longer outings flexible because you haven’t set dates or a hiking pace.",
+      "days": [
+        {
+          "id": "zion-day-1",
+          "dayNumber": 1,
+          "label": "Zion Canyon introduction and Pa'rus Trail",
+          "stops": [
+            {
+              "id": "d1-vc",
+              "order": 1,
+              "type": "visitor_center",
+              "name": "Zion Canyon Visitor Center",
+              "duration": 35,
+              "timeWindow": "Morning",
+              "note": "Start near the South Entrance and ask rangers about trail access and the best way to reach your canyon stops that day.",
+              "why": "A quick orientation makes the first canyon day easier to navigate."
+            },
+            {
+              "id": "d1-parus",
+              "order": 2,
+              "type": "trail",
+              "name": "Pa'rus Trail",
+              "duration": 90,
+              "timeWindow": "Late morning",
+              "note": "Make this your first outdoor walk; turn around when you're ready rather than committing to a particular distance.",
+              "why": "It gives the trip an unhurried start outdoors."
+            },
+            {
+              "id": "d1-museum",
+              "order": 3,
+              "type": "museum",
+              "name": "Human History Museum",
+              "duration": 75,
+              "timeWindow": "Afternoon",
+              "note": "Explore the exhibits and, if it's showing, the 22-minute orientation film; step outside for the views described by the park.",
+              "why": "The human history and canyon scenery offer a different experience after your walk."
+            }
+          ],
+          "travelEdges": [
+            {
+              "sourceStopId": "d1-vc",
+              "targetStopId": "d1-parus",
+              "relationship": "transfer"
+            },
+            {
+              "sourceStopId": "d1-parus",
+              "targetStopId": "d1-museum",
+              "relationship": "transfer"
+            }
+          ]
+        },
+        {
+          "id": "zion-day-2",
+          "dayNumber": 2,
+          "label": "Upper Emerald Pools Trail and canyon landmarks",
+          "stops": [
+            {
+              "id": "d2-emerald",
+              "order": 1,
+              "type": "trail",
+              "name": "Upper Emerald Pools Trail",
+              "duration": 150,
+              "timeWindow": "Morning",
+              "note": "Set aside a generous morning for the outing; confirm the trail's access and conditions before setting off.",
+              "why": "This is the day's main hike, with room to take it at your own pace."
+            },
+            {
+              "id": "d2-court",
+              "order": 2,
+              "type": "viewpoint",
+              "name": "Court of the Patriarchs",
+              "duration": 45,
+              "timeWindow": "Afternoon",
+              "note": "Spend time with the canyon scenery here rather than trying to squeeze in another long hike.",
+              "why": "It gives the afternoon a distinct scenic focus after the trail."
+            }
+          ],
+          "travelEdges": [
+            {
+              "sourceStopId": "d2-emerald",
+              "targetStopId": "d2-court",
+              "relationship": "transfer"
+            }
+          ]
+        },
+        {
+          "id": "zion-day-3",
+          "dayNumber": 3,
+          "label": "Kolob Canyons scenery and Zion's night sky",
+          "stops": [
+            {
+              "id": "d3-kolob-vc",
+              "order": 1,
+              "type": "visitor_center",
+              "name": "Kolob Canyons Visitor Center",
+              "duration": 40,
+              "timeWindow": "Morning, outside 12–1 PM",
+              "note": "Use the Kolob Canyons entry point to ask rangers where you can best enjoy the landscape that day; the center is listed as closed daily from noon to 1 PM.",
+              "why": "Kolob is a separate part of the park, so local orientation is especially useful here."
+            },
+            {
+              "id": "d3-kolob",
+              "order": 2,
+              "type": "landmark",
+              "name": "Kolob Canyons",
+              "duration": 120,
+              "timeWindow": "Late morning to afternoon",
+              "note": "Give the area's scenery time rather than treating the visitor center as the destination; choose accessible places to stop based on the ranger's advice.",
+              "why": "This makes the day about seeing a different Zion landscape, not just making a trip to an information desk."
+            },
+            {
+              "id": "d3-stars",
+              "order": 3,
+              "type": "photography",
+              "name": "Stargazing in Zion",
+              "duration": 60,
+              "timeWindow": "After dark",
+              "note": "If skies and access allow, spend an hour looking at the night sky from a place where public access is permitted; confirm a suitable location before evening.",
+              "why": "A night-sky outing gives this more spacious day a second experience quite unlike the canyon visits."
+            }
+          ],
+          "travelEdges": [
+            {
+              "sourceStopId": "d3-kolob-vc",
+              "targetStopId": "d3-kolob",
+              "relationship": "transfer"
+            },
+            {
+              "sourceStopId": "d3-kolob",
+              "targetStopId": "d3-stars",
+              "relationship": "transfer"
+            }
+          ]
+        },
+        {
+          "id": "zion-day-4",
+          "dayNumber": 4,
+          "label": "Zion-Mt. Carmel Highway and Canyon Overlook",
+          "stops": [
+            {
+              "id": "d4-highway",
+              "order": 1,
+              "type": "scenic_drive",
+              "name": "Zion-Mt. Carmel Highway",
+              "duration": 120,
+              "timeWindow": "Morning",
+              "note": "Take time with the east-side scenery rather than rushing through; check road conditions before you go, particularly if traveling in a large vehicle.",
+              "why": "The road scenery gives the last day a different character from the earlier canyon walks."
+            },
+            {
+              "id": "d4-overlook",
+              "order": 2,
+              "type": "trail",
+              "name": "Canyon Overlook",
+              "duration": 90,
+              "timeWindow": "Late morning or afternoon",
+              "note": "If access and conditions allow, make this the day's walking outing; check trail information before starting.",
+              "why": "It pairs an outdoor destination with the east-side scenic passage without filling the day with multiple hikes."
+            }
+          ],
+          "travelEdges": [
+            {
+              "sourceStopId": "d4-highway",
+              "targetStopId": "d4-overlook",
+              "relationship": "transfer"
+            }
+          ]
+        }
+      ],
+      "narrativeSections": [
+        {
+          "placement": "after_plan",
+          "markdown": "If your dates fall September 21–30, check the Zion-Mt. Carmel Tunnel's nighttime status before planning to use that route after dark: the park reports possible 9 PM–6 AM closures during that period. The park also lists size restrictions for large vehicles on the highway."
+        }
+      ]
+    },
+    {
+      "intro": "I’d give Zion Canyon two unhurried days, then spend one day on the Zion–Mt. Carmel Highway and another in Kolob Canyons. This is a scenery-first trip with time to linger rather than four days of demanding hikes; arrange a car or other transportation for the two outlying days.",
+      "days": [
+        {
+          "id": "zion-day-1",
+          "dayNumber": 1,
+          "label": "An unhurried day in Zion Canyon",
+          "stops": [
+            {
+              "id": "zion-canyon-visitor-center",
+              "order": 1,
+              "type": "visitor_center",
+              "name": "Zion Canyon Visitor Center",
+              "note": "Start with the outdoor exhibits and ask about current canyon transportation and suitable walks before heading farther into the canyon.",
+              "timeWindow": "Morning",
+              "duration": 35,
+              "why": "A short orientation makes the first canyon day easier without taking over the morning."
+            },
+            {
+              "id": "zion-canyon",
+              "order": 2,
+              "type": "landmark",
+              "name": "Zion Canyon",
+              "note": "Make the canyon scenery the main event, allowing the rest of the morning and afternoon for sightseeing, photographs, and a lunch break. Use the day's available canyon transportation rather than assuming you can take a private car throughout. Choose any walks after checking their distances and conditions at the visitor center.",
+              "timeWindow": "Late morning through afternoon",
+              "duration": 240,
+              "why": "Your first full day belongs among Zion's canyon walls, with enough time to enjoy them without rushing between distant areas."
+            }
+          ],
+          "travelEdges": [
+            {
+              "sourceStopId": "zion-canyon-visitor-center",
+              "targetStopId": "zion-canyon",
+              "relationship": "transfer"
+            }
+          ]
+        },
+        {
+          "id": "zion-day-2",
+          "dayNumber": 2,
+          "label": "Zion’s human stories and the Towers of the Virgin",
+          "stops": [
+            {
+              "id": "human-history-museum",
+              "order": 1,
+              "type": "museum",
+              "name": "Human History Museum",
+              "note": "Explore the exhibits about the people and history of Zion, and include the 22-minute orientation film. Check museum operating hours before setting your start time; leave a leisurely lunch break afterward.",
+              "timeWindow": "Late morning",
+              "duration": 100,
+              "why": "This gives the landscape a human context and provides a gentler day between the canyon outing and the scenic-road excursions."
+            },
+            {
+              "id": "towers-of-the-virgin",
+              "order": 2,
+              "type": "photography",
+              "name": "Towers of the Virgin",
+              "note": "Enjoy the Towers of the Virgin and Bridge Mountain from outside the Human History Museum. Allow time for photography or sketching; this is a viewing session from the museum surroundings, not a hike toward the formations.",
+              "timeWindow": "Afternoon",
+              "duration": 75,
+              "why": "The outdoor views complement the exhibits with a distinct, slow-paced landscape experience."
+            }
+          ]
+        },
+        {
+          "id": "zion-day-3",
+          "dayNumber": 3,
+          "label": "Canyon Junction and the Zion–Mt. Carmel Highway",
+          "stops": [
+            {
+              "id": "canyon-junction",
+              "order": 1,
+              "type": "photography",
+              "name": "Canyon Junction",
+              "note": "Begin the scenic outing by taking in the canyon surroundings. Stop only where parking and pedestrian access are permitted; do not stand in the roadway for photographs.",
+              "timeWindow": "Morning",
+              "duration": 30,
+              "why": "This gives the road day a relaxed scenic beginning before continuing toward the east side."
+            },
+            {
+              "id": "zion-mt-carmel-highway",
+              "order": 2,
+              "type": "scenic_drive",
+              "name": "Zion-Mt. Carmel Highway",
+              "note": "Allow a generous daytime block for the scenic journey toward the East Entrance, legal pullout stops, and a lunch break. The allotted time is a sightseeing allowance, not a verified driving time. Check vehicle-size restrictions before committing to this route, especially with an RV or oversized vehicle.",
+              "timeWindow": "Late morning through afternoon",
+              "duration": 210,
+              "why": "A separate road day lets you enjoy the changing scenery without squeezing it around a canyon hike."
+            }
+          ],
+          "activityGroups": [
+            {
+              "id": "east-side-scenic-outing",
+              "stopIds": [
+                "canyon-junction",
+                "zion-mt-carmel-highway"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "zion-day-4",
+          "dayNumber": 4,
+          "label": "The landscapes of Kolob Canyons",
+          "stops": [
+            {
+              "id": "kolob-canyons-visitor-center",
+              "order": 1,
+              "type": "visitor_center",
+              "name": "Kolob Canyons Visitor Center",
+              "note": "Ask about road access and places to stop, then take a brief look at the geology and wildlife exhibits. Plan this visit outside the daily noon–1 PM closure.",
+              "timeWindow": "Morning",
+              "duration": 30,
+              "why": "This is a useful introduction to a separate part of Zion rather than another long orientation visit."
+            },
+            {
+              "id": "kolob-canyons",
+              "order": 2,
+              "type": "scenic_drive",
+              "name": "Kolob Canyons",
+              "note": "Spend the main part of the day enjoying the canyon landscapes, with leisurely scenic stops and time for lunch. Set the extent of the outing after the visitor-center road check; the time allotted includes sightseeing pauses, not just time in transit.",
+              "timeWindow": "Late morning through afternoon",
+              "duration": 180,
+              "why": "Kolob gives the final day a genuinely different setting instead of repeating the main canyon."
+            }
+          ],
+          "travelEdges": [
+            {
+              "sourceStopId": "kolob-canyons-visitor-center",
+              "targetStopId": "kolob-canyons",
+              "relationship": "transfer"
+            }
+          ]
+        }
+      ],
+      "narrativeSections": [
+        {
+          "placement": "after_plan",
+          "heading": "Two transport details",
+          "markdown": "Kolob Canyons Visitor Center is **45 miles north of Springdale**, so leave room for the outward and onward journey beyond the sightseeing blocks. If your visit falls **September 21–30, 2026**, NPS reports expected Zion–Mt. Carmel Tunnel closures from **9 PM to 6 AM when active**; check [UDOT’s Zion-area updates](https://zionarea.udot.utah.gov) before that day's journey. [NPS park information](https://www.nps.gov/zion/index.htm)"
+        }
+      ]
+    }
+  ],
+  "anchor": {
+    "id": "835FC05C-8AC2-43AD-87C0-9704B9895144",
+    "name": "Human History Museum",
+    "description": "Immerse yourself in the human history of Zion National Park! Rangers staff an information desk during operating hours. Indoor exhibits explore the people, places, and stories of Zion. Rotating exhibits feature regional artists, local discoveries, and more. A 22-minute orientation film examines the history of the canyon and highlights the dramatic landscapes of the park. Visit the bookstore for books, gifts, and souvenirs. There are also dramatic views of the Towers of the Virgin and Bridge Mountain outside.",
+    "latitude": "37.209446",
+    "longitude": "-112.980442",
+    "url": "https://www.nps.gov/zion/learn/historyculture/zion-human-history-museum.htm"
+  },
+  "attempts": [
+    {
+      "tier": "sol_medium",
+      "model": "gpt-6-sol",
+      "reasoningEffort": "medium",
+      "attemptKind": "primary",
+      "validationStatus": "fail",
+      "validationReasonCodes": [
+        "stop_identity_unresolved"
+      ],
+      "validationStage": "stop_identity",
+      "validationTargetDiagnostics": {
+        "operationIndex": null,
+        "op": null,
+        "dayNumber": 4,
+        "requestedStopId": null,
+        "requestedStopName": "Towers of the Virgin",
+        "availableStopIds": [],
+        "availableStopNames": [
+          "Upper Emerald Pools Trail",
+          "Canyon Overlook",
+          "Sand Bench",
+          "Pa'rus Trail",
+          "Court of the Patriarchs",
+          "Climbing in Zion",
+          "Stargazing in Zion",
+          "Watchman Trail"
+        ],
+        "matchedCount": 2
+      },
+      "validationDiagnostics": null,
+      "repairProgress": {
+        "progress": "PROGRESS",
+        "satisfied": [
+          "day_count",
+          "non_empty_days",
+          "positive_stop_durations"
+        ],
+        "failed": [],
+        "regressed": [],
+        "discovered": []
+      },
+      "outputPolicy": {
+        "maxOutputTokens": 6000,
+        "artifactOutputBudgetTokens": 3000,
+        "reasoningHeadroomTokens": 3000,
+        "artifactHeadroomTokens": 5232
+      },
+      "completion": {
+        "status": "completed",
+        "incompleteReason": "completed"
+      },
+      "usage": {
+        "inputTokens": 5888,
+        "cachedTokens": 0,
+        "cacheWriteTokens": 5257,
+        "outputTokens": 2037,
+        "reasoningTokens": 768
+      },
+      "cost": {
+        "costStatus": "priced",
+        "costUsd": 0.0452885
+      },
+      "latencyMs": 38924
+    },
+    {
+      "tier": "sol_medium",
+      "model": "gpt-6-sol",
+      "reasoningEffort": "medium",
+      "attemptKind": "same_model_retry",
+      "validationStatus": "fail",
+      "validationReasonCodes": [
+        "validation_failed"
+      ],
+      "validationStage": "itinerary_feasibility",
+      "validationTargetDiagnostics": null,
+      "validationDiagnostics": null,
+      "repairProgress": {
+        "progress": "PROGRESS",
+        "satisfied": [
+          "day_count",
+          "non_empty_days",
+          "positive_stop_durations"
+        ],
+        "failed": [],
+        "regressed": [],
+        "discovered": []
+      },
+      "outputPolicy": {
+        "maxOutputTokens": 6000,
+        "artifactOutputBudgetTokens": 3000,
+        "reasoningHeadroomTokens": 3000,
+        "artifactHeadroomTokens": 4781
+      },
+      "completion": {
+        "status": "completed",
+        "incompleteReason": "completed"
+      },
+      "usage": {
+        "inputTokens": 6160,
+        "cachedTokens": 0,
+        "cacheWriteTokens": 5529,
+        "outputTokens": 2447,
+        "reasoningTokens": 1219
+      },
+      "cost": {
+        "costStatus": "priced",
+        "costUsd": 0.0506125
+      },
+      "latencyMs": 59256
+    },
+    {
+      "tier": "astra_medium",
+      "model": "gpt-6-astra",
+      "reasoningEffort": "medium",
+      "attemptKind": "escalation",
+      "validationStatus": "fail",
+      "validationReasonCodes": [
+        "stop_identity_unresolved"
+      ],
+      "validationStage": "stop_identity",
+      "validationTargetDiagnostics": {
+        "operationIndex": null,
+        "op": null,
+        "dayNumber": 2,
+        "requestedStopId": null,
+        "requestedStopName": "Towers of the Virgin",
+        "availableStopIds": [],
+        "availableStopNames": [
+          "Upper Emerald Pools Trail",
+          "Canyon Overlook",
+          "Sand Bench",
+          "Pa'rus Trail",
+          "Court of the Patriarchs",
+          "Climbing in Zion",
+          "Stargazing in Zion",
+          "Watchman Trail"
+        ],
+        "matchedCount": 1
+      },
+      "validationDiagnostics": null,
+      "repairProgress": {
+        "progress": "PROGRESS",
+        "satisfied": [
+          "day_count",
+          "non_empty_days",
+          "positive_stop_durations"
+        ],
+        "failed": [],
+        "regressed": [],
+        "discovered": []
+      },
+      "outputPolicy": {
+        "maxOutputTokens": 6000,
+        "artifactOutputBudgetTokens": 3000,
+        "reasoningHeadroomTokens": 3000,
+        "artifactHeadroomTokens": 5533
+      },
+      "completion": {
+        "status": "completed",
+        "incompleteReason": "completed"
+      },
+      "usage": {
+        "inputTokens": 6037,
+        "cachedTokens": 0,
+        "cacheWriteTokens": 5406,
+        "outputTokens": 2040,
+        "reasoningTokens": 467
+      },
+      "cost": {
+        "costStatus": "priced",
+        "costUsd": 0.229945
+      },
+      "latencyMs": 49468
+    }
+  ],
+  "evidence": [
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "thingstodo:6ad66a92-b0eb-4064-a52a-2ddb02cf9143",
+        "text": "La Verkin Creek Trail to Kolob Arch: The La Verkin Creek Trail to the Kolob Arch allows hikers outstanding opportunities for solitude in a primitive area of Zion Wilderness. The trail begins at Lee Pass with stunning views of the Kolob Canyons as it crosses Timber Creek and continues to descend toward La Verkin Creek. After seven miles a spur trail leads hikers to a viewpoint where they can see the Kolob Arch.",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:thingstodo:6AD66A92-B0EB-4064-A52A-2DDB02CF9143",
+          "destinationId": "nps:park:zion",
+          "name": "La Verkin Creek Trail to Kolob Arch",
+          "category": "thingstodo",
+          "activityTypes": [
+            "hiking",
+            "hike",
+            "viewpoint"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": null,
+          "duration": "7-9 Hours",
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": null,
+          "accessibility": "Strenuous trail with 1037ft / 316m of elevation change over 14mi / 22.5km. Rocky, sandy, uneven terrain with water crossings. ",
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [
+            "viewpoint"
+          ],
+          "sunsetSuitability": "possible",
+          "coordinates": {
+            "latitude": 37.4522213091,
+            "longitude": -113.19139762
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/thingstodo/la-verkin-creek-trail-to-kolob-arch.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_activity_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "6AD66A92-B0EB-4064-A52A-2DDB02CF9143",
+        "url": "https://www.nps.gov/thingstodo/la-verkin-creek-trail-to-kolob-arch.htm",
+        "title": "La Verkin Creek Trail to Kolob Arch",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:0"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "thingstodo:fd003ef3-8da2-4fcb-9b49-7bffb097cb76",
+        "text": "Upper Emerald Pools Trail: Upper Emerald Pools Trail is a moderate, 1 mile (1.6 km) trail that can be accessed via the Kayenta Trail, Lower Emerald Pools Trail, or Middle Emerald Pools Trail. Climb up stone steps to a sandy path that leads through pinyon-juniper woodlands to the base of towering canyon walls which boast majestic, seasonal waterfalls. The trail ends at the sandy shore of Upper Emerald Pool. No swimming.",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:thingstodo:FD003EF3-8DA2-4FCB-9B49-7BFFB097CB76",
+          "destinationId": "nps:park:zion",
+          "name": "Upper Emerald Pools Trail",
+          "category": "thingstodo",
+          "activityTypes": [
+            "hiking",
+            "hike"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": "moderate",
+          "duration": "1-2 Hours",
+          "walkingDistanceMiles": 1,
+          "walkingDistanceQualifier": "unspecified",
+          "walkingDistanceSource": "text",
+          "walkingDistanceConflict": false,
+          "exposureLevel": null,
+          "accessibility": "<ul> <li><strong>Length (one way)  |  </strong>0.3 mi (0.4 km)</li> <li><strong>Elevation  |  </strong>Gain: 75.8 ft (23.11 m)<strong> | </strong>Loss: 28.9 ft (8.81 m)</li> <li><strong>Grade  |  </strong>Typical: 7.5%<strong>  |  </strong>Maximum: 37%<strong>  | </strong>25.6% of the trail is at a 10% or higher grade.</li> <li><strong>Cross Slope  |  </strong>Typical: 5.2%<strong>  |  </strong>Maximum: 20.6%</li> <li><strong>Tread Width  |  </strong>Typical: 59 in (149.0 cm)<strong> |  </strong>Minimum: 12 in (30.5 cm)</li> <li><strong>Surface  |  </strong>45.1% of trail is hard rock, 35.8% is soft sand, and 19.1% is firm soil.</li> <li><strong>Obstructions  |  </strong>Overhanging rock 11.3 ft (3.4 m) long with 30 in (76.2 cm) of remaining tread outside of rock zone.<strong> |  </strong>Staircases with steps up to 30 in (76.2 cm) tall.</li> </ul> <p><i>Last assessed on March 20, 2025. Obstructions less than 12 in (30.5 cm) tall, or outside the tread area of 12 in (30.5 cm) wide by 96 in (243.8 cm) high, were not reported.</i></p>",
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 37.2510388047,
+            "longitude": -112.958668734
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/thingstodo/hike-upper-emerald-pools.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_activity_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "FD003EF3-8DA2-4FCB-9B49-7BFFB097CB76",
+        "url": "https://www.nps.gov/thingstodo/hike-upper-emerald-pools.htm",
+        "title": "Upper Emerald Pools Trail",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:1"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "thingstodo:7d4532b5-c565-4849-a987-f40d6ddd2b91",
+        "text": "Sand Bench: The Sand Bench Trail travels atop the remains of an ancient rockfall. This trail leads hikers along the Virgin River and then ascends a landslide that dammed the Virgin River 8,000 years ago and created a lake that extended to Angels Landing. This trail is a commercial horse trail from March to October, and it receives little shade in the hot, summer sun. Winter travel is possible, but watch for patches of ice.",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:thingstodo:7D4532B5-C565-4849-A987-F40D6DDD2B91",
+          "destinationId": "nps:park:zion",
+          "name": "Sand Bench",
+          "category": "thingstodo",
+          "activityTypes": [
+            "hiking",
+            "hike"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": null,
+          "duration": "1-4 Hours",
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": null,
+          "accessibility": "<h4><b>From Court of the Patriarchs to Zion Lodge</b></h4> <ul> <li><b>Length (one way)  |  </b>1.5 (2.4 km)</li> <li><b>Elevation  |  </b>Gain: 206.7 ft (63.0 m)<b> | </b>Loss: 235.2 ft (71.7 m)</li> <li><b>Grade  |  </b>Typical: 5.5%<b>  |  </b>Maximum: 32.3%<b>  | </b>22.7% of the trail is at an 8.3% or higher grade.</li> <li><b>Cross Slope  |  </b>Typical: 3.8%<b>  |  </b>Maximum: 23.1%</li> <li><b>Tread Width  |  </b>Typical: 60 in (153.5 cm)<b> |  </b>Minimum: 15 in (38.1 cm)</li> <li><b>Surface  |  </b>84.3% of the trail is firm soil, 10.3% is very soft sand, 3.9% is soft sand, and 1.5% is hard rock.</li> <li><b>Obstructions  |  </b>Bridge 45 in (114.3 cm) wide<b>  |  </b>Steps up to 9 in (22.9 cm) tall</li> </ul> <h4><b>Loop Trail from Court of the Patriarchs</b></h4> <ul> <li><b>Length (round-trip)  |  </b>3.9 mi (6.3 km)</li> <li><b>Elevation  |  </b>Gain: 1037.6 ft (316.2 m)<b> | </b>Loss: 748 ft (228.0 m)</li> <li><b>Grade  |  </b>Typical: 8.7%<b>  |  </b>Maximum: 36%<b>  | </b> 35.6% of the trail is at a 10% or higher grade.</li> <li><b>Cross Slope  |  </b>Typical: 3.6%<b>  |  </b>Maximum: 22.8%</li> <li><b>Tread Width  |  </b>Typical: 46 in (116.9 cm)<b> |  </b>Minimum: 6 in (15.2 cm)</li> <li><b>Surface  |  </b>7.7% of the trail is hard rock, 19.3% is firm soil, 6.4% is soft soil, and 66.6% is very soft sand.</li> <li><b>Obstructions  |  </b>Bridge 45 in (114.3 cm) wide<b>  |  </b>Creek crossing: Water level changes seasonally. Crossing through shallow water may be required. <b> |  </b>Steps up to 21 in (53.3 cm) tall, with 0 in remaining tread</li> </ul> <h4> </h4> <p><a><i>Last assessed on March 19, 2025. Obstructions less than 7 in (17.8 cm) tall, or outside the tread area of 20 in (50.8 cm) wide by 96 in (243.8 cm) high, were not reported.</i></a></p>",
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 37.2510388047,
+            "longitude": -112.958668734
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/thingstodo/hike-sand-bench.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_activity_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "7D4532B5-C565-4849-A987-F40D6DDD2B91",
+        "url": "https://www.nps.gov/thingstodo/hike-sand-bench.htm",
+        "title": "Sand Bench",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:2"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "thingstodo:6a7bb554-73e5-43ed-90c1-a327cadf55c7",
+        "text": "Lower Emerald Pool Trail: Lower Emerald Pool trail is a rough, paved trail that leads through pinyon-juniper woodland to the Lower Emerald Pool and ephemeral waterfalls.The pools are fragile and an essential water source for wildlife. Do not go into the water. Connects to the other Emerald Pools trails and the Kayenta Trail. Avoid cliff edges. Swimming is not permitted. Restrooms and water filling stations are available at the Zion Lodge.",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:thingstodo:6A7BB554-73E5-43ED-90C1-A327CADF55C7",
+          "destinationId": "nps:park:zion",
+          "name": "Lower Emerald Pool Trail",
+          "category": "thingstodo",
+          "activityTypes": [
+            "hiking",
+            "hike"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": "easy",
+          "duration": "1-2 Hours",
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": "moderate",
+          "accessibility": "<ul> <li><strong>Length (one way)  | </strong> 0.6 mi (1.0 km)</li> <li><strong>Elevation  |  </strong>Gain: 131.1 ft (40.0 m) <strong> |  </strong>Loss: 96.4 ft (29.38 m)</li> <li><strong>Grade  | </strong> Typical: 7.1%<strong>  |  </strong>Maximum: 25.3% <strong> | </strong> 34.4% of the trail is at a 8.3% or higher grade.</li> <li><strong>Cross Slope  | </strong> Typical: 3.6%<strong>  |  </strong>Maximum: 17.1% <strong> | </strong> 18.9% of trail has a cross slope of 6% or higher.</li> <li><strong>Tread Width  |  </strong>Typical: 62 in (157.8 cm)<strong>  |  </strong>Minimum: 30 in (76.2 cm).<strong> </strong>25 ft (7.6 m) of the trail is this width.</li> <li><strong>Surface  |  </strong>96.2% of the trail is hard concrete, and 3.8% is firm soil.</li> <li><strong>Obstructions  |  </strong>Bridge with minimum tread width of 45 in (114.3 cm).<strong>  |  </strong>Gaps in concrete up to 2 in (5.1 cm) long.</li> </ul> <p><i>Last assessed on March 20, 2025. Obstructions less than 12 in (30.5 cm) tall, or outside the tread area of 12 in (30.5 cm) wide by 96 in (243.8 cm) high, were not reported.</i></p>",
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 37.2510388047,
+            "longitude": -112.958668734
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/thingstodo/hike-lower-emerald-pool-trail.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_activity_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "6A7BB554-73E5-43ED-90C1-A327CADF55C7",
+        "url": "https://www.nps.gov/thingstodo/hike-lower-emerald-pool-trail.htm",
+        "title": "Lower Emerald Pool Trail",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:3"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "thingstodo:97c6c2f7-e45f-4192-9475-f2f90bf3e70e",
+        "text": "Middle Emerald Pools Trail: Middle Emerald Pools Trail is a moderate hike along an unpaved sandstone ledge above the Lower Emerald Pool Trail. The initial ascent is quite steep, bringing you to expansive views of main Zion Canyon below. Further along the trail, tucked into the red sandstone of the mountain, enjoy the shade and flora of pinyon-juniper woodlands. The trail then descends to emerald-colored pools of water above the small ephemeral waterfalls of Lower Emerald Pool Trail.",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:thingstodo:97C6C2F7-E45F-4192-9475-F2F90BF3E70E",
+          "destinationId": "nps:park:zion",
+          "name": "Middle Emerald Pools Trail",
+          "category": "thingstodo",
+          "activityTypes": [
+            "hiking",
+            "hike"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": "moderate",
+          "duration": "1-2 Hours",
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": "moderate",
+          "accessibility": "<p><i></i></p> <ul> <li><b>Length (one way)  |  </b>0.9 mi (1.4 km)</li> <li><b>Elevation  |  </b>Gain: 332.8 ft (101.4 m)<b> | </b>Loss: 152.2 ft (46.4 m)</li> <li><b>Grade  |  </b>Typical: 10.3%<b>  |  </b>Maximum: 38.1%<b>  | </b>44.8% of the trail is at a 10% or higher grade.</li> <li><b>Cross Slope  |  </b>Typical: 4.4%<b>  |  </b>Maximum: 20.1%</li> <li><b>Tread Width  |  </b>Typical: 57 in (144.2 cm)<b> |  </b>Minimum: 20 in (50.8 cm)</li> <li><b>Surface  |  </b>79.7% of the trail is firm soil, 18.7% is hard rock or concrete, and 1.6% is soft sand.</li> <li><b>Obstructions  |  </b>Bridge with minimum tread width of 45 in (114.3 cm)<b> |  </b>Staircases with steps up to 10 in (25.4 cm) tall, and 0 in of remaining tread</li> </ul> <p><i>Last assessed on March 20, 2025. Obstructions less than 12 in (30.5 cm) tall, or outside the tread area of 12 in (30.5 cm) wide by 96 in (243.8 cm) high, were not reported.</i></p>",
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 37.2510388047,
+            "longitude": -112.958668734
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/thingstodo/hike-middle-emerald-pools-trail.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_activity_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "97C6C2F7-E45F-4192-9475-F2F90BF3E70E",
+        "url": "https://www.nps.gov/thingstodo/hike-middle-emerald-pools-trail.htm",
+        "title": "Middle Emerald Pools Trail",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:4"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "thingstodo:43cc4a81-2227-4e40-9403-6f7e2b27bc53",
+        "text": "Angels Landing: On and after April 1, 2022 hikers continuing to Angels Landing from Scout Lookout are required to have a permit, obtained on recreation.gov.",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:thingstodo:43CC4A81-2227-4E40-9403-6F7E2B27BC53",
+          "destinationId": "nps:park:zion",
+          "name": "Angels Landing",
+          "category": "thingstodo",
+          "activityTypes": [
+            "hiking",
+            "hike"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": "hard",
+          "duration": "1-2 Hours",
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": "moderate",
+          "accessibility": "Trail is unpaved, rocky, and less than 3 ft (1 m) wide in many sections. Chains act as handrails for multiple sections, with long drop-offs. Hiking traffic moves in both directions in limited space.",
+          "operationalFacts": [
+            {
+              "subject": {
+                "entityId": "nps:park:zion:place:43CC4A81-2227-4E40-9403-6F7E2B27BC53",
+                "name": "Angels Landing",
+                "parkCode": "zion"
+              },
+              "type": "reservation_required",
+              "requirement": "a reservation or permit",
+              "plannerRule": "Angels Landing requires a reservation. State that requirement wherever it appears.",
+              "confidence": "stated",
+              "provenance": {
+                "authority": "official_owner",
+                "field": "isReservationRequired",
+                "sourceUrl": "https://www.nps.gov/thingstodo/hike-angels-landing.htm"
+              },
+              "observedAt": "2026-09-24T00:00:00.000Z",
+              "subjects": [
+                "Angels Landing"
+              ]
+            },
+            {
+              "subject": {
+                "entityId": "nps:park:zion:place:43CC4A81-2227-4E40-9403-6F7E2B27BC53",
+                "name": "Angels Landing",
+                "parkCode": "zion"
+              },
+              "type": "reservation_required",
+              "requirement": "a permit",
+              "plannerRule": "Angels Landing requires a permit. If you include it, state the permit requirement in the same breath.",
+              "confidence": "official_text",
+              "provenance": {
+                "authority": "official_owner",
+                "field": "reservationDescription",
+                "sourceUrl": "https://www.nps.gov/thingstodo/hike-angels-landing.htm",
+                "excerpt": "Permits are required"
+              },
+              "observedAt": "2026-09-24T00:00:00.000Z",
+              "subjects": [
+                "Angels Landing"
+              ]
+            }
+          ],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": "possible",
+          "coordinates": {
+            "latitude": 37.2592462081,
+            "longitude": -112.951341885
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/thingstodo/hike-angels-landing.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_activity_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "43CC4A81-2227-4E40-9403-6F7E2B27BC53",
+        "url": "https://www.nps.gov/thingstodo/hike-angels-landing.htm",
+        "title": "Angels Landing",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:5"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "thingstodo:bd4ca407-5be0-426e-8339-f34de6795d3a",
+        "text": "West Rim to Scout Lookout: The strenuous West Rim Trail ascends ~1,000 ft (305 m) to Scout Lookout, high above the canyon floor. Hikers cross the Virgin River and then ascend a series of steep switchbacks along the canyon wall. The trail flattens out as it enters Refrigerator Canyon, offering relief from the heat and elevation gain of the previous segment, but resumes the climb shortly afterward at Walter’s Wiggles: a series of 21 switchbacks that leads hikers to Scout Lookout.",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:thingstodo:BD4CA407-5BE0-426E-8339-F34DE6795D3A",
+          "destinationId": "nps:park:zion",
+          "name": "West Rim to Scout Lookout",
+          "category": "thingstodo",
+          "activityTypes": [
+            "hiking",
+            "hike"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": "hard",
+          "duration": "3-4 Hours",
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": null,
+          "accessibility": "<ul> <li><b>Length (one way)  |  </b>1.9 mi (3 km)<b> </b></li> <li><b>Elevation  |  </b>Gain: 1187 ft (361.8 m)<b> | </b>Loss: 63 ft (19.2 m)</li> <li><b>Grade  |  </b>Typical: 12.9%<b>  |  </b>Maximum: 43%<b>  |</b> 67% of the trail is at an 8.3% or higher grade.</li> <li><b>Cross Slope  |  </b>Typical: 3.7%<b>  |  </b>Maximum: 18.7%</li> <li><b>Tread Width  |  </b>Typical: 63 in (159.2 cm)<b> |  </b>Minimum: 21 in (53.3 cm)</li> <li><b>Surface  |  </b>81.1% of the trail is hard concrete, 17.3% is concrete covered in firm soil, and 1.7% is soft sand.</li> <li><b>Obstructions  |  </b>Overhanging rocks 173.4 ft (52.9 m) long with a minimum vertical clearance of 7 ft (2.1 m). There is 45 in (114.3 cm) of remaining tread.<b>  |  </b>Steps up to 6 in (15.2 cm) tall, with 0 in remaining tread</li> </ul> <p><a><i>Last assessed on March 10, 2025. Obstructions less than 4 in (10.2 cm) tall, or outside the tread area of 15 in (38.1 cm) wide by 96 in (243.8 cm) high, were not reported.</i></a></p>",
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": "possible",
+          "coordinates": {
+            "latitude": 37.2592462081,
+            "longitude": -112.951341885
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/thingstodo/hike-to-scout-lookout.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_activity_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "BD4CA407-5BE0-426E-8339-F34DE6795D3A",
+        "url": "https://www.nps.gov/thingstodo/hike-to-scout-lookout.htm",
+        "title": "West Rim to Scout Lookout",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:6"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "thingstodo:9b081ddd-4c3e-47c0-901a-e92a159b0078",
+        "text": "Kayenta Trail: The moderate, 2.0 mi (3.2 km) Kayenta Trail follows the Virgin River before ascending to the Lower and Upper Emerald Pool Trails. Provides panoramic views of Zion Canyon along the way. Long drop-offs are present along this trail. You can either return on the same trail, or make a loop using one of the Emerald Pools trails.  Water and restrooms are available at The Grotto.",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:thingstodo:9B081DDD-4C3E-47C0-901A-E92A159B0078",
+          "destinationId": "nps:park:zion",
+          "name": "Kayenta Trail",
+          "category": "thingstodo",
+          "activityTypes": [
+            "hiking",
+            "hike"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": "moderate",
+          "duration": "2-3 Hours",
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": "high",
+          "accessibility": "<ul> <li><b>Length (one way)  |  </b>0.9 mi (1.4 km)</li> <li><b>Elevation  |  </b>Gain: 204.1ft (62.2 m)<b> | </b>Loss: 101.9 ft (31.0 m)</li> <li><b>Grade  |  </b>Typical: 6.7%<b>  |  </b>Maximum: 35.3%<b>  | </b> 21.5% of the trail is at an 8.3% or higher grade.</li> <li><b>Cross Slope  |  </b>Typical: 4.5%<b>  |  </b>Maximum: 20.2%</li> <li><b>Tread Width  |  </b>Typical: 50 in (126.1 cm)<b> |  </b>Minimum: 15 in (38.1 cm)</li> <li><b>Surface  |  </b>65% of the trail is firm soil, and 35% is hard concrete or rock.</li> <li><b>Obstructions  |  </b>Overhanging rocks with a minimum vertical clearance of 5.3 ft (1.6 m), with 15 in (38.1 cm) of remaining tread<b>  |  </b>Staircases with steps up to 21 in (53.3 cm) tall, and 0 in of remaining tread</li> </ul> <p><i>Last assessed on March 3, 2025. Obstructions less than 12 in (30.5 cm), or outside the tread area of 12 in (30.5 cm) wide by 96 in (243.8 cm) high, were not reported.</i></p>",
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 37.2592462081,
+            "longitude": -112.951341885
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/thingstodo/hike-kayenta-trail.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_activity_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "9B081DDD-4C3E-47C0-901A-E92A159B0078",
+        "url": "https://www.nps.gov/thingstodo/hike-kayenta-trail.htm",
+        "title": "Kayenta Trail",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:7"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "thingstodo:71bb3562-ac4b-438d-94e0-784c0671c6c7",
+        "text": "Weeping Rock: Short but steep! From the parking area, you'll cross the bridge and head to the left onto a paved trail to Weeping Rock. Along the way, look for small trailside exhibits and watch for minor drop-offs. The trail ends at a set of steps leading you to a rock alcove with dripping springs.",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:thingstodo:71BB3562-AC4B-438D-94E0-784C0671C6C7",
+          "destinationId": "nps:park:zion",
+          "name": "Weeping Rock",
+          "category": "thingstodo",
+          "activityTypes": [
+            "hiking",
+            "hike"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": "easy",
+          "duration": "15-45 Minutes",
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": "moderate",
+          "accessibility": "Short but steep paved trail that gains 98ft (30m) of elevation in 0.4mi (0.6km). Minor drop-offs. Trail includes several stairs.",
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 0,
+            "longitude": 0
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/thingstodo/weeping-rock.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_activity_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "71BB3562-AC4B-438D-94E0-784C0671C6C7",
+        "url": "https://www.nps.gov/thingstodo/weeping-rock.htm",
+        "title": "Weeping Rock",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:8"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "thingstodo:9d7b17de-663c-4a85-a09d-183c71e5ee96",
+        "text": "Timber Creek Overlook: Follows a ridge to views of Timber Creek, Kolob Terrace, and the Pine Valley Mountains.",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:thingstodo:9D7B17DE-663C-4A85-A09D-183C71E5EE96",
+          "destinationId": "nps:park:zion",
+          "name": "Timber Creek Overlook",
+          "category": "thingstodo",
+          "activityTypes": [
+            "hiking",
+            "hike",
+            "walk",
+            "viewpoint"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": "easy",
+          "duration": "30-60 Minutes",
+          "walkingDistanceMiles": 100,
+          "walkingDistanceQualifier": "unspecified",
+          "walkingDistanceSource": "text",
+          "walkingDistanceConflict": false,
+          "exposureLevel": null,
+          "accessibility": "<ul> <li><b>Length (one way)  |  </b>0.6 mi (1 km)</li> <li><b>Elevation  |  </b>Gain: 117.3 ft (35.8 m)<b> | </b>Loss: 103.2 ft (31.5 m)</li> <li><b>Grade  |  </b>Typical: 6.8%<b>  |  </b>Maximum: 38%<b>  |</b> 31 % of the trail is at an 8.3% or higher grade.</li> <li><b>Cross Slope  |  </b>Typical: 4%<b>  |  </b>Maximum: 27.2%</li> <li><b>Tread Width  |  </b>Typical: 54 in (137.8 cm)<b> |  </b>Minimum: 6 in (15.2 cm)</li> <li><b>Surface  |  </b>98.8% of the trail is firm soil, and 1.2% is hard rock.</li> <li><b>Obstructions  |  </b>Steps up to 18 in (45.7 cm) tall, with 0 in of remaining tread<b>  |  </b>Boulders making 12-in-long (30.5 cm) area where tread is 6 in (15.2 cm) wide. 30 in (76.2 cm) of remaining tread.<b> | </b>The dirt trail is often muddy when wet.</li> </ul> <p><i>Last assessed on March 31, 2025. Obstructions less than 7 in (17.8 cm) tall, or outside the tread area of 12 in (30.5 cm) wide by 96 in (243.8 cm) high, were not reported.</i></p>",
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [
+            "viewpoint"
+          ],
+          "sunsetSuitability": "possible",
+          "coordinates": {
+            "latitude": 37.4355110105,
+            "longitude": -113.201933722
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/thingstodo/timber-creek-overlook.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_activity_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "9D7B17DE-663C-4A85-A09D-183C71E5EE96",
+        "url": "https://www.nps.gov/thingstodo/timber-creek-overlook.htm",
+        "title": "Timber Creek Overlook",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:9"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "thingstodo:7b0a7ce7-2553-4a51-9e7c-f1f77dc253a4",
+        "text": "Taylor Creek Trail: Kolob Canyons hike. Follows the Middle Fork of Taylor Creek past two homestead cabins to Double Arch Alcove. Group size limit on Wilderness trails is 12 people.",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:thingstodo:7B0A7CE7-2553-4A51-9E7C-F1F77DC253A4",
+          "destinationId": "nps:park:zion",
+          "name": "Taylor Creek Trail",
+          "category": "thingstodo",
+          "activityTypes": [
+            "hiking",
+            "hike"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": null,
+          "duration": "3-4 Hours",
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": null,
+          "accessibility": "<ul> <li><b>Length (one way)  |  </b>2.6 mi (4.3 km)</li> <li><b>Elevation  |  </b>Gain: 798.7 ft (243.4 m)<b> | </b>Loss: 372.8 ft (113.6 m)</li> <li><b>Grade  |  </b>Typical: 8.4%<b>  |  </b>Maximum: 55.2%<b>  |</b> 31% of the trail is at a 10% or higher grade.</li> <li><b>Cross Slope  |  </b>Typical: 3.8%<b>  |  </b>Maximum: 25.7%</li> <li><b>Tread Width  |  </b>Typical: 45 in (113.5 cm)<b> |  </b>Minimum: 12 in (30.5 cm)</li> <li><b>Surface  |  </b>58.6% of the trail is firm soil, 38% is soft sand, 2.1% is very soft sand, and 1.3% is hard rock.</li> <li><b>Obstructions  |  </b>Boulders creating steps up to 26 in (66 cm) tall, with gaps between rocks up to 7 in (17.8 cm) wide<b>  |  </b>Staircases with steps up to 14 in (35.6 cm) tall<b>  |  </b>Creek crossings where water level changes seasonally. Crossing through shallow water typically required.</li> </ul> <p><i>Last assessed on April 10, 2025. Obstructions less than 7 in (17.8 cm) tall, or outside the tread area of 15 in (31.8 cm) wide by 96 in (243.8 cm) high, were not reported.</i></p>",
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 0,
+            "longitude": 0
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/thingstodo/taylor-creek-trail.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_activity_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "7B0A7CE7-2553-4A51-9E7C-F1F77DC253A4",
+        "url": "https://www.nps.gov/thingstodo/taylor-creek-trail.htm",
+        "title": "Taylor Creek Trail",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:10"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "thingstodo:671ca42a-5287-4ec6-ad13-4841d2f9b724",
+        "text": "Watchman Trail: The Watchman trail is out-and-back. From the relatively flat beginning section of trail by the river, this unpaved trail climbs to a magnificent viewpoint of the Watchman, Temples and Towers, lower Zion Canyon, and the Town of Springdale. The terrain is sandy, rocky, and uneven, with several moderate drop-offs.",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:thingstodo:671CA42A-5287-4EC6-AD13-4841D2F9B724",
+          "destinationId": "nps:park:zion",
+          "name": "Watchman Trail",
+          "category": "thingstodo",
+          "activityTypes": [
+            "hiking",
+            "hike",
+            "viewpoint"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": "moderate",
+          "duration": "1-2 Hours",
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": "moderate",
+          "accessibility": "<h4>Watchman Trail to Overlook</h4> <ul> <li><b>Length (one way)  |  </b>1.4 mi (2.3 km)</li> <li><b>Elevation  |  </b>Gain: 479.4 ft (146.1 m)<b> | </b>Loss: 78.1 ft (23.8 m)</li> <li><b>Grade  |  </b>Typical: 7.4%<b>  |  </b>Maximum: 39.4%<b>  |</b> 34 % of the trail is at an 8.3% or higher grade.</li> <li><b>Cross Slope  |  </b>Typical: 4.8%<b>  |  </b>Maximum: 36.8%</li> <li><b>Tread Width  |  </b>Typical: 77 in (195.6 cm)<b> |  </b>Minimum: 12 in (30.5 cm)</li> <li><b>Surface  |  </b>2.2% of the trail is paved, 58.8% is hard rock, 37.4% is firm soil, and 1.6% is soft soil.</li> <li><b>Obstructions  |  </b>Steps up to 24 in (61 cm) tall, with 0 in of remaining tread<b>  |  </b>Overhanging rocks 20 ft (6.1 m) long with a minimum vertical clearance of 7 ft (2.1 m). There are 20 in (50.8 cm) of remaining tread,</li> </ul> <h4>Loop Trail from Overlook</h4> <ul> <li><b>Length (one way, counterclockwise)  |  </b>0.4 mi (0.7 km)</li> <li><b>Elevation  |  </b>Gain: 80.4 ft (24.52 m)<b> | </b>Loss: 64.6 ft (19.68 m)</li> <li><b>Grade  |  </b>Typical: 6.6%<b>  |  </b>Maximum: 31.5%<b>  |</b> 28.8% of the trail is at an 8.3% or higher grade.</li> <li><b>Cross Slope  |  </b>Typical: 3.6%<b>  |  </b>Maximum: 18%</li> <li><b>Tread Width  |  </b>Typical: 34 in (85.9 cm)<b> |  </b>Minimum: 12 in (30.5 cm)</li> <li><b>Surface  |  </b>73% of the trail is firm soil, and 27% is hard rock.</li> <li><b>Obstructions  |  </b>Steps up to 12 in (30.5 cm) tall, with 0 in remaining tread.</li> </ul> <p><i>Last assessed on 01-15-2025. Obstructions less than 4 in (10.2 cm) tall, or outside the tread area of 36 in (91.4 cm) wide by 96 in (243.8 cm) high, were not reported.</i></p>",
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [
+            "viewpoint"
+          ],
+          "sunsetSuitability": "possible",
+          "coordinates": {
+            "latitude": 0,
+            "longitude": 0
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/thingstodo/hike-watchman-trail.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_activity_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "671CA42A-5287-4EC6-AD13-4841D2F9B724",
+        "url": "https://www.nps.gov/thingstodo/hike-watchman-trail.htm",
+        "title": "Watchman Trail",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:11"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "thingstodo:823a078c-d324-4648-b910-f15507e67244",
+        "text": "Riverside Walk: The Riverside Walk is a relatively flat and paved trail in the northern end of Zion Canyon. This easy trail follows the Virgin River as the sheer sandstone walls narrow in around you. The Riverside Walk is mostly flat through the first half-mile, although paving is irregular in some sections and minor drop-offs are present.",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:thingstodo:823A078C-D324-4648-B910-F15507E67244",
+          "destinationId": "nps:park:zion",
+          "name": "Riverside Walk",
+          "category": "thingstodo",
+          "activityTypes": [
+            "hiking",
+            "hike",
+            "walk"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": "easy",
+          "duration": "1-2 Hours",
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": "moderate",
+          "accessibility": "<ul> <li><b>Length (one way)  |  </b>1 mi (1.6 km)</li> <li><b>Elevation  |  </b>Gain: 154.2 ft (47.0 m)<b> | </b>Loss: 48.5 ft (14.8 m)</li> <li><b>Grade  |  </b>Typical: 4.6%<b>  |  </b>Maximum: 25.9%<b>  | </b>17.5% of the trail is at a 8.3% or higher grade.</li> <li><b>Cross Slope  |  </b>Typical: 1.7%<b>  |  </b>Maximum: 7.6%<b>  |  </b>18% of the trail has a cross slope of 3% or higher.</li> <li><b>Tread Width  |  </b>Typical: 77 in (194.9 cm)<b> |  </b>Minimum: 50 in (127 cm)</li> <li><b>Surface  |  </b>100% of the trail is concrete. Some sections may be slippery from sand.</li> <li><b>Obstructions  |  </b>Overhanging rocks 7 ft (2.1 m) long, with a minimum vertical clearance of 4 ft (1.2 m), and 48 in (121.9 cm) of remaining tread</li> </ul> <p><i>Last assessed on February 24, 2025. Obstructions less than 4 in (10.2 cm) tall, or outside the tread area of 36 in (91.4 cm) wide by 96 in (243.8 cm), high were not reported.</i></p>",
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 37.2852131123,
+            "longitude": -112.947693774
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/thingstodo/hike-riverside-walk.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_activity_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "823A078C-D324-4648-B910-F15507E67244",
+        "url": "https://www.nps.gov/thingstodo/hike-riverside-walk.htm",
+        "title": "Riverside Walk",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:12"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "thingstodo:64535736-992b-4d04-8bf6-3f1965a6a01a",
+        "text": "Grotto Trail: The trail connects the Zion Lodge to the Grotto and is near the road most of the way. This trail is a great place to view wildlife. Restrooms are available at both the Lodge and the Grotto. When the shuttle is not in operation and the parking is full at the Grotto, this trail is a lovely alternate way to reach the Grotto.",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:thingstodo:64535736-992B-4D04-8BF6-3F1965A6A01A",
+          "destinationId": "nps:park:zion",
+          "name": "Grotto Trail",
+          "category": "thingstodo",
+          "activityTypes": [
+            "hiking",
+            "hike",
+            "walk"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": "easy",
+          "duration": "15-45 Minutes",
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": null,
+          "accessibility": "<ul> <li><b>Length</b> (one way) |  0.5 mi (0.8 km)</li> <li><b>Elevation |  </b>Gain: 49.0 ft (14.92 m) | Loss: 45.5 ft (13.86 m)</li> <li><b>Grade | </b>Typical: 3.5% | Maximum: 20.1% | 9.7% of the trail is at an 8.3% or higher grade.</li> <li><b>Cross Slope |  </b>Typical: 4.1% | Maximum: 17.3%</li> <li><b>Tread Width |  </b>Typical: 116 in (293.7 cm) | Minimum: 15 in (38.1 cm)</li> <li><b>Surface |  </b>93.6% of the trail is firm soil, and 6.4% is paved.</li> <li><b>Obstructions |  </b>Rocks up to 21 in (53.3 cm) tall and 0 in of remaining tread |  Boulder in center of trail that is 10 ft (3 m) long with 45 in (114.3 cm) of remaining tread</li> </ul> <p><i>Last assessed on March 5, 2025. Obstructions less than 7 in (17.8 cm) tall, or outside the tread area of 45 in (114.3 cm) wide by 96 in (243.8 cm) high, were not reported.</i></p>",
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 0,
+            "longitude": 0
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/thingstodo/hike-grotto-trail.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_activity_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "64535736-992B-4D04-8BF6-3F1965A6A01A",
+        "url": "https://www.nps.gov/thingstodo/hike-grotto-trail.htm",
+        "title": "Grotto Trail",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:13"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "thingstodo:6fd175ef-a82f-47aa-b055-8833ea1c1162",
+        "text": "Pa'rus Trail: Pa’rus is Paiute for “bubbling water.” The Pa’rus Trail follows the Virgin River and has some of the best views of the Watchman. The paved trail connects the Zion Canyon Visitor Center and Canyon Junction. It is accessible for wheelchairs, pets on leashes, and bicycles. Trailside exhibits cover a variety of subjects, including plant and animal life along the river, geology, and human history.",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:thingstodo:6FD175EF-A82F-47AA-B055-8833EA1C1162",
+          "destinationId": "nps:park:zion",
+          "name": "Pa'rus Trail",
+          "category": "thingstodo",
+          "activityTypes": [
+            "hiking",
+            "hike",
+            "sunset"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": "easy",
+          "duration": "30-120 Minutes",
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": "low",
+          "accessibility": "<ul> <li><b>Length (one way)  |  </b>1.6 mi (2.5 km)</li> <li><b>Elevation  |  </b>Gain: 151.7 ft (46.3 m)<b> | </b>Loss: 62.7 ft (19.12 m)</li> <li><b>Grade  |  </b>Typical: 2.6%<b>  |  </b>Maximum: 11.4%<b>  | </b> 1.2% of the trail is at an 8.3% or higher grade.</li> <li><b>Cross Slope  |  </b>Typical: 2.1%<b>  |  </b>Maximum: 8.8%</li> <li><b>Tread Width  |  </b>Typical: 120 in (304.7 cm)<b> |  </b>Minimum: 96 in (243.8 cm)</li> <li><b>Surface  |  </b>93.6% of the trail is paved and 6.4% is hard wood decking.</li> <li><b>Obstructions  | </b> Bridges (5) 120 in (304.8 cm) wide and 416 - 1744 in (1056.6 - 4429.8 cm) long, with gaps in decking up to 3 in (2.5 cm) wide<b>  | </b> Post in trail leaving 60 in (152.4 cm) of remaining tread<b>  | </b> Tripping hazards 1 - 2 in (2.5 - 5 cm) tall, with 0 in of remaining tread</li> </ul> <p><i>Last assessed on January 13, 2025. Obstructions less than 0.5 in tall, or outside the tread area of 120 in (304.8 cm) wide by 96 in (243.8 cm), high were not reported.</i></p>",
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [
+            "sunset"
+          ],
+          "sunsetSuitability": "supported",
+          "coordinates": {
+            "latitude": 37.2010471279,
+            "longitude": -112.986788497
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/thingstodo/hike-pa-rus-trail.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_activity_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "6FD175EF-A82F-47AA-B055-8833EA1C1162",
+        "url": "https://www.nps.gov/thingstodo/hike-pa-rus-trail.htm",
+        "title": "Pa'rus Trail",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:14"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "thingstodo:97cf105c-b416-4cdc-b84f-2a2c96d870db",
+        "text": "Canyon Overlook: Long drop-offs, mostly fenced. Rocky and uneven trail ends at a viewpoint for Pine Creek Canyon and lower Zion Canyon. To enter or exit the parking area just east of the tunnel, you must turn right. Parking is extremely limited, be prepared to try multiple times. Pit toilets are available in the parking area.",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:thingstodo:97CF105C-B416-4CDC-B84F-2A2C96D870DB",
+          "destinationId": "nps:park:zion",
+          "name": "Canyon Overlook",
+          "category": "thingstodo",
+          "activityTypes": [
+            "hiking",
+            "hike",
+            "viewpoint"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": "moderate",
+          "duration": "1-2 Hours",
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": "high",
+          "accessibility": "<ul> <li><b>Lengt</b><strong>h (one way) |  </strong>0.5 mi (0.8 km)</li> <li><b>Elevation |  </b>Gain: 154.2 ft (47.0 m) | Loss: 48.5 ft (14.78 m)</li> <li><b>Grade |  </b>Typical: 7.6% | Maximum: 50.4% | 23.9% of the trail is at a 10% or higher grade.</li> <li><b>Cross Slope |  </b>Typical: 4.9% | Maximum: 36.4%</li> <li><b>Tread Width |  </b>Typical: 48 in (122.4 cm) | Minimum: 12 in (30.5 cm)</li> <li><b>Surface |  </b>73.8% of the trail is hard rock, 18.0% is firm soil, and 8.2% is soft sand</li> <li><b>Obstructions |  </b>118.9 ft (36.2 m) of o<a>verhanging rocks with an a</a>verage vertical clearance of 7ft (2.1 m), minimum vertical clearance of 4 ft (1.2 m), and 30 in (76.2 cm) of remaining tread. <strong> |  </strong>Staircases with steps up to 18 in (45.7 cm) tall and 0 in of remaining tread <strong> |  </strong>Boulders up to 12 in (30.5 cm) tall and 0 in of remaining tread</li> </ul> <p><a><i>Last assessed February 20, 2025. Obstructions less than 4 in (10.2 cm) or outside of the tread area 36 in (91.4 cm) wide by 96 in (243.8 cm) high were not reported.</i></a></p>",
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [
+            "viewpoint"
+          ],
+          "sunsetSuitability": "possible",
+          "coordinates": {
+            "latitude": 37.21305420753267,
+            "longitude": -112.94102381538823
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/thingstodo/hike-canyon-overlook.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_activity_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "97CF105C-B416-4CDC-B84F-2A2C96D870DB",
+        "url": "https://www.nps.gov/thingstodo/hike-canyon-overlook.htm",
+        "title": "Canyon Overlook",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:15"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "thingstodo:45be55da-0e56-4cf7-9dfa-651eeab97e15",
+        "text": "Stargazing in Zion: Zion is a great place to connect with the night sky, whether you are an avid astrophotographer or this will be your first view of the Milky Way. As an International Dark Sky Park, Zion protects our incredible dark skies for present and future generations by not degrading the night with artificial light. This means that after sunset, the park is very dark. Be prepared!",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:thingstodo:45BE55DA-0E56-4CF7-9DFA-651EEAB97E15",
+          "destinationId": "nps:park:zion",
+          "name": "Stargazing in Zion",
+          "category": "thingstodo",
+          "activityTypes": [
+            "stargazing",
+            "sunset"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": null,
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": null,
+          "accessibility": "The Zion Human History Museum patio is ADA accessible. Seating is available.<br /> <br /> All recommended stargazing locations are maintained with little to no slope or elevation change. Most are paved.<br /> <br /> The view from Lava Point Overlook can be accessed either from the parking area or by following a short, flat, unpaved trail to a fenced overlook. ",
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [
+            "sunset"
+          ],
+          "sunsetSuitability": "supported",
+          "coordinates": {
+            "latitude": 37.2095431601,
+            "longitude": -112.980319726
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/thingstodo/stargazing-in-zion.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_activity_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "45BE55DA-0E56-4CF7-9DFA-651EEAB97E15",
+        "url": "https://www.nps.gov/thingstodo/stargazing-in-zion.htm",
+        "title": "Stargazing in Zion",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:16"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "thingstodo:64075857-acc6-4f4d-961b-1283d0f5475d",
+        "text": "The Narrows: The Narrows is a strenuous hike that follows the Virgin River through a narrow slot canyon. After 1 mile (0.6 km) on the easy, paved Riverside Walk, head down a set of stairs and into the river. The rest of your hike will take place in the Virgin River, where the flow rate can change day by day and the streambed is rocky with unstable footing. Flash flooding and hypothermia are constant dangers.",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:thingstodo:64075857-ACC6-4F4D-961B-1283D0F5475D",
+          "destinationId": "nps:park:zion",
+          "name": "The Narrows",
+          "category": "thingstodo",
+          "activityTypes": [
+            "hiking",
+            "hike",
+            "walk"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": "hard",
+          "duration": "1-8 Hours",
+          "walkingDistanceMiles": 1,
+          "walkingDistanceQualifier": "unspecified",
+          "walkingDistanceSource": "text",
+          "walkingDistanceConflict": false,
+          "exposureLevel": null,
+          "accessibility": "The river is the trail. River rocks are slippery and uneven. Water depth is variable from ankle to chest height. The route is in shade for most of the day, even in summer.",
+          "operationalFacts": [
+            {
+              "subject": {
+                "entityId": "nps:park:zion:place:64075857-ACC6-4F4D-961B-1283D0F5475D",
+                "name": "The Narrows",
+                "parkCode": "zion"
+              },
+              "type": "reservation_required",
+              "requirement": "a permit",
+              "plannerRule": "The Narrows requires a permit. If you include it, state the permit requirement in the same breath.",
+              "confidence": "official_text",
+              "provenance": {
+                "authority": "official_owner",
+                "field": "longDescription",
+                "sourceUrl": "https://www.nps.gov/thingstodo/hike-the-narrows.htm",
+                "excerpt": "permit is required"
+              },
+              "observedAt": "2026-09-24T00:00:00.000Z",
+              "subjects": [
+                "The Narrows"
+              ]
+            }
+          ],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 37.2852131123,
+            "longitude": -112.947693774
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/thingstodo/hike-the-narrows.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_activity_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "64075857-ACC6-4F4D-961B-1283D0F5475D",
+        "url": "https://www.nps.gov/thingstodo/hike-the-narrows.htm",
+        "title": "The Narrows",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:17"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "thingstodo:4e694781-7e95-452d-9ea6-04974841f8dc",
+        "text": "Zion Ranger-led Activities: Join a park ranger to learn about what makes Zion National Park such a special place! We have a variety of ranger-led activities throughout the year, and you can check the schedule on our Events Calendar. Topics range from geology and wildlife to art and human history, and everything inbetween. All ranger-led programs are free.",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:thingstodo:4E694781-7E95-452D-9EA6-04974841F8DC",
+          "destinationId": "nps:park:zion",
+          "name": "Zion Ranger-led Activities",
+          "category": "thingstodo",
+          "activityTypes": [
+            "guided tours"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": null,
+          "duration": "20-120 Minutes",
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": null,
+          "accessibility": "Assistive listening devices are available at the Zion Canyon Visitor Center, as well as supplemental information for park programs. <br /> <br /> All ranger-led talks and evening programs currently take place outdoors. Talks at the Visitor Center take place under a shade structure with sandstone benches for seating. Space is available for mobility devices and wheelchairs. <br /> <br /> The Ride with A Ranger program takes place on Zion Canyon shuttle buses, which are wheelchair accessible. <br /> <br /> Ranger walks on the Pa'rus Trail are wheelchair accessible, but hikes on the Watchman Trail are not.<br /> <br />  ",
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 37.20041122732317,
+            "longitude": -112.98730909824371
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/thingstodo/zion-ranger-led-activities.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_activity_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "4E694781-7E95-452D-9EA6-04974841F8DC",
+        "url": "https://www.nps.gov/thingstodo/zion-ranger-led-activities.htm",
+        "title": "Zion Ranger-led Activities",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:18"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "thingstodo:cb9ccc3b-bd85-4ff6-b95c-b99d424230f9",
+        "text": "Climbing in Zion: Zion National Park's 2,000-foot sandstone cliffs are world renowned for their big wall climbs and adventurous nature. Most routes in the park are not recommended for inexperienced climbers due to difficulty and the soft nature of the rock. While areas outside of the park offer abundant sport climbing and top roping possibilities, this is rare in the park, with bolted routes often having sparse protection.",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:thingstodo:CB9CCC3B-BD85-4FF6-B95C-B99D424230F9",
+          "destinationId": "nps:park:zion",
+          "name": "Climbing in Zion",
+          "category": "thingstodo",
+          "activityTypes": [
+            "climbing"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": null,
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": "low",
+          "accessibility": "<p>Zion National Park's 2,000-foot sandstone cliffs are world renowned for their big wall climbs and adventurous nature. Most routes in the park are not recommended for inexperienced climbers due to difficulty and the soft nature of the rock. While areas outside of the park offer abundant sport climbing and top roping possibilities, this is rare in the park, with bolted routes often having sparse protection.</p>",
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 0,
+            "longitude": 0
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/thingstodo/climbing-in-zion.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_activity_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "CB9CCC3B-BD85-4FF6-B95C-B99D424230F9",
+        "url": "https://www.nps.gov/thingstodo/climbing-in-zion.htm",
+        "title": "Climbing in Zion",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:19"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "place:b3c06994-d80c-44cf-8f6c-9c197d9ca1cf",
+        "text": "Big Bend",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:place:B3C06994-D80C-44CF-8F6C-9C197D9CA1CF",
+          "destinationId": "nps:park:zion",
+          "name": "Big Bend",
+          "category": "place",
+          "activityTypes": [
+            "hike"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": null,
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": null,
+          "accessibility": null,
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 37.27299663,
+            "longitude": -112.946344205
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/places/big-bend.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_place_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "B3C06994-D80C-44CF-8F6C-9C197D9CA1CF",
+        "url": "https://www.nps.gov/places/big-bend.htm",
+        "title": "Big Bend",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:20"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "place:0d93ca13-99ec-4592-b2b8-aaa68238f5af",
+        "text": "Canyon Junction",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:place:0D93CA13-99EC-4592-B2B8-AAA68238F5AF",
+          "destinationId": "nps:park:zion",
+          "name": "Canyon Junction",
+          "category": "place",
+          "activityTypes": [
+            "hike",
+            "viewpoint"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": null,
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": null,
+          "accessibility": null,
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [
+            "viewpoint"
+          ],
+          "sunsetSuitability": "possible",
+          "coordinates": {
+            "latitude": 37.2183639166,
+            "longitude": -112.973934702
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/places/canyon-junction.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_place_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "0D93CA13-99EC-4592-B2B8-AAA68238F5AF",
+        "url": "https://www.nps.gov/places/canyon-junction.htm",
+        "title": "Canyon Junction",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:21"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "place:76fe3917-eb2c-4f31-a585-df2b3da905b9",
+        "text": "Court of the Patriarchs",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:place:76FE3917-EB2C-4F31-A585-DF2B3DA905B9",
+          "destinationId": "nps:park:zion",
+          "name": "Court of the Patriarchs",
+          "category": "place",
+          "activityTypes": [
+            "hike",
+            "walk",
+            "viewpoint"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": null,
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": null,
+          "accessibility": null,
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [
+            "viewpoint"
+          ],
+          "sunsetSuitability": "possible",
+          "coordinates": {
+            "latitude": 37.237028394,
+            "longitude": -112.960583105
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/places/court-of-the-patriarchs.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_place_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "76FE3917-EB2C-4F31-A585-DF2B3DA905B9",
+        "url": "https://www.nps.gov/places/court-of-the-patriarchs.htm",
+        "title": "Court of the Patriarchs",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:22"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "place:6bb17124-4d23-440c-8050-6682b30135dd",
+        "text": "Kolob Canyons Visitor Center",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:place:6BB17124-4D23-440C-8050-6682B30135DD",
+          "destinationId": "nps:park:zion",
+          "name": "Kolob Canyons Visitor Center",
+          "category": "visitor_center",
+          "activityTypes": [
+            "hike",
+            "viewpoint",
+            "visitor_center"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": null,
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": null,
+          "accessibility": null,
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [
+            "viewpoint"
+          ],
+          "sunsetSuitability": "possible",
+          "coordinates": {
+            "latitude": 37.4534968211,
+            "longitude": -113.225414419
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/places/kolob-canyons-visitor-center.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_place_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "6BB17124-4D23-440C-8050-6682B30135DD",
+        "url": "https://www.nps.gov/places/kolob-canyons-visitor-center.htm",
+        "title": "Kolob Canyons Visitor Center",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:23"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "place:c6949e77-8bc7-4457-960e-f1b8eda95399",
+        "text": "Lava Point Overlook",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:place:C6949E77-8BC7-4457-960E-F1B8EDA95399",
+          "destinationId": "nps:park:zion",
+          "name": "Lava Point Overlook",
+          "category": "place",
+          "activityTypes": [
+            "viewpoint"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": "easy",
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": "low",
+          "accessibility": null,
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [
+            "viewpoint"
+          ],
+          "sunsetSuitability": "possible",
+          "coordinates": {
+            "latitude": 37.3836883879,
+            "longitude": -113.028410441
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/places/lava-point-overlook.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_place_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "C6949E77-8BC7-4457-960E-F1B8EDA95399",
+        "url": "https://www.nps.gov/places/lava-point-overlook.htm",
+        "title": "Lava Point Overlook",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:24"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "place:dbca60cb-70d8-41ed-9957-7a0c727e9d87",
+        "text": "Mormon Pioneer National Heritage Area: The Mormon Pioneer National Heritage Area preserves the natural, historical, and cultural heritage legacies and contributions of Mormon settlement in the West. The heritage area accomplishes this through community-led efforts to connect with the past by telling the Mormon pioneer story.",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:place:DBCA60CB-70D8-41ED-9957-7A0C727E9D87",
+          "destinationId": "nps:park:zion",
+          "name": "Mormon Pioneer National Heritage Area",
+          "category": "place",
+          "activityTypes": [
+            "walk"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": null,
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": "low",
+          "accessibility": null,
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 37.83482853143013,
+            "longitude": -112.43756708361622
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/places/mormon-pioneer-national-heritage-area.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_place_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "DBCA60CB-70D8-41ED-9957-7A0C727E9D87",
+        "url": "https://www.nps.gov/places/mormon-pioneer-national-heritage-area.htm",
+        "title": "Mormon Pioneer National Heritage Area",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:25"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "place:cf1b624d-c2ba-4a8c-99aa-1b57f4f06430",
+        "text": "Pa'rus - A Living Canyon",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:place:CF1B624D-C2BA-4A8C-99AA-1B57F4F06430",
+          "destinationId": "nps:park:zion",
+          "name": "Pa'rus - A Living Canyon",
+          "category": "place",
+          "activityTypes": [
+            "hike"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": null,
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": null,
+          "accessibility": null,
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 37.20367564940907,
+            "longitude": -112.98069477081299
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/places/a-living-canyon.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_place_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "CF1B624D-C2BA-4A8C-99AA-1B57F4F06430",
+        "url": "https://www.nps.gov/places/a-living-canyon.htm",
+        "title": "Pa'rus - A Living Canyon",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:26"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "place:12532066-726a-4dc7-8e68-5c2abf5712a4",
+        "text": "Pa'rus - Changing Landscapes",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:place:12532066-726A-4DC7-8E68-5C2ABF5712A4",
+          "destinationId": "nps:park:zion",
+          "name": "Pa'rus - Changing Landscapes",
+          "category": "place",
+          "activityTypes": [],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": null,
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": null,
+          "accessibility": null,
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 37.21050740567137,
+            "longitude": -112.97771215438843
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/places/changing-landscapes.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_place_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "12532066-726A-4DC7-8E68-5C2ABF5712A4",
+        "url": "https://www.nps.gov/places/changing-landscapes.htm",
+        "title": "Pa'rus - Changing Landscapes",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:27"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "place:942b64c5-0fa3-4df4-bafc-d9472e6fdc57",
+        "text": "Pa'rus - Creation from Destruction",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:place:942B64C5-0FA3-4DF4-BAFC-D9472E6FDC57",
+          "destinationId": "nps:park:zion",
+          "name": "Pa'rus - Creation from Destruction",
+          "category": "place",
+          "activityTypes": [],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": null,
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": null,
+          "accessibility": null,
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 37.20892662901413,
+            "longitude": -112.97820568084717
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/places/creation-from-destruction.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_place_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "942B64C5-0FA3-4DF4-BAFC-D9472E6FDC57",
+        "url": "https://www.nps.gov/places/creation-from-destruction.htm",
+        "title": "Pa'rus - Creation from Destruction",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:28"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "place:5455007d-a713-4e0c-8e00-cb9944f5926b",
+        "text": "Pa'rus - Diversion Dam",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:place:5455007D-A713-4E0C-8E00-CB9944F5926B",
+          "destinationId": "nps:park:zion",
+          "name": "Pa'rus - Diversion Dam",
+          "category": "place",
+          "activityTypes": [
+            "hike",
+            "walk",
+            "viewpoint"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": "easy",
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": "low",
+          "accessibility": null,
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [
+            "viewpoint"
+          ],
+          "sunsetSuitability": "possible",
+          "coordinates": {
+            "latitude": 37.21431822297103,
+            "longitude": -112.97634422779083
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/places/diverson-dam.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_place_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "5455007D-A713-4E0C-8E00-CB9944F5926B",
+        "url": "https://www.nps.gov/places/diverson-dam.htm",
+        "title": "Pa'rus - Diversion Dam",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:29"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "place:05ae8cfc-c3d8-4554-ae78-2ea700e82a4d",
+        "text": "Pa'rus - Footprints in Time",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:place:05AE8CFC-C3D8-4554-AE78-2EA700E82A4D",
+          "destinationId": "nps:park:zion",
+          "name": "Pa'rus - Footprints in Time",
+          "category": "place",
+          "activityTypes": [
+            "hike"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": null,
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": null,
+          "accessibility": null,
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 37.20652976664211,
+            "longitude": -112.97939658164978
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/places/footprints-in-time.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_place_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "05AE8CFC-C3D8-4554-AE78-2EA700E82A4D",
+        "url": "https://www.nps.gov/places/footprints-in-time.htm",
+        "title": "Pa'rus - Footprints in Time",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:30"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "place:cd1fa2ad-2d1d-4a8f-ba76-421c4383d160",
+        "text": "Pa'rus - The Master Sculptor",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:place:CD1FA2AD-2D1D-4A8F-BA76-421C4383D160",
+          "destinationId": "nps:park:zion",
+          "name": "Pa'rus - The Master Sculptor",
+          "category": "place",
+          "activityTypes": [
+            "hike"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": null,
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": "moderate",
+          "accessibility": null,
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 37.21559130065613,
+            "longitude": -112.97577559947968
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/places/master-sculptor.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_place_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "CD1FA2AD-2D1D-4A8F-BA76-421C4383D160",
+        "url": "https://www.nps.gov/places/master-sculptor.htm",
+        "title": "Pa'rus - The Master Sculptor",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:31"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "place:57a1bdf3-666b-4604-8216-6fbf17025e09",
+        "text": "Pa'rus - Virgin River Wayside",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:place:57A1BDF3-666B-4604-8216-6FBF17025E09",
+          "destinationId": "nps:park:zion",
+          "name": "Pa'rus - Virgin River Wayside",
+          "category": "place",
+          "activityTypes": [],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": null,
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": "moderate",
+          "accessibility": null,
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 37.21217359386586,
+            "longitude": -112.9768431186676
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/places/virgin-river-wayside.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_place_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "57A1BDF3-666B-4604-8216-6FBF17025E09",
+        "url": "https://www.nps.gov/places/virgin-river-wayside.htm",
+        "title": "Pa'rus - Virgin River Wayside",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:32"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "place:75b52cf1-d637-489a-bcec-3fb4218ee625",
+        "text": "Temple of Sinawava",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:place:75B52CF1-D637-489A-BCEC-3FB4218EE625",
+          "destinationId": "nps:park:zion",
+          "name": "Temple of Sinawava",
+          "category": "place",
+          "activityTypes": [
+            "hike",
+            "walk"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": "easy",
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": "low",
+          "accessibility": null,
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 37.2851874507,
+            "longitude": -112.947408632
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/places/temple-of-sinawava.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_place_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "75B52CF1-D637-489A-BCEC-3FB4218EE625",
+        "url": "https://www.nps.gov/places/temple-of-sinawava.htm",
+        "title": "Temple of Sinawava",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:33"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "place:1b060c03-42a2-4f89-9906-e9c6d0ee0054",
+        "text": "The Zion Grotto",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:place:1B060C03-42A2-4F89-9906-E9C6D0EE0054",
+          "destinationId": "nps:park:zion",
+          "name": "The Zion Grotto",
+          "category": "place",
+          "activityTypes": [
+            "hike"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": null,
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": null,
+          "accessibility": null,
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 37.2590355064,
+            "longitude": -112.950962016
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/places/the-grotto-zion.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_place_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "1B060C03-42A2-4F89-9906-E9C6D0EE0054",
+        "url": "https://www.nps.gov/places/the-grotto-zion.htm",
+        "title": "The Zion Grotto",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:34"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "place:c8d83fe9-28ca-45c5-8f02-980f4d847417",
+        "text": "The Zion Lodge: The Zion Lodge is located in the heart of Zion Canyon and offers unparalleled views of the towering sandstone cliffs. The Zion Lodge provides the only lodging with a variety of accommodations and is also the only place inside Zion to eat with an onsite restaurant.",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:place:C8D83FE9-28CA-45C5-8F02-980F4D847417",
+          "destinationId": "nps:park:zion",
+          "name": "The Zion Lodge",
+          "category": "lodging",
+          "activityTypes": [
+            "hike",
+            "lodging"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": "easy",
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": null,
+          "accessibility": null,
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 37.251474,
+            "longitude": -112.955772
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/places/zion-lodge.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_place_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "C8D83FE9-28CA-45C5-8F02-980F4D847417",
+        "url": "https://www.nps.gov/places/zion-lodge.htm",
+        "title": "The Zion Lodge",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:35"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "place:f4434a7d-176b-4388-9290-e7456be94dce",
+        "text": "Weeping Rock",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:place:F4434A7D-176B-4388-9290-E7456BE94DCE",
+          "destinationId": "nps:park:zion",
+          "name": "Weeping Rock",
+          "category": "place",
+          "activityTypes": [
+            "hike"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": null,
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": null,
+          "accessibility": null,
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 37.2707436561,
+            "longitude": -112.938451173
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/places/weeping-rock.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_place_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "F4434A7D-176B-4388-9290-E7456BE94DCE",
+        "url": "https://www.nps.gov/places/weeping-rock.htm",
+        "title": "Weeping Rock",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:36"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "place:2b4da920-06ab-4431-9e00-4bf51bdf67f7",
+        "text": "Zion Canyon Visitor Center",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:place:2B4DA920-06AB-4431-9E00-4BF51BDF67F7",
+          "destinationId": "nps:park:zion",
+          "name": "Zion Canyon Visitor Center",
+          "category": "visitor_center",
+          "activityTypes": [
+            "hike",
+            "walk",
+            "viewpoint",
+            "visitor_center"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": "easy",
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": "low",
+          "accessibility": null,
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [
+            "viewpoint"
+          ],
+          "sunsetSuitability": "possible",
+          "coordinates": {
+            "latitude": 37.20007883740497,
+            "longitude": -112.98688895601737
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/places/zion-canyon-visitor-center.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_place_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "2B4DA920-06AB-4431-9E00-4BF51BDF67F7",
+        "url": "https://www.nps.gov/places/zion-canyon-visitor-center.htm",
+        "title": "Zion Canyon Visitor Center",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:37"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "place:6e8678f7-171f-43ea-9507-aa5f7713a775",
+        "text": "Zion Human History Museum: Immerse yourself in the human history of Zion National Park! Rangers staff an information desk during operating hours. Indoor exhibits explore the people, places, and stories of Zion. Rotating exhibits feature regional artists, local discoveries, and more. A 22-minute orientation film examines the history of the canyon and highlights the dramatic landscapes of the park. Visit the bookstore for books, gifts, and souvenirs.",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:place:6E8678F7-171F-43EA-9507-AA5F7713A775",
+          "destinationId": "nps:park:zion",
+          "name": "Zion Human History Museum",
+          "category": "museum",
+          "activityTypes": [
+            "hike",
+            "sunset",
+            "museum"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": "easy",
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": "low",
+          "accessibility": null,
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [
+            "sunset"
+          ],
+          "sunsetSuitability": "supported",
+          "coordinates": {
+            "latitude": 37.20954316006341,
+            "longitude": -112.98031972636329
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/places/zion-human-history-museum.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_place_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "6E8678F7-171F-43EA-9507-AA5F7713A775",
+        "url": "https://www.nps.gov/places/zion-human-history-museum.htm",
+        "title": "Zion Human History Museum",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:38"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "place:08b50528-044f-470e-bf11-876d5b77a360",
+        "text": "Zion Nature Center: During the summer, rangers staff the interactive Zion Nature Center from 12 pm - 5 pm daily! This is a perfect place to learn about geology, animals, and the history of Zion. Explore different habitats, enjoy bird songs, listen to canyon tree frog calls, and participate in Junior Ranger programs — all in an air-conditioned building.",
+        "normalizedValue": {
+          "entityId": "nps:park:zion:place:08B50528-044F-470E-BF11-876D5B77A360",
+          "destinationId": "nps:park:zion",
+          "name": "Zion Nature Center",
+          "category": "visitor_center",
+          "activityTypes": [
+            "hike",
+            "walk",
+            "visitor_center"
+          ],
+          "scenicDriveSubject": false,
+          "primaryActivityType": null,
+          "difficulty": "easy",
+          "duration": null,
+          "walkingDistanceMiles": null,
+          "walkingDistanceQualifier": null,
+          "walkingDistanceSource": null,
+          "walkingDistanceConflict": false,
+          "exposureLevel": "low",
+          "accessibility": null,
+          "operationalFacts": [],
+          "seasonalStatus": null,
+          "currentStatus": "unknown",
+          "viewpointTraits": [],
+          "sunsetSuitability": null,
+          "coordinates": {
+            "latitude": 37.20535480630132,
+            "longitude": -112.98241138458252
+          },
+          "authority": "official_owner",
+          "sourceUrl": "https://www.nps.gov/places/zion-nature-center.htm",
+          "observedAt": "2026-09-24T00:00:00.000Z",
+          "freshness": "stable"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "named_place_candidate",
+          "static_suitability_only",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "08B50528-044F-470E-BF11-876D5B77A360",
+        "url": "https://www.nps.gov/places/zion-nature-center.htm",
+        "title": "Zion Nature Center",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:39"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "facility-access:zion-human-history-museum-patio",
+        "text": "Zion Human History Museum Patio: Wheelchair accessible viewing patio overlooking West Temple and the Towers of the Virgin. Use the museum parking approach. The trail connector is not accessible.",
+        "normalizedValue": {
+          "name": "Zion Human History Museum Patio",
+          "category": "viewpoint",
+          "sourceUrl": "https://www.nps.gov/places/zion-human-history-museum.htm",
+          "accessibility": "Wheelchair accessible viewing patio overlooking West Temple and the Towers of the Virgin. Use the museum parking approach.",
+          "limitation": "The trail connector is not accessible.",
+          "activityTypes": [
+            "viewpoint"
+          ],
+          "wheelchairAccessible": true,
+          "currentStatus": "unknown",
+          "exposureLevel": "low",
+          "difficulty": "easy"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "static_suitability_only",
+          "reviewed_facility_access:2026-09-23",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "facility-access:Zion Human History Museum Patio",
+        "url": "https://www.nps.gov/places/zion-human-history-museum.htm",
+        "title": "Zion Human History Museum Patio",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-23",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:40"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "facility-access:zion-canyon-visitor-center",
+        "text": "Zion Canyon Visitor Center: Wheelchair accessible facility with reserved parking and paved walkways. ",
+        "normalizedValue": {
+          "name": "Zion Canyon Visitor Center",
+          "category": "visitor_center",
+          "accessibility": "Wheelchair accessible facility with reserved parking and paved walkways.",
+          "activityTypes": [
+            "visitor_center"
+          ],
+          "wheelchairAccessible": true,
+          "currentStatus": "unknown",
+          "exposureLevel": "low",
+          "difficulty": "easy"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "static_suitability_only",
+          "reviewed_facility_access:2026-09-23",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "facility-access:Zion Canyon Visitor Center",
+        "url": "https://www.nps.gov/zion/planyourvisit/accessibility.htm",
+        "title": "Zion Canyon Visitor Center",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-23",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:41"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "facility-access:zion-human-history-museum",
+        "text": "Zion Human History Museum: Wheelchair accessible exhibits and park film, with a ramp to the building. Seasonal hours apply. ",
+        "normalizedValue": {
+          "name": "Zion Human History Museum",
+          "category": "museum",
+          "accessibility": "Wheelchair accessible exhibits and park film, with a ramp to the building. Seasonal hours apply.",
+          "activityTypes": [
+            "museum"
+          ],
+          "wheelchairAccessible": true,
+          "currentStatus": "unknown",
+          "exposureLevel": "low",
+          "difficulty": "easy"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "static_suitability_only",
+          "reviewed_facility_access:2026-09-23",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "facility-access:Zion Human History Museum",
+        "url": "https://www.nps.gov/zion/planyourvisit/accessibility.htm",
+        "title": "Zion Human History Museum",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-23",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:42"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "facility-access:human-history-museum",
+        "text": "Human History Museum: Wheelchair accessible exhibits and park film, with a ramp to the building. Seasonal hours apply. ",
+        "normalizedValue": {
+          "name": "Human History Museum",
+          "category": "museum",
+          "accessibility": "Wheelchair accessible exhibits and park film, with a ramp to the building. Seasonal hours apply.",
+          "activityTypes": [
+            "museum"
+          ],
+          "wheelchairAccessible": true,
+          "currentStatus": "unknown",
+          "exposureLevel": "low",
+          "difficulty": "easy"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "static_suitability_only",
+          "reviewed_facility_access:2026-09-23",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "facility-access:Human History Museum",
+        "url": "https://www.nps.gov/zion/planyourvisit/accessibility.htm",
+        "title": "Human History Museum",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-23",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:43"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "facility-access:zion-nature-center",
+        "text": "Zion Nature Center: Wheelchair accessible exhibits and activities, with a ramp to the entrance. Seasonal hours apply. ",
+        "normalizedValue": {
+          "name": "Zion Nature Center",
+          "category": "visitor_center",
+          "accessibility": "Wheelchair accessible exhibits and activities, with a ramp to the entrance. Seasonal hours apply.",
+          "activityTypes": [
+            "visitor_center"
+          ],
+          "wheelchairAccessible": true,
+          "currentStatus": "unknown",
+          "exposureLevel": "low",
+          "difficulty": "easy"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "static_suitability_only",
+          "reviewed_facility_access:2026-09-23",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "facility-access:Zion Nature Center",
+        "url": "https://www.nps.gov/zion/planyourvisit/accessibility.htm",
+        "title": "Zion Nature Center",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-23",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:44"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "facility-access:kolob-canyons-visitor-center",
+        "text": "Kolob Canyons Visitor Center: Wheelchair accessible walkways, information desk, exhibits and restrooms. ",
+        "normalizedValue": {
+          "name": "Kolob Canyons Visitor Center",
+          "category": "visitor_center",
+          "accessibility": "Wheelchair accessible walkways, information desk, exhibits and restrooms.",
+          "activityTypes": [
+            "visitor_center"
+          ],
+          "wheelchairAccessible": true,
+          "currentStatus": "unknown",
+          "exposureLevel": "low",
+          "difficulty": "easy"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "static_suitability_only",
+          "reviewed_facility_access:2026-09-23",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "facility-access:Kolob Canyons Visitor Center",
+        "url": "https://www.nps.gov/zion/planyourvisit/accessibility.htm",
+        "title": "Kolob Canyons Visitor Center",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-23",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:45"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "facility-access:zion-lodge",
+        "text": "Zion Lodge: Wheelchair accessible dining room, auditorium and restrooms. Shuttle access restrictions still apply. ",
+        "normalizedValue": {
+          "name": "Zion Lodge",
+          "category": "lodging",
+          "accessibility": "Wheelchair accessible dining room, auditorium and restrooms. Shuttle access restrictions still apply.",
+          "activityTypes": [
+            "lodging"
+          ],
+          "wheelchairAccessible": true,
+          "currentStatus": "unknown",
+          "exposureLevel": "low",
+          "difficulty": "easy"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "static_suitability_only",
+          "reviewed_facility_access:2026-09-23",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "facility-access:Zion Lodge",
+        "url": "https://www.nps.gov/zion/planyourvisit/accessibility.htm",
+        "title": "Zion Lodge",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-23",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:46"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "activities",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "facility-access:south-fork-picnic-area",
+        "text": "South Fork Picnic Area: Wheelchair accessible parking and restroom, level compacted gravel picnic area with extended tables. ",
+        "normalizedValue": {
+          "name": "South Fork Picnic Area",
+          "category": "picnic_area",
+          "accessibility": "Wheelchair accessible parking and restroom, level compacted gravel picnic area with extended tables.",
+          "activityTypes": [
+            "picnic_area"
+          ],
+          "wheelchairAccessible": true,
+          "currentStatus": "unknown",
+          "exposureLevel": "low",
+          "difficulty": "easy"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": [
+          "static_suitability_only",
+          "reviewed_facility_access:2026-09-23",
+          "operational_normalization:opnorm-v2"
+        ]
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "facility-access:South Fork Picnic Area",
+        "url": "https://www.nps.gov/zion/planyourvisit/accessibility.htm",
+        "title": "South Fork Picnic Area",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-23",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-activities-v8"
+      },
+      "evidenceId": "ev:47"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "visitor_services",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "visitor-centers:774a69fb-32df-4a52-a5c9-e9b29f754b51",
+        "text": "Zion Canyon Visitor Center: Located near the South Entrance of the park, the Zion Canyon Visitor Center is an excellent place to begin your exploration of Zion Canyon. Park rangers and outdoor exhibits will help you plan your visit and make the most of your time. Inquire at the Zion Canyon Wilderness Desk about permits for backpacking, canyoneering, and other trips into the wilderness. Visit the bookstore for maps, books, and gifts.",
+        "normalizedValue": {
+          "name": "Zion Canyon Visitor Center",
+          "category": "visitor_center",
+          "coordinates": {
+            "latitude": 37.20007883740497,
+            "longitude": -112.98688895601737
+          },
+          "activityTypes": [
+            "visitor_center",
+            "exhibits",
+            "orientation"
+          ],
+          "difficulty": "easy",
+          "exposureLevel": "low",
+          "currentStatus": "unknown",
+          "authority": "official_owner"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": []
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "774A69FB-32DF-4A52-A5C9-E9B29F754B51",
+        "url": "https://www.nps.gov/zion/index.htm",
+        "title": "Zion Canyon Visitor Center",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-evidence-v2"
+      },
+      "evidenceId": "ev:48"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "visitor_services",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "visitor-centers:07eaf461-10e1-478f-b3bd-a54c910f6a4b",
+        "text": "Zion Nature Center: During the summer, come visit the Zion Nature Center! This is a perfect place to learn about geology, animals, and the history of Zion. Take a break from the sun to explore different habitats, enjoy bird songs, listen to canyon tree frog calls, and participate in Junior Ranger programs. The inside of the Nature Center has a variety of interactive exhibits, animal models, changing activities, and crafts. Park rangers host educational programs throughout the day.",
+        "normalizedValue": {
+          "name": "Zion Nature Center",
+          "category": "visitor_center",
+          "coordinates": {
+            "latitude": 37.20534626106819,
+            "longitude": -112.98241674900055
+          },
+          "activityTypes": [
+            "visitor_center",
+            "exhibits",
+            "orientation"
+          ],
+          "difficulty": "easy",
+          "exposureLevel": "low",
+          "currentStatus": "unknown",
+          "authority": "official_owner"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": []
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "07EAF461-10E1-478F-B3BD-A54C910F6A4B",
+        "url": "https://www.nps.gov/zion/index.htm",
+        "title": "Zion Nature Center",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-evidence-v2"
+      },
+      "evidenceId": "ev:49"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "visitor_services",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "visitor-centers:835fc05c-8ac2-43ad-87c0-9704b9895144",
+        "text": "Human History Museum: Immerse yourself in the human history of Zion National Park! Rangers staff an information desk during operating hours. Indoor exhibits explore the people, places, and stories of Zion. Rotating exhibits feature regional artists, local discoveries, and more. A 22-minute orientation film examines the history of the canyon and highlights the dramatic landscapes of the park. Visit the bookstore for books, gifts, and souvenirs. There are also dramatic views of the Towers of the Virgin and Bridge Mountain outside.",
+        "normalizedValue": {
+          "name": "Human History Museum",
+          "category": "visitor_center",
+          "coordinates": {
+            "latitude": 37.209446,
+            "longitude": -112.980442
+          },
+          "activityTypes": [
+            "visitor_center",
+            "exhibits",
+            "orientation"
+          ],
+          "difficulty": "easy",
+          "exposureLevel": "low",
+          "currentStatus": "unknown",
+          "authority": "official_owner"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": []
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "835FC05C-8AC2-43AD-87C0-9704B9895144",
+        "url": "https://www.nps.gov/zion/index.htm",
+        "title": "Human History Museum",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-evidence-v2"
+      },
+      "evidenceId": "ev:50"
+    },
+    {
+      "entityId": "nps:park:zion",
+      "topic": "visitor_services",
+      "evidenceType": "fact",
+      "claim": {
+        "identity": "visitor-centers:5a161abb-8443-4f3c-8f3c-773a10b4ed2c",
+        "text": "Kolob Canyons Visitor Center: Closed daily from 12pm-1pm This is the entry point to the Kolob Canyons area of the park. It is located 45 miles north of Springdale and 17 miles south of Cedar City at Exit 40 on Interstate 15. Park rangers are available to answer questions. Exhibits explore the geology, vegetation, and wildlife of this unique landscape.",
+        "normalizedValue": {
+          "name": "Kolob Canyons Visitor Center",
+          "category": "visitor_center",
+          "coordinates": {
+            "latitude": 37.45364228,
+            "longitude": -113.225737792
+          },
+          "activityTypes": [
+            "visitor_center",
+            "exhibits",
+            "orientation"
+          ],
+          "difficulty": "easy",
+          "exposureLevel": "low",
+          "currentStatus": "unknown",
+          "authority": "official_owner"
+        },
+        "unit": null,
+        "status": null,
+        "subjectId": "nps:park:zion",
+        "objectId": null,
+        "qualifiers": []
+      },
+      "scope": {
+        "geographicEntityIds": [
+          "nps:park:zion"
+        ],
+        "validFrom": null,
+        "validThrough": null,
+        "audience": "public",
+        "locale": "en-US"
+      },
+      "source": {
+        "provider": "nps",
+        "sourceClass": "official_owner",
+        "sourceId": "5A161ABB-8443-4F3C-8F3C-773A10B4ED2C",
+        "url": "https://www.nps.gov/zion/index.htm",
+        "title": "Kolob Canyons Visitor Center",
+        "publishedAt": null,
+        "sourceUpdatedAt": null
+      },
+      "observedAt": "2026-09-24T00:00:00.000Z",
+      "quality": {
+        "authorityClass": "official_owner",
+        "scopeMatch": "exact",
+        "conflictStatus": "none"
+      },
+      "provenance": {
+        "extractionMethod": "structured_adapter",
+        "extractorVersion": "nps-evidence-v2"
+      },
+      "evidenceId": "ev:51"
+    }
+  ]
+}

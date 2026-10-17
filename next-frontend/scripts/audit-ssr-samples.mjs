@@ -36,7 +36,7 @@ const SAMPLES = [
     path: '/about',
     expect: 'strong',
     titleIncludes: 'About Krishna',
-    h1Includes: "Hey, I'm Krishna",
+    h1Includes: "Hey, I’m Krishna",
     bodyAny: ['TrailVerse', 'national parks'],
   },
   {
@@ -82,8 +82,8 @@ const SAMPLES = [
     tier: '1',
     path: '/testimonials',
     expect: 'strong',
-    titleIncludes: 'Reviews',
-    h1Includes: 'What travelers are saying',
+    titleIncludes: 'Traveler Stories',
+    h1Includes: 'Traveler Stories',
     bodyAny: ['travelers', 'review', 'TrailVerse'],
     bodyMinMatches: 2,
     forbidBody: ['BETA', 'enable JavaScript'],
@@ -125,7 +125,8 @@ const SAMPLES = [
     titleIncludes: 'Explore',
     h1Optional: true,
     canonicalOptional: true,
-    bodyAny: ['Yellowstone', 'Grand Canyon', 'National Park'],
+    bodyAny: ['Explore National Parks', 'Find your next adventure', 'Browse park details'],
+    minParkLinks: 1,
     bodyMinMatches: 2,
     minBytes: 50_000,
   },
@@ -322,6 +323,11 @@ function gradeSample(sample, payload) {
     const rawMatches =
       sample.expect === 'hybrid-thin' ? countBodyMatches(html, sample.bodyAny) : 0;
     checks.body = Math.max(visibleMatches, rawMatches) >= min;
+  }
+
+  if (sample.minParkLinks) {
+    const parkLinks = stripScriptsAndStyles(html).match(/href=["']\/parks\/[^"']+["']/g) || [];
+    checks.body = checks.body && parkLinks.length >= sample.minParkLinks;
   }
 
   if (sample.forbidBody?.length) {

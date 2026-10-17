@@ -4,6 +4,15 @@
  * defaults < aiContext < conversationSummary < savedTripPlan < quickFill < currentMessage
  */
 
+const { buildTripScopeFromMessage, applyTripScopeToTripState } = require('./roadTripContract');
+const { planningStateToTripStateLayer } = require('./planningState');
+const { mapStayPreference } = require('./stayPreferenceMapper');
+const { extractTransportConstraints } = require('./travelerStateExtraction');
+const {
+  normalizeDrivingPolicyFields,
+  reconcileTransportationDrivingPolicy,
+} = require('./transportConstraintContract');
+
 function emptyTripState() {
   return {
     destination: { parkCode: null, parkName: null, region: null, state: null },
@@ -13,18 +22,32 @@ function emptyTripState() {
       count: null,
       groupType: null,
       kids: null,
+      childrenCount: null,
       pets: null,
       accessibilityNeeds: [],
     },
-    lodging: { type: null, baseTown: null, booked: null },
-    transportation: { mode: null, startLocation: null, airport: null, rentalCar: null },
+    lodging: { type: null, stayPreference: null, baseTown: null, booked: null },
+    transportation: {
+      mode: null,
+      startLocation: null,
+      airport: null,
+      departureCity: null,
+      departureAirportCode: null,
+      rentalCar: null,
+      drivingPolicy: null,
+      drivingPolicyReason: null,
+    },
     preferences: {
       fitness: null,
       interests: [],
       budget: null,
       pace: null,
       riskTolerance: null,
+      maxDailyDriveMinutes: null,
+      budgetConstraint: null,
     },
+    roadTrip: null,
+    tripScope: null,
     previousDecisions: [],
     openQuestions: [],
   };
@@ -54,8 +77,12 @@ function mergeInto(target, source) {
   if (isPresent(source.durationDays)) target.durationDays = source.durationDays;
 
   if (source.travelers) {
-    for (const key of ['count', 'groupType', 'kids', 'pets']) {
+    for (const key of ['count', 'groupType', 'kids', 'childrenCount', 'pets']) {
       if (isPresent(source.travelers[key])) target.travelers[key] = source.travelers[key];
+    }
+    if (source.travelers.kids === false) target.travelers.kids = false;
+    if (source.travelers.childrenCount === null && Object.prototype.hasOwnProperty.call(source.travelers, 'childrenCount')) {
+      target.travelers.childrenCount = null;
     }
     if (source.travelers.accessibilityNeeds?.length) {
       target.travelers.accessibilityNeeds = [...source.travelers.accessibilityNeeds];
@@ -63,24 +90,68 @@ function mergeInto(target, source) {
   }
 
   if (source.lodging) {
-    for (const key of ['type', 'baseTown', 'booked']) {
+    for (const key of ['type', 'stayPreference', 'baseTown', 'booked']) {
       if (isPresent(source.lodging[key])) target.lodging[key] = source.lodging[key];
     }
   }
 
   if (source.transportation) {
-    for (const key of ['mode', 'startLocation', 'airport', 'rentalCar']) {
+    if (source.transportation.clearMode === true) {
+      target.transportation.mode = null;
+    }
+    // Phase 9C.1F.1 — explicit restoration clears; a layer that is silent
+    // about the policy leaves it alone.
+    if (source.transportation.clearDrivingPolicy === true) {
+      target.transportation.drivingPolicy = null;
+      target.transportation.drivingPolicyReason = null;
+    }
+    if (source.transportation.drivingPolicy === 'prohibited') {
+      Object.assign(target.transportation, normalizeDrivingPolicyFields(source.transportation));
+    }
+    for (const key of [
+      'mode',
+      'startLocation',
+      'airport',
+      'departureCity',
+      'departureAirportCode',
+      'rentalCar',
+    ]) {
       if (isPresent(source.transportation[key])) target.transportation[key] = source.transportation[key];
     }
+    if (!isPresent(source.transportation.airport)
+      && isPresent(source.transportation.departureAirportCode)) {
+      target.transportation.airport = source.transportation.departureAirportCode;
+    }
+    if (!isPresent(source.transportation.departureAirportCode)
+      && isPresent(source.transportation.airport)) {
+      target.transportation.departureAirportCode = source.transportation.airport;
+    }
+    reconcileTransportationDrivingPolicy(target.transportation);
   }
 
   if (source.preferences) {
-    for (const key of ['fitness', 'budget', 'pace', 'riskTolerance']) {
+    for (const key of ['fitness', 'budget', 'pace', 'riskTolerance', 'maxDailyDriveMinutes', 'budgetConstraint']) {
       if (isPresent(source.preferences[key])) target.preferences[key] = source.preferences[key];
+    }
+    if (source.preferences.budgetConstraint?.cleared) {
+      target.preferences.budget = null;
+      target.preferences.budgetConstraint = source.preferences.budgetConstraint;
+    }
+    if (source.preferences.avoidExposure === true || source.preferences.avoidExposure === false) {
+      target.preferences.avoidExposure = source.preferences.avoidExposure;
     }
     if (source.preferences.interests?.length) {
       target.preferences.interests = [...source.preferences.interests];
     }
+  }
+
+  if (source.tripScope) {
+    target.tripScope = source.tripScope;
+    target.roadTrip = source.tripScope;
+  }
+  if (source.roadTrip) {
+    target.roadTrip = source.roadTrip;
+    target.tripScope = source.roadTrip;
   }
 
   if (source.previousDecisions?.length) {
@@ -90,16 +161,24 @@ function mergeInto(target, source) {
   return target;
 }
 
+// Historical name: this is requested plan length, not inclusive calendar span.
 function calcDurationDays(startDate, endDate, fallbackDays) {
-  if (isPresent(fallbackDays)) return Number(fallbackDays);
-  if (startDate && endDate) {
-    const s = new Date(startDate);
-    const e = new Date(endDate);
-    if (!Number.isNaN(s.getTime()) && !Number.isNaN(e.getTime())) {
-      return Math.max(1, Math.round((e - s) / (1000 * 60 * 60 * 24)) + 1);
-    }
+  return isPresent(fallbackDays) ? Number(fallbackDays) : null;
+}
+
+function applyStayPreference(layer, rawAccommodation, messageText = '') {
+  if (!rawAccommodation) return;
+  const mapped = mapStayPreference({
+    rawAccommodation,
+    messageText,
+    previousStayPreference: layer.lodging.stayPreference,
+  });
+  layer.lodging.type = mapped.accommodationClass !== 'unknown'
+    ? mapped.accommodationClass
+    : String(rawAccommodation).toLowerCase();
+  if (mapped.stayPreference !== 'unknown') {
+    layer.lodging.stayPreference = mapped.stayPreference;
   }
-  return null;
 }
 
 function parseSummaryText(text) {
@@ -140,7 +219,7 @@ function parseSummaryText(text) {
   if (fitnessMatch) layer.preferences.fitness = (fitnessMatch[1] || fitnessMatch[2]).toLowerCase();
 
   const accomMatch = text.match(/(?:Accommodation:\s*([^\n]+))|(camping|tent|rv|car camping|backcountry|lodge|hotel|cabin|glamping|airbnb)/i);
-  if (accomMatch) layer.lodging.type = (accomMatch[1] || accomMatch[2]).toLowerCase();
+  if (accomMatch) applyStayPreference(layer, accomMatch[1] || accomMatch[2], text);
 
   const adjustments = text.match(/User adjustments:\s*([^\n]+)/i);
   if (adjustments?.[1]) {
@@ -200,7 +279,9 @@ function layerFromFormData(formData = {}, metadata = {}) {
   );
   layer.travelers.count = formData.groupSize || formData.travelers || null;
   layer.travelers.kids = formData.hasChildren || formData.children || null;
-  layer.lodging.type = formData.accommodation || formData.lodging || null;
+  if (formData.childrenCount != null) layer.travelers.childrenCount = formData.childrenCount;
+  if (formData.travelParty) layer.travelers.groupType = formData.travelParty;
+  applyStayPreference(layer, formData.accommodation || formData.lodging);
   layer.preferences.fitness = formData.fitnessLevel || formData.fitness || formData.difficulty || null;
   layer.preferences.budget = formData.budget || null;
   layer.preferences.interests = Array.isArray(formData.interests)
@@ -256,11 +337,34 @@ function layerFromCurrentMessage({
   );
 
   if (constraints?.groupSize) layer.travelers.count = constraints.groupSize;
-  if (constraints?.hasChildren) layer.travelers.kids = true;
-  if (constraints?.accommodation) layer.lodging.type = constraints.accommodation;
+  if (constraints?.travelParty) layer.travelers.groupType = constraints.travelParty;
+  if (constraints?.hasChildren === true) layer.travelers.kids = true;
+  if (constraints?.hasChildren === false) layer.travelers.kids = false;
+  if (constraints?.childrenCount != null) layer.travelers.childrenCount = constraints.childrenCount;
+  if (constraints?.childrenCount === null && constraints?.hasChildren === false) {
+    layer.travelers.childrenCount = null;
+  }
+  if (constraints?.accommodation) {
+    applyStayPreference(layer, constraints.accommodation, msg);
+  }
   if (constraints?.fitnessLevel) layer.preferences.fitness = constraints.fitnessLevel;
   if (constraints?.budget) layer.preferences.budget = constraints.budget;
+  if (constraints?.budgetConstraint) {
+    layer.preferences.budgetConstraint = constraints.budgetConstraint;
+    if (constraints.budgetConstraint.cleared) layer.preferences.budget = null;
+  }
   if (constraints?.interests?.length) layer.preferences.interests = [...constraints.interests];
+  if (constraints?.pace) layer.preferences.pace = constraints.pace;
+  if (constraints?.avoidExposure === true) layer.preferences.avoidExposure = true;
+  if (constraints?.maxDailyDriveMinutes != null) {
+    layer.preferences.maxDailyDriveMinutes = constraints.maxDailyDriveMinutes;
+  }
+
+  // Prefer precomputed tripScope from parseConstraints; else derive offline.
+  const tripScope = constraints?.tripScope || buildTripScopeFromMessage(msg);
+  if (tripScope && (tripScope.destinations?.length > 0 || tripScope.type === 'road_trip')) {
+    applyTripScopeToTripState(layer, tripScope);
+  }
 
   const seasonMatch = msg.match(/\b(spring|summer|fall|autumn|winter)\b/i);
   if (seasonMatch) layer.dates.season = seasonMatch[1].toLowerCase();
@@ -269,13 +373,20 @@ function layerFromCurrentMessage({
     layer.dates.flexible = true;
   }
 
-  if (/\b(solo|alone|just me|by myself)\b/i.test(msg)) {
-    layer.travelers.count = 1;
-    layer.travelers.groupType = 'solo';
-  } else if (/\b(couple|partner|two of us)\b/i.test(msg)) {
-    layer.travelers.groupType = 'couple';
-  } else if (/\b(family|families)\b/i.test(msg)) {
-    layer.travelers.groupType = 'family';
+  // Prefer normalized constraints.travelParty over re-inferring from message regex.
+  if (!layer.travelers.groupType) {
+    if (/\b(solo|alone|just me|by myself)\b/i.test(msg)) {
+      layer.travelers.count = layer.travelers.count || 1;
+      layer.travelers.groupType = 'solo';
+    } else if (/\b(couple|partner|two of us)\b/i.test(msg)) {
+      layer.travelers.groupType = 'couple';
+    } else if (/\b(family|families)\b/i.test(msg)) {
+      layer.travelers.groupType = 'family';
+    } else if (/\bfriends\b/i.test(msg)) {
+      layer.travelers.groupType = 'friends';
+    } else if (/\bgroup of\b/i.test(msg)) {
+      layer.travelers.groupType = 'group';
+    }
   }
 
   if (/\b(dog|dogs|pet|pets)\b/i.test(msg)) layer.travelers.pets = true;
@@ -289,14 +400,39 @@ function layerFromCurrentMessage({
   if (/\b(relaxed|leisurely|slow pace)\b/i.test(msg)) layer.preferences.pace = 'relaxed';
   if (/\b(packed|aggressive|fast pace|see everything)\b/i.test(msg)) layer.preferences.pace = 'packed';
 
-  if (/\b(fly|flying|flight|airport)\b/i.test(msg)) layer.transportation.mode = 'fly';
-  if (/\b(road trip|driving|drive from)\b/i.test(msg)) layer.transportation.mode = 'drive';
-  if (/\b(rental car|rent a car)\b/i.test(msg)) layer.transportation.rentalCar = true;
+  const preferNotToFly =
+    /\bprefer\s+not\s+to\s+fly\b|\b(?:do\s+not|don['’]?t)\s+(?:want|prefer)\s+to\s+fly\b|\bno\s+flights?\b/i.test(msg);
+  if (preferNotToFly) {
+    layer.transportation.clearMode = true;
+  }
+  if (!preferNotToFly && /\b(fly|flying|flight|airport)\b/i.test(msg)) {
+    layer.transportation.mode = 'fly';
+  }
+  // Phase 9C.1F.1 — an explicit prohibition in this message outranks the
+  // broad drive/rental signals in the SAME message ("no driving" contains
+  // "driving"); an explicit restoration clears a persisted prohibition.
+  const transportConstraint = extractTransportConstraints(msg);
+  if (transportConstraint.drivingPolicy === 'prohibited') {
+    layer.transportation.drivingPolicy = transportConstraint.drivingPolicy;
+    layer.transportation.drivingPolicyReason = transportConstraint.drivingPolicyReason;
+  } else {
+    if (transportConstraint.clearDrivingPolicy) layer.transportation.clearDrivingPolicy = true;
+    if (/\b(road trip|driving|drive from)\b/i.test(msg)) layer.transportation.mode = 'drive';
+    if (/\b(rental car|rent a car)\b/i.test(msg) || transportConstraint.rentalCar === true) {
+      layer.transportation.rentalCar = true;
+    }
+  }
 
   const airportMatch = msg.match(/\b([A-Z]{3})\s+airport\b/i);
-  if (airportMatch) layer.transportation.airport = airportMatch[1].toUpperCase();
+  if (airportMatch) {
+    layer.transportation.airport = airportMatch[1].toUpperCase();
+    layer.transportation.departureAirportCode = layer.transportation.airport;
+  }
 
-  if (userCity?.name) layer.transportation.startLocation = userCity.name;
+  if (userCity?.name) {
+    layer.transportation.startLocation = userCity.name;
+    layer.transportation.departureCity = userCity.name;
+  }
 
   return layer;
 }
@@ -332,6 +468,10 @@ function computeTripStateCompleteness(tripState) {
 
 /**
  * Build canonical tripState from layered sources (lowest → highest priority).
+ *
+ * Pass #5 precedence:
+ * defaults < aiContext < legacy savedTrip/formData history < conversationSummary
+ * < persisted planningState < Quick Fill formData < latest message/constraints
  */
 function buildTripState({
   metadata = {},
@@ -351,6 +491,19 @@ function buildTripState({
     mergeInto(state, layerFromSavedTripPlan(savedTripPlan));
   }
   mergeInto(state, conversationSummary);
+
+  // Persisted normalized planningState beats conversation re-extraction.
+  const planningRaw =
+    resolvedMetadata?.planningState
+    || metadata?.planningState
+    || savedTripPlan?.planningState
+    || constraints?.planningState
+    || null;
+  if (planningRaw) {
+    const layer = planningStateToTripStateLayer(planningRaw);
+    if (layer) mergeInto(state, layer);
+  }
+
   mergeInto(state, layerFromFormData(metadata.formData, metadata));
   mergeInto(
     state,
@@ -363,6 +516,15 @@ function buildTripState({
     })
   );
 
+  // Authoritative temporal projection can intentionally contain nulls.
+  // A conversation summary (including assistant prose) must not resurrect them.
+  if (constraints?.dates) {
+    state.dates.startDate = constraints.dates.start || null;
+    state.dates.endDate = constraints.dates.end || null;
+    state.tripWindowDays = constraints.dates.tripWindowDays ?? null;
+    if (constraints.dates.numDays != null) state.durationDays = constraints.dates.numDays;
+    state.planDayCalendarBindings = constraints.planningState?.planDayCalendarBindings || [];
+  }
   state.openQuestions = deriveOpenQuestions(state);
   return state;
 }

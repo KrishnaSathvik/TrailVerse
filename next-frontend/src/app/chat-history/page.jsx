@@ -412,9 +412,9 @@ export default function ChatHistoryPage() {
       <Header />
 
       <section className="relative overflow-hidden py-8 sm:py-12">
-        <div className="relative z-10 mx-auto max-w-[92rem] px-4 sm:px-6 lg:px-10 xl:px-12">
+        <div className="relative z-10 public-shell">
           <div
-            className="inline-flex items-center gap-2 rounded-full px-4 py-2 backdrop-blur"
+            className="inline-flex items-center gap-2 rounded-full px-4 py-2 "
             style={{
               backgroundColor: 'var(--surface)',
               borderWidth: '1px',
@@ -434,7 +434,7 @@ export default function ChatHistoryPage() {
             >
               Chat History
             </h1>
-            <p className="max-w-3xl text-lg sm:text-xl" style={{ color: 'var(--text-secondary)' }}>
+            <p className="public-content text-lg sm:text-xl" style={{ color: 'var(--text-secondary)' }}>
               Reopen older planning sessions, archive finished trips, and keep your active chats organized in one place.
             </p>
           </div>
@@ -453,7 +453,7 @@ export default function ChatHistoryPage() {
       </section>
 
       <section className="pb-24">
-        <div className="mx-auto max-w-[92rem] px-4 sm:px-6 lg:px-10 xl:px-12">
+        <div className="public-shell">
           {error && !loading && (
             <div
               className="mb-8 flex flex-col gap-4 rounded-2xl border p-5 sm:flex-row sm:items-center sm:justify-between"
@@ -509,7 +509,7 @@ export default function ChatHistoryPage() {
                 </button>
               </div>
 
-              <div className="flex w-full flex-col gap-3 sm:flex-row lg:max-w-2xl">
+              <div className="flex w-full flex-col gap-3 sm:flex-row public-content">
                 <div className="relative flex-1">
                   <Search
                     className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2"
@@ -606,7 +606,7 @@ export default function ChatHistoryPage() {
                   borderColor: 'var(--border)'
                 }}
               >
-                <div className="max-w-2xl">
+                <div className="public-content">
                   <div
                     className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em]"
                     style={{ backgroundColor: 'rgba(67, 160, 106, 0.12)', color: 'var(--accent-green)' }}

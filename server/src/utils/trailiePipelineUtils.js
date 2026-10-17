@@ -2,6 +2,7 @@
 
 const { CLAUDE_FALLBACK_MODELS, CLAUDE_PRIMARY_MODEL } = require('../config/aiModels');
 const { parseClaudeMessageResponse } = require('./claudeResponseParser');
+const { stampTripSchemaVersion } = require('../../../shared/tripSchemaVersion.cjs');
 
 function isClaudeModelUnavailable(error) {
   const errorBody = error.error || error.response?.data || error.body || {};
@@ -90,6 +91,10 @@ async function callClaudeWithFallback({
         usage: {
           inputTokens: claudeResponse.usage.input_tokens,
           outputTokens: claudeResponse.usage.output_tokens,
+          cacheCreationInputTokens: Number.isFinite(claudeResponse.usage.cache_creation_input_tokens)
+            ? claudeResponse.usage.cache_creation_input_tokens : null,
+          cacheReadInputTokens: Number.isFinite(claudeResponse.usage.cache_read_input_tokens)
+            ? claudeResponse.usage.cache_read_input_tokens : null,
         },
       };
     } catch (error) {
@@ -154,20 +159,40 @@ function buildPlanDocument({
   parkCode,
   reviewMeta,
   auditTrail,
+  identity = null,
+  feasibilityIssues = [],
 }) {
   if (!itineraryData) return null;
 
-  return {
+  // `version: 1` is the document envelope (not tripSchemaVersion).
+  // tripSchemaVersion is stamped from the shared contract after the itinerary
+  // payload is merged so missing legacy plans get CURRENT without rewriting DB rows
+  // that are not being written.
+  return stampTripSchemaVersion({
     type: 'itinerary',
     version: 1,
     generatedAt: new Date().toISOString(),
     createdFrom: 'ai',
     parkName: parkName || null,
     parkCode: parkCode || null,
+    // Stage 8 — canonical response identity travels WITH the plan so the
+    // persistence guard (extractPlanIdentity) can enforce single-writer ordering.
+    ...(identity
+      ? {
+          responseId: identity.responseId,
+          responseVersion: identity.responseVersion,
+          contentHash: identity.contentHash,
+          itineraryHash: identity.itineraryHash,
+        }
+      : {}),
     ...itineraryData,
+    // Stage 10 (F-QUAL-1) — deterministic feasibility warnings persist WITH the
+    // plan (one source of truth) so they restore and export alongside it. Not
+    // hashed: itineraryHash is over itineraryData only.
+    feasibilityIssues: Array.isArray(feasibilityIssues) ? feasibilityIssues : [],
     ...(reviewMeta ? { reviewMeta } : {}),
     ...(auditTrail ? { auditTrail } : {}),
-  };
+  });
 }
 
 function buildAuditTrail({

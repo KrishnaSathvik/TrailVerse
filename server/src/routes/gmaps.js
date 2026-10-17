@@ -1,7 +1,8 @@
 const express = require('express');
-const fetch = require('node-fetch');
+const { fetchGoogleMaps: fetch } = require('../services/googleMapsTransport');
 const NodeCache = require('node-cache');
 const { safeCacheSet } = require('../utils/safeCacheSet');
+const { searchNearbyPlaces } = require('../services/placesLodgingService');
 
 const router = express.Router();
 const cache = new NodeCache({
@@ -10,46 +11,6 @@ const cache = new NodeCache({
   checkperiod: 300,
 });
 const KEY = process.env.GMAPS_SERVER_KEY;
-
-// Debug endpoint to check API key status
-router.get('/debug', (req, res) => {
-  res.json({
-    hasKey: !!KEY,
-    keyLength: KEY ? KEY.length : 0,
-    keyPrefix: KEY ? KEY.substring(0, 10) + '...' : 'none',
-    environment: process.env.NODE_ENV,
-    timestamp: new Date().toISOString(),
-    allEnvVars: Object.keys(process.env).filter(key => key.includes('GMAPS') || key.includes('GOOGLE'))
-  });
-});
-
-// Debug endpoint to test Google Places API directly
-router.get('/debug-places', async (req, res) => {
-  try {
-    if (!KEY) {
-      return res.status(500).json({ error: 'GMAPS_SERVER_KEY not configured' });
-    }
-
-    const { lat = '40.7128', lng = '-74.0060', type = 'restaurant', radius = '1000' } = req.query;
-    
-    const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius}&type=${type}&key=${KEY}`;
-    
-    console.log('🔍 Testing Google Places API directly:', url);
-    
-    const response = await fetch(url);
-    const json = await response.json();
-    
-    res.json({
-      url,
-      status: json.status,
-      error_message: json.error_message,
-      results: json.results?.length || 0,
-      raw_response: json
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
 
 /**
  * @swagger
@@ -175,203 +136,27 @@ router.get('/nearby', async (req, res) => {
     }
 
     if (!KEY) {
-      console.error('❌ GMAPS_SERVER_KEY not configured in nearby search');
-      console.error('❌ Environment variables:', Object.keys(process.env).filter(key => key.includes('GMAPS')));
-      console.error('❌ All environment variables:', Object.keys(process.env).sort());
-      return res.status(500).json({ 
+      console.error('GMAPS_SERVER_KEY not configured in nearby search');
+      return res.status(500).json({
         error: 'Google Maps API key not configured',
-        debug: {
-          hasKey: !!KEY,
-          keyLength: KEY ? KEY.length : 0,
-          environment: process.env.NODE_ENV,
-          availableEnvVars: Object.keys(process.env).filter(key => key.includes('GMAPS'))
-        }
       });
     }
 
-    let url;
-    
-    // Handle park-specific attractions search
-    if (type === 'tourist_attraction_park_specific' && parkName) {
-      // Use text search for park-specific attractions
-      const searchQuery = `${parkName} attractions landmarks points of interest`;
-      url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(searchQuery)}&location=${lat},${lng}&radius=${radius}&key=${KEY}`;
-      console.log('🔍 Park-specific search query:', searchQuery);
-    } else {
-      // Regular nearby search
-      const searchType = type === 'tourist_attraction_park_specific' ? 'tourist_attraction' : type;
-      url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius}&type=${encodeURIComponent(searchType)}&key=${KEY}`;
-    }
-    
-    console.log('🔍 Google Places API URL:', url);
-    const response = await fetch(url);
-    const json = await response.json();
-    
-    console.log('🔍 Google Places API Response:', {
-      status: json.status,
-      resultsCount: json.results?.length || 0,
-      error_message: json.error_message
+    const result = await searchNearbyPlaces({
+      lat,
+      lng,
+      type,
+      radiusMeters: radius,
+      parkName,
+      limit: 10,
     });
-    
-    // Check for API errors
-    if (json.status !== 'OK') {
-      console.error('❌ Google Places API Error:', json.status, json.error_message);
-      console.error('❌ Request URL:', url);
-      console.error('❌ Full API Response:', JSON.stringify(json, null, 2));
-      
-      // Handle specific error cases
-      if (json.status === 'REQUEST_DENIED') {
-        return res.status(400).json({ 
-          error: 'Google Places API access denied. Check API key and billing.',
-          status: json.status, 
-          message: json.error_message,
-          debug: {
-            hasKey: !!KEY,
-            keyLength: KEY ? KEY.length : 0,
-            url: url.replace(KEY, 'HIDDEN_KEY')
-          }
-        });
-      }
-      
-      if (json.status === 'INVALID_REQUEST') {
-        return res.status(400).json({ 
-          error: 'Invalid request to Google Places API',
-          status: json.status, 
-          message: json.error_message,
-          debug: {
-            url: url.replace(KEY, 'HIDDEN_KEY'),
-            params: { lat, lng, type, radius, parkName }
-          }
-        });
-      }
-      
-      return res.status(400).json({ 
-        error: 'Google Places API error', 
-        status: json.status, 
-        message: json.error_message,
-        debug: {
-          url: url.replace(KEY, 'HIDDEN_KEY'),
-          params: { lat, lng, type, radius, parkName }
-        }
-      });
+
+    if (result.status === 'provider_unavailable') {
+      return res.status(400).json({ error: 'Google Places API unavailable' });
     }
-    
-    // Debug: Check first result's rating data
-    if (json.results && json.results.length > 0) {
-      const firstResult = json.results[0];
-      console.log('🔍 Sample result rating data:', {
-        name: firstResult.name,
-        rating: firstResult.rating,
-        user_ratings_total: firstResult.user_ratings_total,
-        price_level: firstResult.price_level
-      });
-    }
-    
-    // Check if we have results
-    if (!json.results || json.results.length === 0) {
-      console.log('🔍 No results found for search:', { lat, lng, type, radius });
-      return res.json([]);
-    }
-    
-    // Fetch detailed place information for each result to get photos and complete data
-    const items = [];
-    const placesToProcess = json.results.slice(0, 50); // Get more results to find top 10 by rating
-    
-    for (const place of placesToProcess) {
-      try {
-        // Fetch place details to get photos and complete information
-        const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=place_id,name,formatted_address,geometry/location,rating,user_ratings_total,price_level,photos,opening_hours/weekday_text,website,formatted_phone_number,types,vicinity&key=${KEY}`;
-        const detailsResponse = await fetch(detailsUrl);
-        const detailsJson = await detailsResponse.json();
-        
-        if (detailsJson.status === 'OK' && detailsJson.result) {
-          const result = detailsJson.result;
-          items.push({
-            place_id: result.place_id,
-            name: result.name,
-            lat: result.geometry?.location?.lat,
-            lng: result.geometry?.location?.lng,
-            rating: result.rating,
-            user_ratings_total: result.user_ratings_total,
-            price_level: result.price_level,
-            address: result.vicinity || result.formatted_address,
-            formatted_address: result.formatted_address,
-            photos: result.photos?.map(photo => ({
-              photo_reference: photo.photo_reference,
-              // Use proxy endpoint instead of direct Google API URL
-              url: `/api/gmaps/photo?photo_reference=${photo.photo_reference}&maxwidth=400`
-            })) || [],
-            opening_hours: result.opening_hours ? {
-              weekday_text: result.opening_hours.weekday_text,
-              // Note: open_now is deprecated but still functional
-              // Consider using PlacesService.getDetails() with isOpen() method in future
-              open_now: result.opening_hours.open_now
-            } : null,
-            website: result.website,
-            formatted_phone_number: result.formatted_phone_number,
-            phone_number: result.formatted_phone_number,
-            types: result.types,
-            vicinity: result.vicinity
-          });
-        } else {
-          // Fallback to basic nearby search data if details fail
-          items.push({
-            place_id: place.place_id,
-            name: place.name,
-            lat: place.geometry?.location?.lat,
-            lng: place.geometry?.location?.lng,
-            rating: place.rating,
-            user_ratings_total: place.user_ratings_total || null,
-            address: place.vicinity || place.formatted_address
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching place details for:', place.name, error);
-        // Fallback to basic nearby search data
-        items.push({
-          place_id: place.place_id,
-          name: place.name,
-          lat: place.geometry?.location?.lat,
-          lng: place.geometry?.location?.lng,
-          rating: place.rating,
-          user_ratings_total: place.user_ratings_total || null,
-          address: place.vicinity || place.formatted_address
-        });
-      }
-    }
-    
-    console.log('🔍 Processed items with ratings:', items.slice(0, 3).map(item => ({
-      name: item.name,
-      rating: item.rating,
-      user_ratings_total: item.user_ratings_total
-    })));
-    
-    // Sort by rating (highest first), then by number of reviews (most reviews first)
-    const sortedItems = items.sort((a, b) => {
-      const ratingA = a.rating || 0;
-      const ratingB = b.rating || 0;
-      const reviewsA = a.user_ratings_total || 0;
-      const reviewsB = b.user_ratings_total || 0;
-      
-      // First sort by rating (descending)
-      if (ratingB !== ratingA) {
-        return ratingB - ratingA;
-      }
-      // If ratings are equal, sort by number of reviews (descending)
-      return reviewsB - reviewsA;
-    });
-    
-    // Take top 10 best places
-    const top10 = sortedItems.slice(0, 10);
-    
-    console.log('🔍 Top 10 places by rating:', top10.map(item => ({
-      name: item.name,
-      rating: item.rating,
-      user_ratings_total: item.user_ratings_total
-    })));
-    
-    safeCacheSet(cache, k, top10, 60 * 60 * 24); // 1 day
-    res.json(top10);
+
+    safeCacheSet(cache, k, result.places, 60 * 60 * 24); // 1 day
+    res.json(result.places);
   } catch (error) {
     console.error('Nearby Search Error:', error);
     res.status(500).json({ error: 'Failed to fetch nearby places' });

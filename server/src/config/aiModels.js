@@ -4,12 +4,18 @@ const parseModelList = (value, fallback) =>
     .map((model) => model.trim())
     .filter(Boolean);
 
-const CLAUDE_PRIMARY_MODEL =
-  process.env.CLAUDE_PRIMARY_MODEL || 'claude-sonnet-5';
+const CANONICAL_TRAILIE_CLAUDE_MODEL = 'claude-sonnet-5';
+const reviewedModelException =
+  process.env.TRAILIE_ALLOW_NONCANONICAL_CLAUDE_MODEL === 'true' ||
+  process.env.NODE_ENV === 'test';
+
+const CLAUDE_PRIMARY_MODEL = reviewedModelException
+  ? (process.env.CLAUDE_PRIMARY_MODEL || CANONICAL_TRAILIE_CLAUDE_MODEL)
+  : CANONICAL_TRAILIE_CLAUDE_MODEL;
 
 const CLAUDE_FALLBACK_TAIL = parseModelList(
-  process.env.CLAUDE_FALLBACK_MODELS,
-  'claude-sonnet-4-6,claude-haiku-4-5-20251001'
+  reviewedModelException ? process.env.CLAUDE_FALLBACK_MODELS : null,
+  'claude-sonnet-5'
 );
 
 /** Primary first, then fallbacks (deduped). */
@@ -22,7 +28,7 @@ const CLAUDE_REVIEWER_MODEL =
   process.env.CLAUDE_REVIEWER_MODEL || CLAUDE_PRIMARY_MODEL;
 
 const CLAUDE_EXTRACTOR_MODEL =
-  process.env.CLAUDE_EXTRACTOR_MODEL || 'claude-haiku-4-5-20251001';
+  reviewedModelException ? (process.env.CLAUDE_EXTRACTOR_MODEL || CLAUDE_PRIMARY_MODEL) : CLAUDE_PRIMARY_MODEL;
 
 const OPENAI_PRIMARY_MODEL =
   process.env.OPENAI_PRIMARY_MODEL || 'gpt-5.4-mini';
@@ -33,6 +39,7 @@ const OPENAI_FALLBACK_MODELS = parseModelList(
 );
 
 module.exports = {
+  CANONICAL_TRAILIE_CLAUDE_MODEL,
   CLAUDE_PRIMARY_MODEL,
   CLAUDE_FALLBACK_MODELS,
   CLAUDE_REVIEWER_MODEL,

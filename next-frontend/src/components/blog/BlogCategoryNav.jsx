@@ -22,7 +22,7 @@ export default function BlogCategoryNav({
       <div
         role="navigation"
         aria-label="Blog categories"
-        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2"
+        className="public-selector lg:flex-wrap"
       >
         {categories.map((category) => {
           const isActive = category.id === activeId;
@@ -33,7 +33,7 @@ export default function BlogCategoryNav({
               key={category.id}
               href={href}
               aria-current={isActive ? 'page' : undefined}
-              className="flex h-12 items-center justify-center rounded-xl px-3 text-center text-sm font-medium leading-tight transition hover:shadow-sm"
+              className="flex min-h-11 items-center justify-center whitespace-nowrap rounded-lg px-4 text-center text-sm font-medium leading-tight transition"
               style={{
                 backgroundColor: isActive ? 'var(--text-primary)' : 'var(--surface-hover)',
                 color: isActive ? 'var(--bg-primary)' : 'var(--text-secondary)',
@@ -41,7 +41,7 @@ export default function BlogCategoryNav({
                 borderColor: isActive ? 'var(--text-primary)' : 'var(--border)',
               }}
             >
-              <span className="line-clamp-2 px-1">
+              <span className="px-1">
                 {category.label}
                 {typeof category.count === 'number' ? (
                   <span className={isActive ? 'opacity-80' : 'opacity-60'}> ({category.count})</span>

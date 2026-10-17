@@ -1,5 +1,7 @@
+import InfoPageHeader from '@/components/info/InfoPageHeader';
+import LegalSections from '@/components/common/LegalSections';
 
-const LAST_UPDATED = 'April 6, 2026';
+
 
 export default function TermsPageContent() {
   const sections = [
@@ -31,7 +33,7 @@ export default function TermsPageContent() {
           <ul className="list-disc pl-6 mb-4 space-y-2">
             <li>Use the platform for commercial purposes without written consent</li>
             <li>Copy, modify, or create derivative works</li>
-            <li>Use automated tools (bots, scrapers) to access or collect data</li>
+            <li>Use unauthorized bots or scrapers to access or collect data; the provided ChatGPT app and MCP connector are permitted within their published access and usage limits</li>
             <li>Reverse engineer or decompile any software</li>
             <li>Remove copyright or proprietary notices</li>
           </ul>
@@ -69,8 +71,20 @@ export default function TermsPageContent() {
             <li>Weather, trail conditions, and park information can change rapidly</li>
             <li>You are solely responsible for your safety and preparedness when visiting parks</li>
             <li>TrailVerse is not responsible for outdoor activities, travel decisions, or incidents during trips</li>
-            <li>Always verify critical information with official National Park Service sources</li>
+            <li>Always verify critical information with the National Park Service or the relevant destination authority</li>
           </ul>
+        </>
+      )
+    },
+    {
+      id: "access-sharing",
+      title: "Access, Connected Apps & Sharing",
+      content: (
+        <>
+          <p className="mb-4">These terms cover TrailVerse website features, Trailie text and voice planning, and our tools accessed through ChatGPT or Claude. Guest allowances, rate limits, data coverage, and host-app availability can differ. A free TrailVerse account does not include a third-party subscription.</p>
+          <p className="mb-4">Our planning tools provide information and suggestions; they do not make reservations, purchase permits, or guarantee availability. Connected-app conversations do not automatically sync to website trip history.</p>
+          <p className="mb-4">A public trip link exposes the shared itinerary and conversation to anyone with the link. Review it before sharing. Reviews and approved testimonials are public. See the Privacy Policy for processing, retention, and account deletion details.</p>
+          <p className="mb-4">Installing the web app does not make all features available offline. Download a plan before travel; chat, account requests, and current conditions require internet access.</p>
         </>
       )
     },
@@ -131,10 +145,10 @@ export default function TermsPageContent() {
           <p className="mb-4">TrailVerse integrates with third-party services:</p>
           <div className="grid gap-3 mb-4">
             <div className="p-3 rounded-lg border text-sm" style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)' }}>
-              <strong>Google:</strong> Maps JavaScript API, Analytics 4 (subject to Google's Terms & Privacy)
+              <strong>Google:</strong> Maps and Analytics where configured; map services may also use MapTiler. These providers have their own terms and privacy policies.
             </div>
             <div className="p-3 rounded-lg border text-sm" style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)' }}>
-              <strong>AI:</strong> Anthropic Claude Sonnet 5 (Trailie chat), OpenAI (Trailie Voice — anonymized queries, subject to their Terms & Privacy)
+              <strong>AI:</strong> OpenAI processes current website planning requests and voice audio. Anthropic may process requests through other configured AI features. Requests are not guaranteed to be anonymous; their terms and privacy policies also apply.
             </div>
             <div className="p-3 rounded-lg border text-sm" style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)' }}>
               <strong>APIs:</strong> National Park Service API, OpenWeather API (public data, subject to their terms)
@@ -185,8 +199,8 @@ export default function TermsPageContent() {
       content: (
         <>
           <p className="mb-4">
-            We may update these Terms periodically. Changes will be posted with an updated date. 
-            Significant changes will be notified via email. Continued use after changes constitutes acceptance.
+            We may update these Terms periodically. Changes will be posted here.
+            Please review the updated terms when posted. Continued use after changes constitutes acceptance.
           </p>
         </>
       )
@@ -222,94 +236,17 @@ export default function TermsPageContent() {
 
   return (
     <>
-      <main className="pt-3 sm:pt-16">
-        {/* Hero Section */}
-        <section className="py-8 sm:py-16 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              Terms of Service
-            </h1>
-            <p className="text-lg sm:text-xl mb-8 max-w-3xl mx-auto"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              Please read these terms carefully before using TrailVerse.
-            </p>
-            <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium ring-1 backdrop-blur"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderColor: 'var(--border)',
-                color: 'var(--text-primary)'
-              }}
-            >
-              <span>Last updated: {LAST_UPDATED}</span>
-            </div>
-          </div>
-        </section>
+      <main className="info-page info-legal">
+        <InfoPageHeader title="Terms of Service" description="Please read these terms carefully before using TrailVerse." />
 
-        {/* Quick Summary Box */}
-        <section className="pb-8 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto">
-            <div className="rounded-2xl p-6 sm:p-8 backdrop-blur border-2"
-              style={{
-                backgroundColor: 'var(--surface-active)',
-                borderColor: 'var(--border-hover)'
-              }}
-            >
-              <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
-                Terms Summary
-              </h2>
-              <div className="grid md:grid-cols-3 gap-4 text-sm">
-                <div>
-                  <p className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>You Can</p>
-                  <p style={{ color: 'var(--text-secondary)' }}>Use for personal trips, save parks, write reviews, use AI planning</p>
-                </div>
-                <div>
-                  <p className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>You Cannot</p>
-                  <p style={{ color: 'var(--text-secondary)' }}>Use commercially, scrape data, post false content, harass users</p>
-                </div>
-                <div>
-                  <p className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Important</p>
-                  <p style={{ color: 'var(--text-secondary)' }}>AI suggestions are guidance only - verify before trips</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Terms Sections */}
-        <section className="py-8 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto space-y-6">
-            {sections.map((section, index) => (
-              <div 
-                key={section.id}
-                className="rounded-xl overflow-hidden backdrop-blur"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)'
-                }}
-              >
-                <div className="p-6">
-                  <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
-                    {index + 1}. {section.title}
-                  </h2>
-                  <div style={{ color: 'var(--text-secondary)' }}>
-                    {section.content}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+        <LegalSections sections={sections} />
 
         {/* Safety Notice */}
-        <section className="py-16 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto">
-            <div className="rounded-2xl p-6 sm:p-8 backdrop-blur border-2"
+        <section className="info-section">
+          <div className="max-w-6xl mx-auto">
+            <div className="info-panel"
               style={{
-                backgroundColor: 'var(--accent-orange)/5',
+                backgroundColor: 'var(--surface)',
                 borderColor: 'var(--accent-orange)'
               }}
             >
@@ -332,12 +269,10 @@ export default function TermsPageContent() {
         </section>
 
         {/* Contact CTA */}
-        <section className="py-8 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto">
-            <div className="rounded-3xl p-8 sm:p-12 text-center backdrop-blur"
+        <section className="info-section">
+          <div className="max-w-6xl mx-auto">
+            <div className="public-editorial-section py-8"
               style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
                 borderColor: 'var(--border)'
               }}
             >
@@ -346,14 +281,14 @@ export default function TermsPageContent() {
               >
                 Questions About Terms?
               </h2>
-              <p className="text-base mb-6 max-w-2xl mx-auto"
+              <p className="text-base mb-6 public-content"
                 style={{ color: 'var(--text-secondary)' }}
               >
                 Need clarification on our terms? We&apos;re here to help.
               </p>
               <a
                 href="mailto:trailverseteam@gmail.com"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition"
+                className="inline-flex items-center gap-2 px-6 py-3 public-action rounded-xl font-semibold transition"
                 style={{
                   backgroundColor: 'var(--bg-secondary)',
                   border: '1px solid var(--border)',

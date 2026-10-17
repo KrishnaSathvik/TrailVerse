@@ -1,0 +1,623 @@
+#!/usr/bin/env node
+/**
+ * Generic paid /plan-ai V2 live gate.
+ * Authenticated POST /api/ai/chat. No demo, no fixture wiring, no prompt edits.
+ * Saves raw terminal envelopes. Does not rewrite answers.
+ */
+'use strict';
+
+// Local gate auth is stored under the server's existing admin env names.
+// This maps credentials only; prompts, ordering, request shape, and grading stay unchanged.
+require('../../server/node_modules/dotenv').config({ path: pathForServerEnv() });
+process.env.TRAILIE_AUTH_EMAIL ||= process.env.ADMIN_EMAIL;
+process.env.TRAILIE_AUTH_PASSWORD ||= process.env.REACT_APP_ADMIN_PASSWORD;
+
+const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
+const http = require('http');
+
+function pathForServerEnv() {
+  return require('path').resolve(__dirname, '..', '..', 'server', '.env');
+}
+
+const ROOT = path.resolve(__dirname);
+const PLAN_STAGE_DIR = path.resolve(ROOT, '..', 'private', 'plan_stages');
+const PLAN_STAGE_PREFIX = 'generic-live-gate-after-valid__attempt-';
+const API_BASE = process.env.API_BASE || 'http://127.0.0.1:5001';
+const TIMEOUT_MS = Number(process.env.LIVE_GATE_TIMEOUT_MS || 600000);
+const ONLY = (process.argv.find((a) => a.startsWith('--only=')) || '')
+  .replace('--only=', '')
+  .split(',')
+  .filter(Boolean);
+
+const THREADS = [
+  {
+    id: 'A',
+    title: 'Yellowstone conversation continuity',
+    turns: [
+      {
+        key: 'A1-duration-advice',
+        prompt: 'Is three days enough for Yellowstone?',
+      },
+      {
+        key: 'A2-which-airport',
+        prompt: 'Which airport should I use?',
+      },
+      {
+        key: 'A3-coming-from-dallas',
+        prompt: "I'm coming from Dallas.",
+      },
+      {
+        key: 'A4-build-itinerary',
+        prompt: 'Okay, build me a realistic day-by-day itinerary.',
+      },
+      {
+        key: 'A5-make-day-2-slower',
+        prompt: 'Make Day 2 slower and reduce driving.',
+      },
+    ],
+  },
+  {
+    id: 'B',
+    title: 'Alaska trip skeleton, no itinerary',
+    turns: [
+      {
+        key: 'B1-alaska-skeleton',
+        prompt:
+          "Plan realistic logistics, prices, places, and things to do for two people traveling to Alaska for 10 days in 2027. Don't make a day-by-day itinerary yet.",
+      },
+    ],
+  },
+  {
+    id: 'C',
+    title: 'Hard-constraint Zion itinerary',
+    turns: [
+      {
+        key: 'C1-zion-no-exposure',
+        prompt:
+          'Plan a realistic 2-day Zion trip for a couple who wants scenic views, easy-to-moderate hiking, and no exposed scary trails.',
+      },
+    ],
+  },
+  {
+    id: 'D',
+    title: 'Glacier operational advice',
+    turns: [
+      {
+        key: 'D1-glacier-backup',
+        prompt:
+          "I'm visiting Glacier with only one full day. What should I prioritize, and what's a good backup if Logan Pass access or parking doesn't work?",
+      },
+    ],
+  },
+  {
+    id: 'E',
+    title: 'Unseen older-traveler Grand Teton',
+    turns: [
+      {
+        key: 'E1-teton-parents',
+        prompt:
+          "My parents are in their late 60s and can't comfortably walk more than about a mile at a time. Is Grand Teton still worth visiting for three days, and what would you focus on?",
+      },
+    ],
+  },
+];
+
+function ensureDir(p) {
+  fs.mkdirSync(p, { recursive: true });
+}
+
+function writeJson(file, data) {
+  ensureDir(path.dirname(file));
+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+}
+
+function snapshotPlanStages() {
+  if (!fs.existsSync(PLAN_STAGE_DIR)) return new Map();
+  return new Map(fs.readdirSync(PLAN_STAGE_DIR)
+    .filter((name) => name.startsWith(PLAN_STAGE_PREFIX) && name.endsWith('.json'))
+    .map((name) => [name, fs.statSync(path.join(PLAN_STAGE_DIR, name)).mtimeMs]));
+}
+
+function copyChangedPlanStages(before, threadDir, turnKey) {
+  if (!fs.existsSync(PLAN_STAGE_DIR)) return [];
+  const copied = [];
+  for (const name of fs.readdirSync(PLAN_STAGE_DIR)) {
+    if (!name.startsWith(PLAN_STAGE_PREFIX) || !name.endsWith('.json')) continue;
+    const source = path.join(PLAN_STAGE_DIR, name);
+    const mtimeMs = fs.statSync(source).mtimeMs;
+    if (before.get(name) === mtimeMs) continue;
+    const attempt = name.slice(PLAN_STAGE_PREFIX.length, -'.json'.length);
+    const destination = path.join(threadDir, `${turnKey}-plan-stage-attempt-${attempt}.json`);
+    fs.copyFileSync(source, destination);
+    copied.push(path.basename(destination));
+  }
+  return copied;
+}
+
+function sanitizeForDisk(obj) {
+  const scrubbed = JSON.stringify(obj)
+    .replace(/Bearer\s+[A-Za-z0-9._\-]+/gi, 'Bearer [REDACTED]')
+    .replace(/"password"\s*:\s*"[^"]*"/gi, '"password":"[REDACTED]"')
+    .replace(/"token"\s*:\s*"[^"]*"/gi, '"token":"[REDACTED]"')
+    .replace(/"cookie"\s*:\s*"[^"]*"/gi, '"cookie":"[REDACTED]"')
+    .replace(/sk-[A-Za-z0-9_\-]+/g, '[REDACTED_KEY]');
+  return JSON.parse(scrubbed);
+}
+
+function requestJson(method, pathname, body, { headers = {}, timeoutMs = TIMEOUT_MS } = {}) {
+  return new Promise((resolve, reject) => {
+    const data = body == null ? '' : JSON.stringify(body);
+    const url = new URL(pathname, API_BASE);
+    const req = http.request(
+      url,
+      {
+        method,
+        headers: {
+          ...(data ? {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(data),
+          } : {}),
+          'User-Agent': 'Trailie-Generic-Live-Gate/1.0',
+          ...headers,
+        },
+      },
+      (res) => {
+        const chunks = [];
+        res.on('data', (c) => chunks.push(c));
+        res.on('end', () => {
+          const raw = Buffer.concat(chunks).toString('utf8');
+          let json = null;
+          try {
+            json = JSON.parse(raw);
+          } catch {
+            json = { parseError: true, rawPreview: raw.slice(0, 4000) };
+          }
+          resolve({ status: res.statusCode, json, raw });
+        });
+      }
+    );
+    req.on('error', reject);
+    req.setTimeout(timeoutMs, () => {
+      req.destroy();
+      reject(new Error(`Timeout after ${timeoutMs}ms`));
+    });
+    if (data) req.write(data);
+    req.end();
+  });
+}
+
+function authHeaders(token) {
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+async function loginWithPassword() {
+  const email = process.env.TRAILIE_AUTH_EMAIL;
+  const password = process.env.TRAILIE_AUTH_PASSWORD;
+  if (!email || !password) {
+    throw new Error('TRAILIE_AUTH_EMAIL and TRAILIE_AUTH_PASSWORD are required');
+  }
+  const res = await requestJson('POST', '/api/auth/login', { email, password }, { timeoutMs: 30000 });
+  if (res.status !== 200 || !res.json?.token) {
+    throw new Error(`Login failed HTTP ${res.status}: ${String(res.raw || '').slice(0, 400)}`);
+  }
+  const user = res.json.data || {};
+  return {
+    token: res.json.token,
+    user: {
+      id: user.id || user._id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+    },
+  };
+}
+
+function envelopeFromPayload(data) {
+  return {
+    content: data.content || '',
+    canonicalPlan: data.itinerary || data.canonicalPlan || null,
+    travelLogistics: data.travelLogistics ?? null,
+    responseArtifacts: data.responseArtifacts ?? null,
+    intent: data.intent ?? data.trailieV2?.intent ?? null,
+    presentation: data.presentation ?? null,
+    planningState: data.planningState ?? null,
+    itineraryHash: data.itineraryHash || data.trailieV2?.itineraryHash || null,
+    responseId: data.responseId || null,
+    responseVersion: data.responseVersion ?? null,
+    responseRevision: data.responseRevision ?? null,
+    trailieV2: data.trailieV2 || null,
+  };
+}
+
+function extractCapture(envelope, planningState) {
+  const v2 = envelope.trailieV2 || {};
+  const intent = envelope.intent || {};
+  const plan = envelope.canonicalPlan;
+  const days = Array.isArray(plan?.days) ? plan.days : [];
+  const stopNames = days.flatMap((day) => (day.stops || []).map((stop) => stop.name || stop.title || null)).filter(Boolean);
+  return {
+    travelerJob: intent.travelerJob || null,
+    primaryIntent: intent.primaryIntent || v2.intent || null,
+    lastTravelerJob: planningState?.lastTravelerJob ?? envelope.planningState?.lastTravelerJob ?? null,
+    activeDecision: planningState?.activeDecision ?? envelope.planningState?.activeDecision ?? null,
+    intent,
+    normalizedPlanningState: planningState || envelope.planningState || null,
+    planningState: planningState || envelope.planningState || null,
+    resolvedDestination: planningState?.destination ?? envelope.planningState?.destination ?? null,
+    resolvedGeography: planningState?.tripScope ?? envelope.planningState?.tripScope ?? null,
+    constraints: {
+      pace: planningState?.preferences?.pace ?? envelope.planningState?.preferences?.pace ?? null,
+      avoidExposure: planningState?.preferences?.avoidExposure
+        ?? envelope.planningState?.preferences?.avoidExposure
+        ?? null,
+      fitness: planningState?.preferences?.fitness ?? envelope.planningState?.preferences?.fitness ?? null,
+      interests: planningState?.preferences?.interests ?? envelope.planningState?.preferences?.interests ?? null,
+      durationDays: planningState?.dates?.durationDays ?? envelope.planningState?.dates?.durationDays ?? null,
+      departureCity: planningState?.transportation?.departureCity
+        ?? envelope.planningState?.transportation?.departureCity
+        ?? null,
+      lastTravelerJob: planningState?.lastTravelerJob ?? envelope.planningState?.lastTravelerJob ?? null,
+      destination: planningState?.destination ?? envelope.planningState?.destination ?? null,
+    },
+    evidenceRequirements: null,
+    evidenceCoverage: v2.evidence || null,
+    packedEvidenceSummary: v2.evidence || null,
+    model: v2.model || null,
+    reasoningEffort: v2.reasoningEffort || null,
+    selectedTier: v2.selectedTier || null,
+    attemptCount: v2.attemptCount ?? (Array.isArray(v2.attempts) ? v2.attempts.length : null),
+    attempts: v2.attempts || null,
+    rawTravelerFacingProse: envelope.content || '',
+    canonicalPlan: plan,
+    canonicalPlanDayCount: days.length,
+    canonicalPlanStopNames: stopNames,
+    validation: v2.validation || null,
+    presentation: envelope.presentation || null,
+    presentationKind: envelope.presentation?.presentationKind || null,
+    terminalStatus: v2.status || null,
+    cost: v2.totalCost || null,
+    note: 'evidenceRequirements and packed evidence items are not in the public terminal envelope; evidenceCoverage is the live summary (topics/count/sources).',
+  };
+}
+
+async function runChat({ token, messages, metadata = {}, conversationId = null }) {
+  const t0 = Date.now();
+  const body = {
+    provider: 'auto',
+    messages,
+    metadata: {
+      skipUserContext: true,
+      ...metadata,
+    },
+    clientTurnId: `live-gate-${crypto.randomUUID()}`,
+  };
+  if (conversationId) body.conversationId = conversationId;
+  const res = await requestJson('POST', '/api/ai/chat', body, { headers: authHeaders(token) });
+  const ms = Date.now() - t0;
+  const data = res.json?.data || res.json || {};
+  return {
+    httpStatus: res.status,
+    ms,
+    error: data.error || res.json?.error || null,
+    rawKeys: Object.keys(data || {}),
+    payload: data,
+    envelope: envelopeFromPayload(data),
+  };
+}
+
+async function persistTrip({
+  token,
+  tripId,
+  title,
+  parkName,
+  parkCode,
+  conversation,
+  plan,
+  planningState,
+}) {
+  const payload = {
+    parkName: parkName || 'General Planning',
+    parkCode: parkCode || null,
+    title,
+    conversation,
+    plan: plan || null,
+    planningState: planningState || undefined,
+    provider: 'auto',
+    status: 'active',
+  };
+  if (tripId) {
+    const res = await requestJson('PUT', `/api/trips/${tripId}`, payload, {
+      headers: authHeaders(token),
+      timeoutMs: 30000,
+    });
+    return { tripId, httpStatus: res.status, json: res.json };
+  }
+  const res = await requestJson('POST', '/api/trips', payload, {
+    headers: authHeaders(token),
+    timeoutMs: 30000,
+  });
+  const created = res.json?.data || {};
+  return {
+    tripId: created._id || created.id || null,
+    httpStatus: res.status,
+    json: res.json,
+  };
+}
+
+function assistantMessageFromEnvelope(envelope) {
+  return {
+    role: 'assistant',
+    content: envelope.content || '',
+    timestamp: new Date().toISOString(),
+    provider: 'openai',
+    model: envelope.trailieV2?.model || undefined,
+    canonicalPlan: envelope.canonicalPlan || undefined,
+    itineraryPlan: envelope.canonicalPlan || undefined,
+    hasItinerary: Boolean(envelope.canonicalPlan?.days?.length),
+    itineraryHash: envelope.itineraryHash || undefined,
+    responseId: envelope.responseId || undefined,
+    responseVersion: envelope.responseVersion ?? undefined,
+    responseRevision: envelope.responseRevision ?? undefined,
+    travelLogistics: envelope.travelLogistics || undefined,
+    responseArtifacts: envelope.responseArtifacts || undefined,
+    intent: envelope.intent || undefined,
+    presentation: envelope.presentation || undefined,
+    presentationKind: envelope.presentation?.presentationKind || undefined,
+  };
+}
+
+function parkHintFromThread(threadId, planningState) {
+  if (threadId === 'A') {
+    return {
+      parkName: planningState?.destination?.parkName || 'Yellowstone National Park',
+      parkCode: planningState?.destination?.parkCode || 'yell',
+    };
+  }
+  if (threadId === 'C') return { parkName: 'Zion National Park', parkCode: 'zion' };
+  if (threadId === 'D') return { parkName: 'Glacier National Park', parkCode: 'glac' };
+  if (threadId === 'E') return { parkName: 'Grand Teton National Park', parkCode: 'grte' };
+  return {
+    parkName: planningState?.destination?.parkName || 'General Planning',
+    parkCode: planningState?.destination?.parkCode || null,
+  };
+}
+
+async function waitForHealth(retries = 40) {
+  for (let i = 0; i < retries; i += 1) {
+    try {
+      const res = await requestJson('GET', '/health', null, { timeoutMs: 3000 });
+      if (res.status === 200 && res.json?.status === 'healthy') return res.json;
+    } catch {
+      /* retry */
+    }
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  throw new Error('Backend health check failed');
+}
+
+async function runZeroCostHardPreflight(token) {
+  const res = await requestJson('GET', '/api/ai/live-gate-preflight', null, {
+    headers: authHeaders(token),
+    timeoutMs: 30000,
+  });
+  const preflight = res.json?.data || res.json || {};
+  const valid = res.status === 200
+    && preflight.ready === true
+    && preflight.routeId === 'trailie-v2-wp11a-only'
+    && Object.values(preflight.checks || {}).every((value) => value === true);
+  writeJson(path.join(ROOT, 'zero-cost-preflight.json'), sanitizeForDisk({
+    checkedAt: new Date().toISOString(),
+    httpStatus: res.status,
+    ...preflight,
+  }));
+  if (!valid) {
+    throw new Error(
+      `ZERO_COST_PREFLIGHT_FAILED: HTTP ${res.status}; blockers=${(preflight.blockers || ['invalid_preflight_response']).join(',')}`
+    );
+  }
+  return preflight;
+}
+
+async function main() {
+  ensureDir(ROOT);
+  await waitForHealth();
+  const auth = await loginWithPassword();
+  // This is the last step before any /chat call. It performs no provider/model
+  // request and hard-stops the process on any runtime/config/auth mismatch.
+  const zeroCostPreflight = await runZeroCostHardPreflight(auth.token);
+  const runMeta = {
+    startedAt: new Date().toISOString(),
+    apiBase: API_BASE,
+    only: ONLY.length ? ONLY : 'all',
+    authEmail: auth.user.email,
+    authUserId: auth.user.id,
+    path: 'authenticated POST /api/ai/chat',
+    zeroCostPreflight,
+    skipUserContext: true,
+    note: 'Generic paid /plan-ai V2 live gate. Exact envelopes preserved. No demo, no prompt edits.',
+  };
+  writeJson(path.join(ROOT, 'run-meta.json'), runMeta);
+  writeJson(path.join(ROOT, 'auth-session.json'), sanitizeForDisk({
+    email: auth.user.email,
+    userId: auth.user.id,
+    name: auth.user.name,
+    role: auth.user.role,
+  }));
+
+  const selected = THREADS.filter((thread) => !ONLY.length || ONLY.includes(thread.id));
+  const summary = [];
+
+  for (const thread of selected) {
+    const threadDir = path.join(ROOT, `thread-${thread.id}`);
+    ensureDir(threadDir);
+    let tripId = null;
+    let conversation = [];
+    let lastEnvelope = null;
+
+    for (let i = 0; i < thread.turns.length; i += 1) {
+      const turn = thread.turns[i];
+      console.log(`\n========== Thread ${thread.id} turn ${i + 1}: ${turn.key} ==========`);
+      console.log(turn.prompt);
+
+      conversation = [
+        ...conversation,
+        { role: 'user', content: turn.prompt, timestamp: new Date().toISOString() },
+      ];
+      const messages = conversation.map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+        ...(msg.intent ? { intent: msg.intent } : {}),
+      }));
+      const metadata = {
+        ...(lastEnvelope?.planningState ? { planningState: lastEnvelope.planningState } : {}),
+        ...(lastEnvelope?.canonicalPlan ? { existingCanonicalPlan: lastEnvelope.canonicalPlan } : {}),
+      };
+
+      let outcome;
+      const planStagesBefore = snapshotPlanStages();
+      try {
+        outcome = await runChat({
+          token: auth.token,
+          messages,
+          metadata,
+          conversationId: tripId,
+        });
+      } catch (err) {
+        outcome = {
+          httpStatus: 0,
+          ms: 0,
+          error: String(err.message || err),
+          rawKeys: [],
+          payload: {},
+          envelope: envelopeFromPayload({}),
+        };
+      }
+
+      const planStageFiles = copyChangedPlanStages(planStagesBefore, threadDir, turn.key);
+
+      lastEnvelope = outcome.envelope;
+      conversation = [
+        ...conversation,
+        assistantMessageFromEnvelope(outcome.envelope),
+      ];
+
+      const hint = parkHintFromThread(thread.id, outcome.envelope.planningState);
+      let persisted = { tripId, httpStatus: null };
+      if (outcome.httpStatus === 200 && outcome.envelope.content) {
+        try {
+          persisted = await persistTrip({
+            token: auth.token,
+            tripId,
+            title: `Live gate ${thread.id}: ${thread.title}`,
+            parkName: hint.parkName,
+            parkCode: hint.parkCode,
+            conversation,
+            plan: outcome.envelope.canonicalPlan
+              ? {
+                ...outcome.envelope.canonicalPlan,
+                responseId: outcome.envelope.responseId,
+                responseVersion: outcome.envelope.responseVersion,
+                responseRevision: outcome.envelope.responseRevision,
+                itineraryHash: outcome.envelope.itineraryHash,
+              }
+              : null,
+            planningState: outcome.envelope.planningState,
+          });
+        } catch (err) {
+          persisted = { tripId, httpStatus: 0, error: String(err.message || err) };
+        }
+      }
+      if (persisted.tripId) tripId = persisted.tripId;
+
+      const capture = extractCapture(outcome.envelope, outcome.envelope.planningState);
+      const record = sanitizeForDisk({
+        thread: thread.id,
+        threadTitle: thread.title,
+        turn: i + 1,
+        key: turn.key,
+        question: turn.prompt,
+        httpStatus: outcome.httpStatus,
+        ms: outcome.ms,
+        tripId,
+        persistHttpStatus: persisted.httpStatus || null,
+        error: outcome.error,
+        rawKeys: outcome.rawKeys,
+        planStageFiles,
+        envelope: outcome.envelope,
+        payload: outcome.payload,
+        capture,
+      });
+
+      writeJson(path.join(threadDir, `${turn.key}-response.json`), record);
+      writeJson(path.join(threadDir, `${turn.key}-envelope.json`), sanitizeForDisk({
+        question: turn.prompt,
+        tripId,
+        ...outcome.envelope,
+      }));
+      writeJson(path.join(threadDir, `${turn.key}-capture.json`), sanitizeForDisk(capture));
+      fs.writeFileSync(path.join(threadDir, `${turn.key}-prose.txt`), outcome.envelope.content || '');
+
+      const row = {
+        thread: thread.id,
+        turn: i + 1,
+        key: turn.key,
+        question: turn.prompt,
+        tripId,
+        httpStatus: outcome.httpStatus,
+        ms: outcome.ms,
+        status: capture.terminalStatus,
+        travelerJob: capture.travelerJob,
+        primaryIntent: capture.primaryIntent,
+        presentationKind: capture.presentationKind,
+        model: capture.model,
+        reasoningEffort: capture.reasoningEffort,
+        attemptCount: capture.attemptCount,
+        cost: capture.cost,
+        validation: capture.validation,
+        hasPlan: Boolean(capture.canonicalPlanDayCount),
+        dayCount: capture.canonicalPlanDayCount,
+        proseLen: (outcome.envelope.content || '').length,
+        lastTravelerJob: capture.constraints.lastTravelerJob,
+        departureCity: capture.constraints.departureCity,
+        error: outcome.error || null,
+      };
+      writeJson(path.join(threadDir, `${turn.key}-evaluation.json`), sanitizeForDisk(row));
+      summary.push(row);
+
+      console.log(JSON.stringify({
+        thread: thread.id,
+        turn: i + 1,
+        http: outcome.httpStatus,
+        ms: outcome.ms,
+        status: row.status,
+        travelerJob: row.travelerJob,
+        primaryIntent: row.primaryIntent,
+        presentationKind: row.presentationKind,
+        model: row.model,
+        cost: row.cost,
+        hasPlan: row.hasPlan,
+        dayCount: row.dayCount,
+        tripId: row.tripId,
+        error: row.error,
+      }, null, 2));
+    }
+  }
+
+  writeJson(path.join(ROOT, 'results-summary.json'), sanitizeForDisk({
+    finishedAt: new Date().toISOString(),
+    authEmail: auth.user.email,
+    results: summary,
+    totalCost: summary.reduce((n, r) => {
+      const cost = r.cost?.costUsd ?? r.cost;
+      return n + (Number(cost) || 0);
+    }, 0),
+  }));
+  console.log('\nDone. Summary written to results-summary.json');
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

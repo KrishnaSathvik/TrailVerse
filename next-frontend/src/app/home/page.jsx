@@ -733,11 +733,11 @@ const DailyFeedPage = () => {
         />
 
         <div className="relative z-10 flex min-h-[26rem] flex-col justify-end px-4 pb-6 pt-8 sm:min-h-[24rem] sm:justify-start sm:px-6 sm:py-8 sm:pt-8 lg:px-10 xl:px-12 md:flex md:min-h-full md:justify-end md:pb-10 lg:pb-12">
-          <div className="max-w-[92rem] mx-auto w-full">
+          <div className="public-shell w-full">
             <div className="max-w-5xl xl:max-w-6xl">
               <div className="mb-5 flex flex-wrap items-center gap-2 sm:mb-4">
                 <div
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 sm:px-4 sm:py-2 rounded-full backdrop-blur-md border"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 sm:px-4 sm:py-2 rounded-full border"
                   style={{
                     backgroundColor: 'rgba(9, 14, 12, 0.72)',
                     borderColor: 'rgba(255,255,255,0.14)',
@@ -757,7 +757,7 @@ const DailyFeedPage = () => {
                 </div>
 
                 <div
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full backdrop-blur"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full "
                   style={{
                     backgroundColor: 'rgba(9, 14, 12, 0.68)',
                     borderWidth: '1px',
@@ -783,7 +783,7 @@ const DailyFeedPage = () => {
                 <p className="text-[0.95rem] font-medium text-white/95 [text-shadow:0_1px_12px_rgba(0,0,0,0.55)] sm:text-2xl sm:text-white/90 sm:[text-shadow:none]">
                   Your daily briefing
                 </p>
-                <p className="max-w-3xl text-sm leading-relaxed text-white/90 text-pretty [text-shadow:0_1px_10px_rgba(0,0,0,0.5)] sm:text-lg sm:text-white/78 sm:leading-normal sm:text-balance sm:[text-shadow:none]">
+                <p className="public-content text-sm leading-relaxed text-white/90 text-pretty [text-shadow:0_1px_10px_rgba(0,0,0,0.5)] sm:text-lg sm:text-white/78 sm:leading-normal sm:text-balance sm:[text-shadow:none]">
                   <span className="sm:hidden">
                     Weather, alerts, and tips for today&apos;s featured park.
                   </span>
@@ -810,7 +810,7 @@ const DailyFeedPage = () => {
                     variant="secondary"
                     size="md"
                     icon={CalendarDots}
-                    className="w-full justify-center backdrop-blur sm:w-auto"
+                    className="w-full justify-center sm:w-auto"
                     style={{
                       backgroundColor: 'rgba(255, 255, 255, 0.1)',
                       borderWidth: '1px',
@@ -827,7 +827,7 @@ const DailyFeedPage = () => {
         </div>
       </section>
 
-      <main className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 py-8 sm:py-10 lg:py-12">
+      <main className="public-shell py-8 sm:py-10 lg:py-12">
         <HomeAlertsStrip alerts={parkAlerts} parkName={park?.name} />
 
         <TodaySnapshot weather={weather} sun={sun} dailyFeed={dailyFeed} conditionRows={conditionRows} />

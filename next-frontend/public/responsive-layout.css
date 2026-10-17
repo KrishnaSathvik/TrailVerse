@@ -1,0 +1,45 @@
+/* One layout vocabulary for the app and standalone public reports. */
+:root {
+  --public-shell-width: 1280px;
+  /* One content column on desktop: prose, trips, demos, and articles share rich width. */
+  --public-rich-width: 1120px;
+  --public-reading-width: var(--public-rich-width);
+  --public-form-width: 560px;
+  --public-gutter: 16px;
+  --public-section-space: 32px;
+  --public-control-height: 44px;
+}
+.public-shell {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: var(--public-shell-width);
+  margin-inline: auto;
+  padding-inline: var(--public-gutter);
+}
+.public-reading, .public-rich, .public-content, .public-full, .public-form {
+  width: 100%;
+  min-width: 0;
+  margin-inline: auto;
+}
+.public-reading { max-width: var(--public-reading-width); }
+.public-rich,
+.public-content { max-width: var(--public-rich-width); }
+.public-full { max-width: var(--public-shell-width); }
+.public-form { max-width: var(--public-form-width); }
+.public-section { padding-block: var(--public-section-space); }
+.public-card-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; }
+.public-selector { display: flex; gap: 8px; overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: 4px; }
+.public-selector > * { flex-shrink: 0; min-height: var(--public-control-height); }
+@media (min-width: 640px) {
+  :root { --public-gutter: 24px; --public-section-space: 40px; }
+  .public-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1024px) {
+  :root { --public-gutter: 32px; --public-section-space: 48px; }
+  .public-card-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .public-selector--desktop-grid { display: grid; }
+}
+@media (min-width: 1280px) {
+  .public-card-grid--four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}

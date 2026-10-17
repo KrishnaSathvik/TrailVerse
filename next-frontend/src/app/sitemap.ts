@@ -4,6 +4,8 @@ import { GUIDES } from '@/data/guides';
 import { INTENT_LANDINGS } from '@/data/intentLandings';
 import { COMPARE_LANDINGS } from '@/data/compareLandings';
 
+import { PUBLIC_ITINERARIES } from '@/data/publicItineraries';
+
 const BASE_URL = 'https://www.nationalparksexplorerusa.com';
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -19,6 +21,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/events`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.8 },
     // Weekly-changing content
     { url: `${BASE_URL}/explore`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${BASE_URL}/where-next`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
     { url: `${BASE_URL}/discover`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 },
     { url: `${BASE_URL}/discover/activities`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.85 },
     { url: `${BASE_URL}/discover/topics`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.85 },
@@ -36,7 +39,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/mcp`, lastModified: new Date('2026-05-01'), changeFrequency: 'monthly', priority: 0.7 },
     { url: `${BASE_URL}/chatgpt`, lastModified: new Date('2026-05-01'), changeFrequency: 'monthly', priority: 0.7 },
     { url: `${BASE_URL}/magazine`, lastModified: new Date('2026-05-01'), changeFrequency: 'monthly', priority: 0.5 },
-    { url: `${BASE_URL}/newsletter`, lastModified: new Date('2026-01-01'), changeFrequency: 'monthly', priority: 0.5 },
     { url: `${BASE_URL}/faq`, lastModified: new Date('2026-01-01'), changeFrequency: 'monthly', priority: 0.5 },
     { url: `${BASE_URL}/guides`, lastModified: new Date('2026-05-31'), changeFrequency: 'monthly', priority: 0.75 },
     { url: `${BASE_URL}/itineraries`, lastModified: new Date('2026-07-12'), changeFrequency: 'weekly', priority: 0.8 },
@@ -142,5 +144,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.75,
   }));
 
-  return [...staticRoutes, ...compareRoutes, ...parkRoutes, ...stateRoutes, ...blogRoutes, ...categoryRoutes, ...guideRoutes, ...intentRoutes];
+  const sampleRoutes: MetadataRoute.Sitemap = PUBLIC_ITINERARIES.map(sample => ({
+    url: `${BASE_URL}/itineraries/${sample.slug}`, changeFrequency: 'yearly' as const, priority: 0.75,
+  }));
+
+  return [...sampleRoutes, ...staticRoutes, ...compareRoutes, ...parkRoutes, ...stateRoutes, ...blogRoutes, ...categoryRoutes, ...guideRoutes, ...intentRoutes];
 }

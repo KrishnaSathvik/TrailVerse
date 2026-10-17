@@ -110,14 +110,14 @@ function runContentChecks(scenarios, alerts, checks) {
 
     if (id.startsWith(COMPARE_SCENARIO_PREFIX)) {
       const lead = primaryAnswer(scenario).trim().replace(/^\*\*/, '').slice(0, 200);
-      if (!/\b(go with|pick|choose|i'd go|i would go|take|sequoia|yosemite)\b/i.test(lead)) {
+      if (!/\b(go with|pick|choose|i'd go|i would go|i’d choose|take|acadia|shenandoah)\b/i.test(lead)) {
         fail(checks, id, 'Compare should lead with a decisive pick in the opening');
       }
-      if (!/yosemite|sequoia/i.test(leadText)) {
-        fail(checks, id, 'Yosemite vs Sequoia compare should reference both parks');
+      if (!/acadia|shenandoah/i.test(leadText)) {
+        fail(checks, id, 'Acadia vs Shenandoah compare should reference both parks');
       }
-      if (!/september|fall|crowd|photo/i.test(leadText)) {
-        fail(checks, id, 'Compare should address season, photography, or crowds');
+      if (!/october|fall|photo/i.test(leadText)) {
+        fail(checks, id, 'Compare should address season or photography');
       }
     }
 

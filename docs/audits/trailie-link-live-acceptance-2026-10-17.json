@@ -1,0 +1,336 @@
+{
+  "startedAt": "2026-10-17T15:19:27.039Z",
+  "modelCalls": 0,
+  "credentials": {
+    "RIDB_API_KEY": true,
+    "TAVILY_API_KEY": true,
+    "SERPER_API_KEY": true
+  },
+  "cases": [
+    {
+      "label": "Where can I reserve Upper Pines Campground in Yosemite?",
+      "elapsedMs": 2970,
+      "status": "fulfilled",
+      "links": [
+        {
+          "resourceName": "Upper Pines Campground",
+          "destination": "Yosemite National Park",
+          "resourceKind": "campground",
+          "facilityId": "ridb:facility:232447",
+          "listingUrl": "https://www.recreation.gov/camping/campgrounds/232447",
+          "reservationUrl": "https://www.recreation.gov/camping/campgrounds/232447",
+          "linkKind": "reservation",
+          "verification": "extracted_exact_resource_page",
+          "currentAvailability": null,
+          "price": null,
+          "availabilityDates": null,
+          "evidenceRef": "simple:4e9ced9f4786918b2ace6720a0567b5c54215ac60313448541eeb756104d66c6"
+        }
+      ],
+      "unresolved": [],
+      "providerOutcomes": [
+        {
+          "provider": "ridb",
+          "topic": "campgrounds",
+          "status": "fulfilled",
+          "reasonCode": null,
+          "providerAttemptCount": 1,
+          "cost": {
+            "costStatus": "known",
+            "costUsd": 0
+          },
+          "durationMs": 568
+        },
+        {
+          "provider": "tavily",
+          "topic": "local_business",
+          "status": "fulfilled",
+          "reasonCode": null,
+          "providerAttemptCount": 2,
+          "cost": {
+            "costStatus": "unknown",
+            "costUsd": null
+          },
+          "durationMs": 2398
+        }
+      ],
+      "guidanceIssues": [],
+      "chatLinksSurvive": true,
+      "exportLinksSurvive": true,
+      "plan": {
+        "narrativeSections": [
+          {
+            "heading": "Things to Know",
+            "markdown": "[Upper Pines Campground](https://www.recreation.gov/camping/campgrounds/232447) \u2014 check dates directly; availability and prices are not confirmed.",
+            "placement": "after_plan"
+          }
+        ],
+        "days": [
+          {
+            "id": "day-1",
+            "dayNumber": 1,
+            "stops": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "Exact Springdale hotel pages",
+      "elapsedMs": 8665,
+      "status": "fulfilled",
+      "links": [
+        {
+          "resourceName": "Cable Mountain Lodge",
+          "destination": "Springdale",
+          "resourceKind": "hotel",
+          "facilityId": null,
+          "listingUrl": "https://www.guestreservations.com/cable-mountain-lodge/booking",
+          "reservationUrl": "https://www.guestreservations.com/cable-mountain-lodge/booking",
+          "linkKind": "reservation",
+          "verification": "extracted_exact_resource_page",
+          "currentAvailability": null,
+          "price": null,
+          "availabilityDates": null,
+          "evidenceRef": "simple:21ac0decea1c0350476d20d97277941b4169d9a9e1aba60f11d7d59ca54052d2"
+        }
+      ],
+      "unresolved": [
+        {
+          "topic": "local_business",
+          "resource": "Desert Pearl Inn",
+          "destination": "Springdale",
+          "reasonCode": "resource_link_unverified",
+          "reason": "No exact resource page could be verified. Availability and price remain unknown."
+        }
+      ],
+      "providerOutcomes": [
+        {
+          "provider": "tavily",
+          "topic": "local_business",
+          "status": "fulfilled",
+          "reasonCode": null,
+          "providerAttemptCount": 2,
+          "cost": {
+            "costStatus": "unknown",
+            "costUsd": null
+          },
+          "durationMs": 6650
+        },
+        {
+          "provider": "tavily",
+          "topic": "local_business",
+          "status": "no_result",
+          "reasonCode": null,
+          "providerAttemptCount": 2,
+          "cost": {
+            "costStatus": "unknown",
+            "costUsd": null
+          },
+          "durationMs": 2013
+        }
+      ],
+      "guidanceIssues": [],
+      "chatLinksSurvive": true,
+      "exportLinksSurvive": true,
+      "plan": {
+        "narrativeSections": [
+          {
+            "heading": "Things to Know",
+            "markdown": "[Cable Mountain Lodge](https://www.guestreservations.com/cable-mountain-lodge/booking) \u2014 check dates directly; availability and prices are not confirmed.",
+            "placement": "after_plan"
+          }
+        ],
+        "days": [
+          {
+            "id": "day-1",
+            "dayNumber": 1,
+            "stops": []
+          }
+        ]
+      }
+    }
+  ],
+  "http": [
+    {
+      "host": "ridb.recreation.gov",
+      "path": "/api/v1/recareas",
+      "method": "get"
+    },
+    {
+      "host": "ridb.recreation.gov",
+      "path": "/api/v1/recareas/2991/facilities",
+      "method": "get"
+    },
+    {
+      "host": "api.tavily.com",
+      "path": "/search",
+      "method": "post"
+    },
+    {
+      "host": "api.tavily.com",
+      "path": "/extract",
+      "method": "post"
+    },
+    {
+      "host": "google.serper.dev",
+      "path": "/places",
+      "method": "post"
+    },
+    {
+      "host": "api.tavily.com",
+      "path": "/search",
+      "method": "post"
+    },
+    {
+      "host": "api.tavily.com",
+      "path": "/extract",
+      "method": "post"
+    },
+    {
+      "host": "api.tavily.com",
+      "path": "/search",
+      "method": "post"
+    },
+    {
+      "host": "api.tavily.com",
+      "path": "/extract",
+      "method": "post"
+    }
+  ],
+  "hotelDiscovery": [],
+  "finishedAt": "2026-10-17T15:20:15.140Z",
+  "capturedNegativeCases": {
+    "wrongFacilityId": true,
+    "wrongDestination": true,
+    "unextracted": true
+  },
+  "harnessNote": "Guidance composed deterministically from returned link evidence; no live model, database commit or browser chat session. Export check compares fields/URLs, not JSON object key order.",
+  "searchDiagnostics": [
+    {
+      "resource": {
+        "name": "Upper Pines Campground",
+        "destination": "Yosemite National Park",
+        "kind": "campground",
+        "facilityId": "ridb:facility:232447"
+      },
+      "candidates": [
+        {
+          "title": "Upper Pines Campground, Yosemite National Park - Recreation.gov",
+          "url": "https://www.recreation.gov/camping/campgrounds/232447",
+          "extracted": true,
+          "extractedCharacters": 7106
+        },
+        {
+          "title": "Yosemite National Park - Camping, Permits & More | California | Recreation.gov",
+          "url": "https://www.recreation.gov/gateways/2991",
+          "extracted": true,
+          "extractedCharacters": 5839
+        },
+        {
+          "title": "Lower Pines Campground, Yosemite National Park - Recreation.gov",
+          "url": "https://www.recreation.gov/camping/campgrounds/232450",
+          "extracted": false,
+          "extractedCharacters": 0
+        },
+        {
+          "title": "North Pines Campground, Yosemite National Park - Recreation.gov",
+          "url": "https://www.recreation.gov/camping/campgrounds/232449",
+          "extracted": false,
+          "extractedCharacters": 0
+        },
+        {
+          "title": "White Wolf Campground, Yosemite National Park - Recreation.gov",
+          "url": "https://www.recreation.gov/camping/campgrounds/10083567",
+          "extracted": false,
+          "extractedCharacters": 0
+        }
+      ]
+    },
+    {
+      "resource": {
+        "name": "Cable Mountain Lodge",
+        "destination": "Springdale",
+        "kind": "hotel"
+      },
+      "candidates": [
+        {
+          "title": "Cable Mountain Lodge - Guest Reservations",
+          "url": "https://www.guestreservations.com/cable-mountain-lodge/booking",
+          "extracted": true,
+          "extractedCharacters": 12000
+        },
+        {
+          "title": "Cable Mountain Lodge | Hotel & Suites at Zion National Park",
+          "url": "http://cablemountainlodge.com",
+          "extracted": false,
+          "extractedCharacters": 0
+        },
+        {
+          "title": "Lodging in Zion: Tips For Booking Your Stay | CableMountainLodge.com",
+          "url": "http://cablemountainlodge.com/lodging-in-zion",
+          "extracted": false,
+          "extractedCharacters": 0
+        },
+        {
+          "title": "Hotels Around Zion National Park: Cable Mountain is Best of Springdale",
+          "url": "http://cablemountainlodge.com/hotels-around-zion-national-park",
+          "extracted": false,
+          "extractedCharacters": 0
+        },
+        {
+          "title": "Cable Mountain Lodge, Springdale (updated prices)",
+          "url": "https://www.booking.com/hotel/us/cable-mountain-lodge.html",
+          "extracted": false,
+          "extractedCharacters": 0
+        }
+      ]
+    },
+    {
+      "resource": {
+        "name": "Desert Pearl Inn",
+        "destination": "Springdale",
+        "kind": "hotel"
+      },
+      "candidates": [
+        {
+          "title": "Desert Pearl Inn- First Class Springdale, UT Hotels",
+          "url": "https://www.travelweekly.com/Hotels/Springdale-UT/Desert-Pearl-Inn-p4075083",
+          "extracted": false,
+          "extractedCharacters": 0
+        },
+        {
+          "title": "DESERT PEARL INN - Updated 2026 Hotel Reviews ...",
+          "url": "https://www.tripadvisor.com/Hotel_Review-g61001-d99964-Reviews-Desert_Pearl_Inn-Springdale_Utah.html",
+          "extracted": false,
+          "extractedCharacters": 0
+        },
+        {
+          "title": "Zion National Park Lodging Available | Desert Pearl Inn",
+          "url": "https://www.desertpearl.com",
+          "extracted": false,
+          "extractedCharacters": 0
+        },
+        {
+          "title": "Desert Pearl Inn, Springdale: Hotel Reviews, Rooms & Prices",
+          "url": "https://www.hotels.com/ho461009/desert-pearl-inn-springdale-united-states-of-america",
+          "extracted": false,
+          "extractedCharacters": 0
+        },
+        {
+          "title": "Important Information",
+          "url": "https://www.desertpearl.com/en/stay/rates-and-policies",
+          "extracted": false,
+          "extractedCharacters": 0
+        }
+      ]
+    }
+  ],
+  "ridbResource": [
+    {
+      "facilityId": "232447",
+      "name": "Upper Pines Campground",
+      "reservationUrl": "",
+      "listingUrl": null
+    }
+  ]
+}

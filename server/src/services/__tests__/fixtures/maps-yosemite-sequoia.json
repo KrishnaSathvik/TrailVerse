@@ -1,0 +1,9 @@
+{
+  "originAddress": "Yosemite National Park, California, USA",
+  "destinationAddress": "Sequoia National Park, California, USA",
+  "distanceMeters": 220480,
+  "durationSeconds": 14220,
+  "durationInTrafficSeconds": 15180,
+  "providerStatus": "OK",
+  "observedAt": "2026-08-09T12:02:00.000Z"
+}

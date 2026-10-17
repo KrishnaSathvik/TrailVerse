@@ -26,7 +26,10 @@ describe('fetchParkExploreIndex', () => {
     const index = await fetchParkExploreIndex('yell', 'https://api.test');
 
     expect(index?.activities).toBe(2);
-    expect(fetchMock).toHaveBeenCalledWith('https://api.test/parks/yell/explore-index');
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.test/parks/yell/explore-index',
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
 
     vi.unstubAllGlobals();
   });
@@ -43,7 +46,10 @@ describe('fetchParkTab', () => {
     const data = await fetchParkTab('yell', 'activities', 'https://api.test');
 
     expect(data).toEqual([{ id: 'a1' }]);
-    expect(fetchMock).toHaveBeenCalledWith('https://api.test/parks/yell/activities');
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.test/parks/yell/activities',
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
 
     vi.unstubAllGlobals();
   });

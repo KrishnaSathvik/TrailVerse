@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "experiences": [
+    {
+      "entityId": "nps:park:yose:experience:mist-trail",
+      "contextEntityId": "nps:park:yose",
+      "canonicalName": "Mist Trail",
+      "category": "trail",
+      "activityTypes": [
+        "hike"
+      ],
+      "source": {
+        "url": "https://www.nps.gov/yose/planyourvisit/vernalnevadatrail.htm",
+        "title": "Vernal Fall and Nevada Fall Trails - Yosemite National Park (U.S. National Park Service)",
+        "publisher": "National Park Service",
+        "excerpt": "To proceed directly to the top of Vernal Fall, follow the Mist Trail 0.3 miles (0.5 km) up a steep granite stairway of over 600 steps."
+      },
+      "sourceCheck": {
+        "checkedAt": "2026-09-15T15:33:52.207Z",
+        "httpStatus": 200,
+        "finalUrl": "https://www.nps.gov/yose/planyourvisit/vernalnevadatrail.htm",
+        "excerptFound": true
+      }
+    },
+    {
+      "entityId": "nps:park:yose:experience:vernal-fall-footbridge",
+      "contextEntityId": "nps:park:yose",
+      "canonicalName": "Vernal Fall Footbridge",
+      "category": "place",
+      "source": {
+        "url": "https://www.nps.gov/yose/planyourvisit/vernalnevadatrail.htm",
+        "title": "Vernal Fall and Nevada Fall Trails - Yosemite National Park (U.S. National Park Service)",
+        "publisher": "National Park Service",
+        "excerpt": "This first paved mile of trail is busiest and accesses the Vernal Fall Footbridge."
+      },
+      "sourceCheck": {
+        "checkedAt": "2026-09-15T15:33:52.207Z",
+        "httpStatus": 200,
+        "finalUrl": "https://www.nps.gov/yose/planyourvisit/vernalnevadatrail.htm",
+        "excerptFound": true
+      }
+    },
+    {
+      "entityId": "nps:park:yose:experience:vernal-fall",
+      "contextEntityId": "nps:park:yose",
+      "canonicalName": "Vernal Fall",
+      "category": "waterfall",
+      "source": {
+        "url": "https://www.nps.gov/yose/planyourvisit/vernalnevadatrail.htm",
+        "title": "Vernal Fall and Nevada Fall Trails - Yosemite National Park (U.S. National Park Service)",
+        "publisher": "National Park Service",
+        "excerpt": "At the top of Vernal Fall, you can experience jaw-dropping views straight down the length of the 317-foot waterfall"
+      },
+      "sourceCheck": {
+        "checkedAt": "2026-09-15T15:33:52.207Z",
+        "httpStatus": 200,
+        "finalUrl": "https://www.nps.gov/yose/planyourvisit/vernalnevadatrail.htm",
+        "excerptFound": true
+      }
+    }
+  ]
+}

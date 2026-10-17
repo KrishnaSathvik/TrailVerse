@@ -1,0 +1,909 @@
+{
+  "candidate": "db419a43d49e8a8f669b21d68802a07284094e1f",
+  "gate": "npm audit --audit-level moderate",
+  "scopes": {
+    "server": {
+      "gateExitCode": 1,
+      "counts": {
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 31,
+        "critical": 0,
+        "total": 31
+      },
+      "roots": [
+        "braces"
+      ],
+      "nodes": [
+        {
+          "name": "braces",
+          "version": "3.0.3",
+          "location": "node_modules/braces"
+        },
+        {
+          "name": "chokidar",
+          "version": "3.6.0",
+          "location": "node_modules/chokidar"
+        },
+        {
+          "name": "nodemon",
+          "version": "3.1.10",
+          "location": "node_modules/nodemon"
+        },
+        {
+          "name": "micromatch",
+          "version": "4.0.8",
+          "location": "node_modules/micromatch"
+        },
+        {
+          "name": "@jest/core",
+          "version": "29.7.0",
+          "location": "node_modules/@jest/core"
+        },
+        {
+          "name": "jest",
+          "version": "29.7.0",
+          "location": "node_modules/jest"
+        },
+        {
+          "name": "jest-cli",
+          "version": "29.7.0",
+          "location": "node_modules/jest-cli"
+        },
+        {
+          "name": "@jest/transform",
+          "version": "29.7.0",
+          "location": "node_modules/@jest/transform"
+        },
+        {
+          "name": "@jest/reporters",
+          "version": "29.7.0",
+          "location": "node_modules/@jest/reporters"
+        },
+        {
+          "name": "babel-jest",
+          "version": "29.7.0",
+          "location": "node_modules/babel-jest"
+        },
+        {
+          "name": "jest-config",
+          "version": "29.7.0",
+          "location": "node_modules/jest-config"
+        },
+        {
+          "name": "create-jest",
+          "version": "29.7.0",
+          "location": "node_modules/create-jest"
+        },
+        {
+          "name": "jest-runner",
+          "version": "29.7.0",
+          "location": "node_modules/jest-runner"
+        },
+        {
+          "name": "jest-runtime",
+          "version": "29.7.0",
+          "location": "node_modules/jest-runtime"
+        },
+        {
+          "name": "jest-circus",
+          "version": "29.7.0",
+          "location": "node_modules/jest-circus"
+        },
+        {
+          "name": "jest-snapshot",
+          "version": "29.7.0",
+          "location": "node_modules/jest-snapshot"
+        },
+        {
+          "name": "@jest/expect",
+          "version": "29.7.0",
+          "location": "node_modules/@jest/expect"
+        },
+        {
+          "name": "@jest/globals",
+          "version": "29.7.0",
+          "location": "node_modules/@jest/globals"
+        },
+        {
+          "name": "jest-resolve-dependencies",
+          "version": "29.7.0",
+          "location": "node_modules/jest-resolve-dependencies"
+        },
+        {
+          "name": "jest-haste-map",
+          "version": "29.7.0",
+          "location": "node_modules/jest-haste-map"
+        },
+        {
+          "name": "@jest/test-sequencer",
+          "version": "29.7.0",
+          "location": "node_modules/@jest/test-sequencer"
+        },
+        {
+          "name": "jest-resolve",
+          "version": "29.7.0",
+          "location": "node_modules/jest-resolve"
+        },
+        {
+          "name": "jest-pnp-resolver",
+          "version": "1.2.3",
+          "location": "node_modules/jest-pnp-resolver"
+        },
+        {
+          "name": "jest-resolve",
+          "version": "29.7.0",
+          "location": ""
+        },
+        {
+          "name": "jest-message-util",
+          "version": "29.7.0",
+          "location": "node_modules/jest-message-util"
+        },
+        {
+          "name": "@jest/console",
+          "version": "29.7.0",
+          "location": "node_modules/@jest/console"
+        },
+        {
+          "name": "@jest/test-result",
+          "version": "29.7.0",
+          "location": "node_modules/@jest/test-result"
+        },
+        {
+          "name": "jest-watcher",
+          "version": "29.7.0",
+          "location": "node_modules/jest-watcher"
+        },
+        {
+          "name": "@jest/fake-timers",
+          "version": "29.7.0",
+          "location": "node_modules/@jest/fake-timers"
+        },
+        {
+          "name": "@jest/environment",
+          "version": "29.7.0",
+          "location": "node_modules/@jest/environment"
+        },
+        {
+          "name": "jest-environment-node",
+          "version": "29.7.0",
+          "location": "node_modules/jest-environment-node"
+        },
+        {
+          "name": "expect",
+          "version": "29.7.0",
+          "location": "node_modules/expect"
+        },
+        {
+          "name": "@types/jest",
+          "version": "29.5.14",
+          "location": "node_modules/@types/jest"
+        }
+      ],
+      "edges": [
+        {
+          "from": "<project root>",
+          "to": "@types/jest@29.5.14 [node_modules/@types/jest]",
+          "requested": "^29.5.14",
+          "type": "dev"
+        },
+        {
+          "from": "<project root>",
+          "to": "jest@29.7.0 [node_modules/jest]",
+          "requested": "^29.7.0",
+          "type": "dev"
+        },
+        {
+          "from": "<project root>",
+          "to": "nodemon@3.1.10 [node_modules/nodemon]",
+          "requested": "^3.0.3",
+          "type": "dev"
+        },
+        {
+          "from": "@jest/console@29.7.0 [node_modules/@jest/console]",
+          "to": "jest-message-util@29.7.0 [node_modules/jest-message-util]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "@jest/core@29.7.0 [node_modules/@jest/core]",
+          "to": "@jest/console@29.7.0 [node_modules/@jest/console]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "@jest/core@29.7.0 [node_modules/@jest/core]",
+          "to": "@jest/reporters@29.7.0 [node_modules/@jest/reporters]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "@jest/core@29.7.0 [node_modules/@jest/core]",
+          "to": "@jest/test-result@29.7.0 [node_modules/@jest/test-result]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "@jest/core@29.7.0 [node_modules/@jest/core]",
+          "to": "@jest/transform@29.7.0 [node_modules/@jest/transform]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "@jest/core@29.7.0 [node_modules/@jest/core]",
+          "to": "jest-config@29.7.0 [node_modules/jest-config]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "@jest/core@29.7.0 [node_modules/@jest/core]",
+          "to": "jest-haste-map@29.7.0 [node_modules/jest-haste-map]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "@jest/core@29.7.0 [node_modules/@jest/core]",
+          "to": "jest-message-util@29.7.0 [node_modules/jest-message-util]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "@jest/core@29.7.0 [node_modules/@jest/core]",
+          "to": "jest-resolve-dependencies@29.7.0 [node_modules/jest-resolve-dependencies]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "@jest/core@29.7.0 [node_modules/@jest/core]",
+          "to": "jest-resolve@29.7.0 [node_modules/jest-resolve]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "@jest/core@29.7.0 [node_modules/@jest/core]",
+          "to": "jest-runner@29.7.0 [node_modules/jest-runner]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "@jest/core@29.7.0 [node_modules/@jest/core]",
+          "to": "jest-runtime@29.7.0 [node_modules/jest-runtime]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "@jest/core@29.7.0 [node_modules/@jest/core]",
+          "to": "jest-snapshot@29.7.0 [node_modules/jest-snapshot]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "@jest/core@29.7.0 [node_modules/@jest/core]",
+          "to": "jest-watcher@29.7.0 [node_modules/jest-watcher]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "@jest/core@29.7.0 [node_modules/@jest/core]",
+          "to": "micromatch@4.0.8 [node_modules/micromatch]",
+          "requested": "^4.0.4",
+          "type": "prod"
+        },
+        {
+          "from": "@jest/environment@29.7.0 [node_modules/@jest/environment]",
+          "to": "@jest/fake-timers@29.7.0 [node_modules/@jest/fake-timers]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "@jest/expect@29.7.0 [node_modules/@jest/expect]",
+          "to": "expect@29.7.0 [node_modules/expect]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "@jest/expect@29.7.0 [node_modules/@jest/expect]",
+          "to": "jest-snapshot@29.7.0 [node_modules/jest-snapshot]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "@jest/fake-timers@29.7.0 [node_modules/@jest/fake-timers]",
+          "to": "jest-message-util@29.7.0 [node_modules/jest-message-util]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "@jest/globals@29.7.0 [node_modules/@jest/globals]",
+          "to": "@jest/environment@29.7.0 [node_modules/@jest/environment]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "@jest/globals@29.7.0 [node_modules/@jest/globals]",
+          "to": "@jest/expect@29.7.0 [node_modules/@jest/expect]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "@jest/reporters@29.7.0 [node_modules/@jest/reporters]",
+          "to": "@jest/console@29.7.0 [node_modules/@jest/console]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "@jest/reporters@29.7.0 [node_modules/@jest/reporters]",
+          "to": "@jest/test-result@29.7.0 [node_modules/@jest/test-result]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "@jest/reporters@29.7.0 [node_modules/@jest/reporters]",
+          "to": "@jest/transform@29.7.0 [node_modules/@jest/transform]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "@jest/reporters@29.7.0 [node_modules/@jest/reporters]",
+          "to": "jest-message-util@29.7.0 [node_modules/jest-message-util]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "@jest/test-result@29.7.0 [node_modules/@jest/test-result]",
+          "to": "@jest/console@29.7.0 [node_modules/@jest/console]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "@jest/test-sequencer@29.7.0 [node_modules/@jest/test-sequencer]",
+          "to": "@jest/test-result@29.7.0 [node_modules/@jest/test-result]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "@jest/test-sequencer@29.7.0 [node_modules/@jest/test-sequencer]",
+          "to": "jest-haste-map@29.7.0 [node_modules/jest-haste-map]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "@jest/transform@29.7.0 [node_modules/@jest/transform]",
+          "to": "jest-haste-map@29.7.0 [node_modules/jest-haste-map]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "@jest/transform@29.7.0 [node_modules/@jest/transform]",
+          "to": "micromatch@4.0.8 [node_modules/micromatch]",
+          "requested": "^4.0.4",
+          "type": "prod"
+        },
+        {
+          "from": "@types/jest@29.5.14 [node_modules/@types/jest]",
+          "to": "expect@29.7.0 [node_modules/expect]",
+          "requested": "^29.0.0",
+          "type": "prod"
+        },
+        {
+          "from": "babel-jest@29.7.0 [node_modules/babel-jest]",
+          "to": "@jest/transform@29.7.0 [node_modules/@jest/transform]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "chokidar@3.6.0 [node_modules/chokidar]",
+          "to": "braces@3.0.3 [node_modules/braces]",
+          "requested": "~3.0.2",
+          "type": "prod"
+        },
+        {
+          "from": "create-jest@29.7.0 [node_modules/create-jest]",
+          "to": "jest-config@29.7.0 [node_modules/jest-config]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "expect@29.7.0 [node_modules/expect]",
+          "to": "jest-message-util@29.7.0 [node_modules/jest-message-util]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-circus@29.7.0 [node_modules/jest-circus]",
+          "to": "@jest/environment@29.7.0 [node_modules/@jest/environment]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-circus@29.7.0 [node_modules/jest-circus]",
+          "to": "@jest/expect@29.7.0 [node_modules/@jest/expect]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-circus@29.7.0 [node_modules/jest-circus]",
+          "to": "@jest/test-result@29.7.0 [node_modules/@jest/test-result]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-circus@29.7.0 [node_modules/jest-circus]",
+          "to": "jest-message-util@29.7.0 [node_modules/jest-message-util]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-circus@29.7.0 [node_modules/jest-circus]",
+          "to": "jest-runtime@29.7.0 [node_modules/jest-runtime]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-circus@29.7.0 [node_modules/jest-circus]",
+          "to": "jest-snapshot@29.7.0 [node_modules/jest-snapshot]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-cli@29.7.0 [node_modules/jest-cli]",
+          "to": "@jest/core@29.7.0 [node_modules/@jest/core]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-cli@29.7.0 [node_modules/jest-cli]",
+          "to": "@jest/test-result@29.7.0 [node_modules/@jest/test-result]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-cli@29.7.0 [node_modules/jest-cli]",
+          "to": "create-jest@29.7.0 [node_modules/create-jest]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-cli@29.7.0 [node_modules/jest-cli]",
+          "to": "jest-config@29.7.0 [node_modules/jest-config]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-config@29.7.0 [node_modules/jest-config]",
+          "to": "@jest/test-sequencer@29.7.0 [node_modules/@jest/test-sequencer]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-config@29.7.0 [node_modules/jest-config]",
+          "to": "babel-jest@29.7.0 [node_modules/babel-jest]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-config@29.7.0 [node_modules/jest-config]",
+          "to": "jest-circus@29.7.0 [node_modules/jest-circus]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-config@29.7.0 [node_modules/jest-config]",
+          "to": "jest-environment-node@29.7.0 [node_modules/jest-environment-node]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-config@29.7.0 [node_modules/jest-config]",
+          "to": "jest-resolve@29.7.0 [node_modules/jest-resolve]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-config@29.7.0 [node_modules/jest-config]",
+          "to": "jest-runner@29.7.0 [node_modules/jest-runner]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-config@29.7.0 [node_modules/jest-config]",
+          "to": "micromatch@4.0.8 [node_modules/micromatch]",
+          "requested": "^4.0.4",
+          "type": "prod"
+        },
+        {
+          "from": "jest-environment-node@29.7.0 [node_modules/jest-environment-node]",
+          "to": "@jest/environment@29.7.0 [node_modules/@jest/environment]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-environment-node@29.7.0 [node_modules/jest-environment-node]",
+          "to": "@jest/fake-timers@29.7.0 [node_modules/@jest/fake-timers]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-haste-map@29.7.0 [node_modules/jest-haste-map]",
+          "to": "micromatch@4.0.8 [node_modules/micromatch]",
+          "requested": "^4.0.4",
+          "type": "prod"
+        },
+        {
+          "from": "jest-message-util@29.7.0 [node_modules/jest-message-util]",
+          "to": "micromatch@4.0.8 [node_modules/micromatch]",
+          "requested": "^4.0.4",
+          "type": "prod"
+        },
+        {
+          "from": "jest-pnp-resolver@1.2.3 [node_modules/jest-pnp-resolver]",
+          "to": "jest-resolve@29.7.0 [node_modules/jest-resolve]",
+          "requested": "*",
+          "type": "peerOptional"
+        },
+        {
+          "from": "jest-resolve-dependencies@29.7.0 [node_modules/jest-resolve-dependencies]",
+          "to": "jest-snapshot@29.7.0 [node_modules/jest-snapshot]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-resolve@29.7.0 []",
+          "to": "jest-pnp-resolver@1.2.3 [node_modules/jest-pnp-resolver]",
+          "requested": "^1.2.2",
+          "type": "prod"
+        },
+        {
+          "from": "jest-resolve@29.7.0 [node_modules/jest-resolve]",
+          "to": "jest-haste-map@29.7.0 [node_modules/jest-haste-map]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-runner@29.7.0 [node_modules/jest-runner]",
+          "to": "@jest/console@29.7.0 [node_modules/@jest/console]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-runner@29.7.0 [node_modules/jest-runner]",
+          "to": "@jest/environment@29.7.0 [node_modules/@jest/environment]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-runner@29.7.0 [node_modules/jest-runner]",
+          "to": "@jest/test-result@29.7.0 [node_modules/@jest/test-result]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-runner@29.7.0 [node_modules/jest-runner]",
+          "to": "@jest/transform@29.7.0 [node_modules/@jest/transform]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-runner@29.7.0 [node_modules/jest-runner]",
+          "to": "jest-environment-node@29.7.0 [node_modules/jest-environment-node]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-runner@29.7.0 [node_modules/jest-runner]",
+          "to": "jest-haste-map@29.7.0 [node_modules/jest-haste-map]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-runner@29.7.0 [node_modules/jest-runner]",
+          "to": "jest-message-util@29.7.0 [node_modules/jest-message-util]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-runner@29.7.0 [node_modules/jest-runner]",
+          "to": "jest-resolve@29.7.0 [node_modules/jest-resolve]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-runner@29.7.0 [node_modules/jest-runner]",
+          "to": "jest-runtime@29.7.0 [node_modules/jest-runtime]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-runner@29.7.0 [node_modules/jest-runner]",
+          "to": "jest-watcher@29.7.0 [node_modules/jest-watcher]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-runtime@29.7.0 [node_modules/jest-runtime]",
+          "to": "@jest/environment@29.7.0 [node_modules/@jest/environment]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-runtime@29.7.0 [node_modules/jest-runtime]",
+          "to": "@jest/fake-timers@29.7.0 [node_modules/@jest/fake-timers]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-runtime@29.7.0 [node_modules/jest-runtime]",
+          "to": "@jest/globals@29.7.0 [node_modules/@jest/globals]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-runtime@29.7.0 [node_modules/jest-runtime]",
+          "to": "@jest/test-result@29.7.0 [node_modules/@jest/test-result]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-runtime@29.7.0 [node_modules/jest-runtime]",
+          "to": "@jest/transform@29.7.0 [node_modules/@jest/transform]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-runtime@29.7.0 [node_modules/jest-runtime]",
+          "to": "jest-haste-map@29.7.0 [node_modules/jest-haste-map]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-runtime@29.7.0 [node_modules/jest-runtime]",
+          "to": "jest-message-util@29.7.0 [node_modules/jest-message-util]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-runtime@29.7.0 [node_modules/jest-runtime]",
+          "to": "jest-resolve@29.7.0 [node_modules/jest-resolve]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-runtime@29.7.0 [node_modules/jest-runtime]",
+          "to": "jest-snapshot@29.7.0 [node_modules/jest-snapshot]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-snapshot@29.7.0 [node_modules/jest-snapshot]",
+          "to": "@jest/transform@29.7.0 [node_modules/@jest/transform]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-snapshot@29.7.0 [node_modules/jest-snapshot]",
+          "to": "expect@29.7.0 [node_modules/expect]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-snapshot@29.7.0 [node_modules/jest-snapshot]",
+          "to": "jest-message-util@29.7.0 [node_modules/jest-message-util]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest-watcher@29.7.0 [node_modules/jest-watcher]",
+          "to": "@jest/test-result@29.7.0 [node_modules/@jest/test-result]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest@29.7.0 [node_modules/jest]",
+          "to": "@jest/core@29.7.0 [node_modules/@jest/core]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "jest@29.7.0 [node_modules/jest]",
+          "to": "jest-cli@29.7.0 [node_modules/jest-cli]",
+          "requested": "^29.7.0",
+          "type": "prod"
+        },
+        {
+          "from": "micromatch@4.0.8 [node_modules/micromatch]",
+          "to": "braces@3.0.3 [node_modules/braces]",
+          "requested": "^3.0.3",
+          "type": "prod"
+        },
+        {
+          "from": "nodemon@3.1.10 [node_modules/nodemon]",
+          "to": "chokidar@3.6.0 [node_modules/chokidar]",
+          "requested": "^3.5.2",
+          "type": "prod"
+        }
+      ]
+    },
+    "next-frontend": {
+      "gateExitCode": 1,
+      "counts": {
+        "info": 0,
+        "low": 0,
+        "moderate": 3,
+        "high": 11,
+        "critical": 0,
+        "total": 14
+      },
+      "roots": [
+        "braces",
+        "sprintf-js",
+        "extract-zip"
+      ],
+      "nodes": [
+        {
+          "name": "braces",
+          "version": "3.0.3",
+          "location": "node_modules/braces"
+        },
+        {
+          "name": "micromatch",
+          "version": "4.0.8",
+          "location": "node_modules/micromatch"
+        },
+        {
+          "name": "fast-glob",
+          "version": "3.3.1",
+          "location": "node_modules/fast-glob"
+        },
+        {
+          "name": "@next/eslint-plugin-next",
+          "version": "16.3.8",
+          "location": "node_modules/@next/eslint-plugin-next"
+        },
+        {
+          "name": "eslint-config-next",
+          "version": "16.3.8",
+          "location": "node_modules/eslint-config-next"
+        },
+        {
+          "name": "sprintf-js",
+          "version": "1.0.3",
+          "location": "node_modules/sprintf-js"
+        },
+        {
+          "name": "argparse",
+          "version": "1.0.10",
+          "location": "node_modules/@lhci/utils/node_modules/argparse"
+        },
+        {
+          "name": "js-yaml",
+          "version": "3.15.2",
+          "location": "node_modules/@lhci/utils/node_modules/js-yaml"
+        },
+        {
+          "name": "@lhci/utils",
+          "version": "0.15.1",
+          "location": "node_modules/@lhci/utils"
+        },
+        {
+          "name": "@lhci/cli",
+          "version": "0.15.1",
+          "location": "node_modules/@lhci/cli"
+        },
+        {
+          "name": "extract-zip",
+          "version": "2.0.1",
+          "location": "node_modules/extract-zip"
+        },
+        {
+          "name": "@puppeteer/browsers",
+          "version": "2.13.0",
+          "location": "node_modules/@puppeteer/browsers"
+        },
+        {
+          "name": "puppeteer-core",
+          "version": "24.40.0",
+          "location": "node_modules/puppeteer-core"
+        },
+        {
+          "name": "lighthouse",
+          "version": "12.6.1",
+          "location": "node_modules/lighthouse"
+        }
+      ],
+      "edges": [
+        {
+          "from": "<project root>",
+          "to": "@lhci/cli@0.15.1 [node_modules/@lhci/cli]",
+          "requested": "^0.15.1",
+          "type": "dev"
+        },
+        {
+          "from": "<project root>",
+          "to": "eslint-config-next@16.3.8 [node_modules/eslint-config-next]",
+          "requested": "16.3.8",
+          "type": "dev"
+        },
+        {
+          "from": "@lhci/cli@0.15.1 [node_modules/@lhci/cli]",
+          "to": "@lhci/utils@0.15.1 [node_modules/@lhci/utils]",
+          "requested": "0.15.1",
+          "type": "prod"
+        },
+        {
+          "from": "@lhci/cli@0.15.1 [node_modules/@lhci/cli]",
+          "to": "lighthouse@12.6.1 [node_modules/lighthouse]",
+          "requested": "12.6.1",
+          "type": "prod"
+        },
+        {
+          "from": "@lhci/utils@0.15.1 [node_modules/@lhci/utils]",
+          "to": "js-yaml@3.15.2 [node_modules/@lhci/utils/node_modules/js-yaml]",
+          "requested": "^3.13.1",
+          "type": "prod"
+        },
+        {
+          "from": "@lhci/utils@0.15.1 [node_modules/@lhci/utils]",
+          "to": "lighthouse@12.6.1 [node_modules/lighthouse]",
+          "requested": "12.6.1",
+          "type": "prod"
+        },
+        {
+          "from": "@next/eslint-plugin-next@16.3.8 [node_modules/@next/eslint-plugin-next]",
+          "to": "fast-glob@3.3.1 [node_modules/fast-glob]",
+          "requested": "3.3.1",
+          "type": "prod"
+        },
+        {
+          "from": "@puppeteer/browsers@2.13.0 [node_modules/@puppeteer/browsers]",
+          "to": "extract-zip@2.0.1 [node_modules/extract-zip]",
+          "requested": "^2.0.1",
+          "type": "prod"
+        },
+        {
+          "from": "argparse@1.0.10 [node_modules/@lhci/utils/node_modules/argparse]",
+          "to": "sprintf-js@1.0.3 [node_modules/sprintf-js]",
+          "requested": "~1.0.2",
+          "type": "prod"
+        },
+        {
+          "from": "eslint-config-next@16.3.8 [node_modules/eslint-config-next]",
+          "to": "@next/eslint-plugin-next@16.3.8 [node_modules/@next/eslint-plugin-next]",
+          "requested": "16.3.8",
+          "type": "prod"
+        },
+        {
+          "from": "fast-glob@3.3.1 [node_modules/fast-glob]",
+          "to": "micromatch@4.0.8 [node_modules/micromatch]",
+          "requested": "^4.0.4",
+          "type": "prod"
+        },
+        {
+          "from": "js-yaml@3.15.2 [node_modules/@lhci/utils/node_modules/js-yaml]",
+          "to": "argparse@1.0.10 [node_modules/@lhci/utils/node_modules/argparse]",
+          "requested": "^1.0.7",
+          "type": "prod"
+        },
+        {
+          "from": "lighthouse@12.6.1 [node_modules/lighthouse]",
+          "to": "puppeteer-core@24.40.0 [node_modules/puppeteer-core]",
+          "requested": "^24.10.0",
+          "type": "prod"
+        },
+        {
+          "from": "micromatch@4.0.8 [node_modules/micromatch]",
+          "to": "braces@3.0.3 [node_modules/braces]",
+          "requested": "^3.0.3",
+          "type": "prod"
+        },
+        {
+          "from": "puppeteer-core@24.40.0 [node_modules/puppeteer-core]",
+          "to": "@puppeteer/browsers@2.13.0 [node_modules/@puppeteer/browsers]",
+          "requested": "2.13.0",
+          "type": "prod"
+        }
+      ]
+    }
+  }
+}

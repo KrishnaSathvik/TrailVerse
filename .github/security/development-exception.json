@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "id": "trailverse-dev-tools-2026-10-16",
+  "status": "approved",
+  "owner": "KrishnaSathvik",
+  "expiresAt": "2026-10-30T00:00:00Z",
+  "scopes": {
+    "next-frontend": {
+      "findingsSha256": "29bc2691908b67c46a9a10813e38f518e166e2fa769c33bd2a8296677e58d034",
+      "advisoryPaths": [
+        {
+          "advisory": "GHSA-vfj7-8cjw-p6xm",
+          "package": "braces",
+          "version": "3.0.3",
+          "location": "node_modules/braces"
+        },
+        {
+          "advisory": "GHSA-jmr9-qjv8-65gv",
+          "package": "extract-zip",
+          "version": "2.0.1",
+          "location": "node_modules/extract-zip"
+        },
+        {
+          "advisory": "GHSA-7pqw-9j4j-h8q3",
+          "package": "extract-zip",
+          "version": "2.0.1",
+          "location": "node_modules/extract-zip"
+        },
+        {
+          "advisory": "GHSA-hp3w-g68c-fv3c",
+          "package": "sprintf-js",
+          "version": "1.0.3",
+          "location": "node_modules/sprintf-js"
+        }
+      ]
+    },
+    "server": {
+      "findingsSha256": "fbdccbde33a8607eed11d8fc53498b2fb682cfe0f2b82d017fd2ef2d5c4c589c",
+      "advisoryPaths": [
+        {
+          "advisory": "GHSA-vfj7-8cjw-p6xm",
+          "package": "braces",
+          "version": "3.0.3",
+          "location": "node_modules/braces"
+        }
+      ]
+    }
+  },
+  "files": {
+    "package.json": "de164a5215c7852013ad02017839a6789721dc9271135122fdbfea1cd8571e82",
+    "package-lock.json": "b456254c0b42b0adfb6813a96f7aa2f4293453d0af2f2e7a040711ea851ea352",
+    "next-frontend/package.json": "09d3322e1d556d652f696200f306bc3c2b0dfa9f1fcf545cd09ff8d110a84a1c",
+    "next-frontend/package-lock.json": "c40cbab8f675764219471e6e1158d7c5db444e4497b14d22451a33db2f59d44f",
+    "server/package.json": "53652c2f9fae9278325ae3b6760b5c780f0f54fe382a1fe088e5289fd9026d72",
+    "server/package-lock.json": "3c4e9df241b504af1be94a0d7a14f5d8ad2cf9104e53c06d3e55a2cbca1bbcfb",
+    "docs/releases/remaining-ci-dependency-paths-2026-10-16.json": "564693615c871444c96f8e793a26e10efdc9a565182959425549ac675658d8a0"
+  },
+  "scopeSha256": "54b5ecb03bb460cf5cf29976bf7b5a3ee502dd324f2027f5f5524ba544c18689",
+  "approval": {
+    "approvedBy": "KrishnaSathvik",
+    "approvedAt": "2026-10-17T21:07:26Z",
+    "decisionReference": "docs/releases/security-metadata-refresh-2026-10-17.md",
+    "scopeSha256": "54b5ecb03bb460cf5cf29976bf7b5a3ee502dd324f2027f5f5524ba544c18689"
+  }
+}

@@ -37,8 +37,26 @@ describe('hasActivePlanAiConversation', () => {
   it('returns true when anonymous session has sent messages', () => {
     localStorage.setItem(
       'anonymousSession',
-      JSON.stringify({ anonymousId: 'anon_1', messageCount: 2, canSendMore: true })
+      JSON.stringify({
+        anonymousId: 'guest_v2_123e4567-e89b-42d3-a456-426614174000',
+        messageCount: 2,
+        canSendMore: true,
+      })
     );
     expect(hasActivePlanAiConversation()).toBe(true);
   });
+
+  it('does not treat collided legacy anonymous state as resumable', () => {
+    localStorage.setItem(
+      'anonymousSession',
+      JSON.stringify({ anonymousId: 'anon_0123456789abcdef_012345', messageCount: 2 })
+    );
+    expect(hasActivePlanAiConversation()).toBe(false);
+  });
+});
+
+it('replaces an old cache with an explicitly selected empty saved chat', () => {
+  saveTempChatState({ messages: [{role:'user',content:'Old local message'}] });
+  expect(saveTempChatState({ currentTripId:null, guestSessionId:'guest', guestConversationId:null, messages:[] })).toBe(true);
+  expect(JSON.parse(localStorage.getItem('planai-chat-state'))).toEqual({currentTripId:null,guestSessionId:'guest',guestConversationId:null,messages:[]});
 });

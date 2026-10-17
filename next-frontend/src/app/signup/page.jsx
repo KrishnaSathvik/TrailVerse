@@ -94,7 +94,6 @@ const SignupPage = () => {
       );
       
       console.log('✅ SignupPage: Signup successful, response:', response);
-      logEvent('Auth', 'signup_success', 'email');
 
       // Show appropriate message based on email status
       if (response.emailSent) {
@@ -175,39 +174,21 @@ const SignupPage = () => {
 
   return (
     <AuthShell
-      desktopTitle="Join the adventure!"
-      desktopDescription="Create a free account to save favorites, keep your Trailie chat, plan outdoor trips, and get personalized recommendations."
-      mobileTitle="Create Account"
-      mobileDescription="Unlock favorites, save your Trailie chat, and get personalized recommendations."
+      desktopTitle="Start your next adventure"
+      desktopDescription="Save favorite parks, keep your Trailie trips, and return to your plans whenever you’re ready."
     >
-          <div
-            className="hidden lg:block lg:mb-8 lg:rounded-none lg:border-0 lg:px-0 lg:py-0"
-            style={{
-              backgroundColor: 'transparent',
-              borderColor: 'transparent'
-            }}
-          >
-            <h1 className="text-2xl font-semibold tracking-tight lg:text-4xl lg:mb-2" style={{ color: 'var(--text-primary)' }}>
-              Create Account
-            </h1>
-            <p className="mt-1 text-sm leading-relaxed lg:text-base" style={{ color: 'var(--text-secondary)' }}>
-              Unlock favorites, Trailie trip planning, personalized recommendations, and park tracking in one place.
-            </p>
-            <p className="mt-3 text-sm lg:mt-2" style={{ color: 'var(--text-secondary)' }}>
-              Already have an account?{' '}
-              <Link href="/login" className="font-semibold hover:opacity-80 transition" style={{ color: 'var(--accent-green)' }}>
-                Sign in
-              </Link>
-            </p>
+          <div className="mb-7">
+            <h2 className="text-2xl font-semibold tracking-tight lg:text-4xl text-[var(--text-primary)]">Create your account</h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">Save your trips, favorites, and Trailie conversations.</p>
+            <p className="mt-3 text-sm text-[var(--text-secondary)]">Already have an account? <Link href="/login" className="font-medium text-[var(--accent-green)] hover:opacity-80">Sign in</Link></p>
           </div>
-
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="min-w-0 space-y-5">
             {/* Name Fields */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* First Name */}
               <div>
-                <label className="block text-xs font-medium mb-2 uppercase tracking-wider"
+                <label htmlFor="signup-firstName" className="block text-xs font-medium mb-2 uppercase tracking-wider"
                   style={{ color: 'var(--text-secondary)' }}
                 >
                   First Name
@@ -217,6 +198,10 @@ const SignupPage = () => {
                   <input
                     type="text"
                     name="firstName"
+                    id="signup-firstName"
+                    autoComplete="given-name"
+                    aria-invalid={Boolean(errors.firstName)}
+                    aria-describedby={errors.firstName ? 'signup-firstName-error' : undefined}
                     value={formData.firstName}
                     onChange={handleChange}
                     placeholder="First name"
@@ -244,7 +229,7 @@ const SignupPage = () => {
                   />
                 </div>
                 {errors.firstName && (
-                  <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
+                  <p id="signup-firstName-error" className="mt-1 text-xs text-red-400 flex items-center gap-1">
                     <AlertCircle className="h-3 w-3" />
                     {errors.firstName}
                   </p>
@@ -253,7 +238,7 @@ const SignupPage = () => {
 
               {/* Last Name */}
               <div>
-                <label className="block text-xs font-medium mb-2 uppercase tracking-wider"
+                <label htmlFor="signup-lastName" className="block text-xs font-medium mb-2 uppercase tracking-wider"
                   style={{ color: 'var(--text-secondary)' }}
                 >
                   Last Name
@@ -263,6 +248,10 @@ const SignupPage = () => {
                   <input
                     type="text"
                     name="lastName"
+                    id="signup-lastName"
+                    autoComplete="family-name"
+                    aria-invalid={Boolean(errors.lastName)}
+                    aria-describedby={errors.lastName ? 'signup-lastName-error' : undefined}
                     value={formData.lastName}
                     onChange={handleChange}
                     placeholder="Last name"
@@ -290,7 +279,7 @@ const SignupPage = () => {
                   />
                 </div>
                 {errors.lastName && (
-                  <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
+                  <p id="signup-lastName-error" className="mt-1 text-xs text-red-400 flex items-center gap-1">
                     <AlertCircle className="h-3 w-3" />
                     {errors.lastName}
                   </p>
@@ -300,7 +289,7 @@ const SignupPage = () => {
 
             {/* Email */}
             <div>
-              <label className="block text-xs font-medium mb-2 uppercase tracking-wider"
+              <label htmlFor="signup-email" className="block text-xs font-medium mb-2 uppercase tracking-wider"
                 style={{ color: 'var(--text-secondary)' }}
               >
                 Email Address
@@ -310,6 +299,10 @@ const SignupPage = () => {
                 <input
                   type="email"
                   name="email"
+                    id="signup-email"
+                    autoComplete="email"
+                    aria-invalid={Boolean(errors.email)}
+                    aria-describedby={errors.email ? 'signup-email-error' : undefined}
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="Enter your email"
@@ -337,7 +330,7 @@ const SignupPage = () => {
                 />
               </div>
               {errors.email && (
-                <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
+                <p id="signup-email-error" className="mt-1 text-xs text-red-400 flex items-center gap-1">
                   <AlertCircle className="h-3 w-3" />
                   {errors.email}
                 </p>
@@ -346,7 +339,7 @@ const SignupPage = () => {
 
             {/* Password */}
             <div>
-              <label className="block text-xs font-medium mb-2 uppercase tracking-wider"
+              <label htmlFor="signup-password" className="block text-xs font-medium mb-2 uppercase tracking-wider"
                 style={{ color: 'var(--text-secondary)' }}
               >
                 Password
@@ -356,6 +349,10 @@ const SignupPage = () => {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   name="password"
+                    id="signup-password"
+                    autoComplete="new-password"
+                    aria-invalid={Boolean(errors.password)}
+                    aria-describedby={errors.password ? 'signup-password-error' : undefined}
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="Enter password"
@@ -383,8 +380,9 @@ const SignupPage = () => {
                 />
                 <button
                   type="button"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-lg hover:bg-white/5 transition"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-white/5 transition"
                   style={{ color: 'var(--text-tertiary)' }}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -414,7 +412,7 @@ const SignupPage = () => {
               )}
 
               {errors.password && (
-                <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
+                <p id="signup-password-error" className="mt-1 text-xs text-red-400 flex items-center gap-1">
                   <AlertCircle className="h-3 w-3" />
                   {errors.password}
                 </p>
@@ -423,7 +421,7 @@ const SignupPage = () => {
 
             {/* Confirm Password */}
             <div>
-              <label className="block text-xs font-medium mb-2 uppercase tracking-wider"
+              <label htmlFor="signup-confirmPassword" className="block text-xs font-medium mb-2 uppercase tracking-wider"
                 style={{ color: 'var(--text-secondary)' }}
               >
                 Confirm Password
@@ -433,6 +431,10 @@ const SignupPage = () => {
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   name="confirmPassword"
+                    id="signup-confirmPassword"
+                    autoComplete="new-password"
+                    aria-invalid={Boolean(errors.confirmPassword)}
+                    aria-describedby={errors.confirmPassword ? 'signup-confirmPassword-error' : undefined}
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   placeholder="Confirm password"
@@ -460,15 +462,16 @@ const SignupPage = () => {
                 />
                 <button
                   type="button"
+                  aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-lg hover:bg-white/5 transition"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-white/5 transition"
                   style={{ color: 'var(--text-tertiary)' }}
                 >
                   {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
               {errors.confirmPassword && (
-                <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
+                <p id="signup-confirmPassword-error" className="mt-1 text-xs text-red-400 flex items-center gap-1">
                   <AlertCircle className="h-3 w-3" />
                   {errors.confirmPassword}
                 </p>
@@ -491,7 +494,7 @@ const SignupPage = () => {
                     className="sr-only peer"
                   />
                   <div 
-                    className="w-5 h-5 rounded border-2 transition-all"
+                    className="w-5 h-5 rounded border-2 transition-all peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-[var(--accent-green)]"
                     style={{
                       backgroundColor: agreeToTerms ? 'var(--accent-green)' : 'var(--surface-hover)',
                       borderColor: agreeToTerms ? 'var(--accent-green)' : 'var(--border)'
@@ -537,15 +540,10 @@ const SignupPage = () => {
           </form>
 
           {/* Sign In Link */}
-          <p className="mt-6 text-center text-xs" style={{ color: 'var(--text-tertiary)' }}>
+          <p className="mt-6 text-left text-xs" style={{ color: 'var(--text-tertiary)' }}>
             By creating an account, you agree to TrailVerse&apos;s Terms and Privacy Policy.
           </p>
-          <p className="mt-3 text-center text-sm lg:hidden" style={{ color: 'var(--text-secondary)' }}>
-            Already have an account?{' '}
-            <Link href="/login" className="font-semibold hover:opacity-80 transition" style={{ color: 'var(--accent-green)' }}>
-              Sign in
-            </Link>
-          </p>
+
     </AuthShell>
   );
 };

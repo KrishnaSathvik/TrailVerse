@@ -8,6 +8,10 @@
 export function getTestimonialBadge(testimonial) {
   const source = testimonial?.source;
 
+  if (source === 'admin-created') {
+    return { label: 'Admin-added story', variant: 'muted', showAward: false };
+  }
+
   if (source === 'press') {
     return { label: 'Press mention', variant: 'muted', showAward: false };
   }

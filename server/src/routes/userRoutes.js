@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { protect } = require('../middleware/auth');
 const resendEmailService = require('../services/resendEmailService');
+const { eraseAccountData } = require('../services/accountErasureService');
 
 // @route   PUT /api/user/change-password
 // @desc    Change user's password
@@ -183,18 +184,19 @@ router.delete('/delete-account', protect, async (req, res) => {
     // Log account deletion for audit
     console.log(`🗑️ Account deletion initiated for: ${user.email}`);
 
-    // Send account deletion confirmation email BEFORE deleting the user
+    await eraseAccountData({
+      userId: req.user.id,
+      actor: { type: 'self', id: req.user.id },
+    });
+
+    // The confirmation is sent only after every required erasure operation has
+    // completed. The in-memory user snapshot is sufficient after deletion.
     try {
       await resendEmailService.sendAccountDeletionConfirmation(user);
     } catch (emailError) {
       console.error('Failed to send account deletion email:', emailError);
       // Don't fail deletion if email fails
     }
-
-    // Delete user and associated data
-    // Note: In a production app, you'd want to handle cascading deletes
-    // for related data like blog posts, comments, trips, etc.
-    await User.findByIdAndDelete(req.user.id);
 
     // Clear any authentication cookies/tokens
     res.clearCookie('token');
@@ -235,7 +237,7 @@ router.get('/privacy-info', protect, async (req, res) => {
       emailVerified: user.isEmailVerified || false,
       dataRetention: {
         profileData: 'Retained until account deletion',
-        activityLogs: 'Retained for 90 days',
+        activityLogs: 'Retained for 30 days',
         emailPreferences: 'Retained until account deletion'
       }
     };

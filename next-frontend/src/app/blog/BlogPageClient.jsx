@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   X,
@@ -30,8 +30,8 @@ const HubSkeleton = () => (
       <div key={section}>
         <div className="h-8 w-48 rounded-2xl animate-pulse mb-6" style={{ backgroundColor: 'var(--surface)' }} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="rounded-[2rem] h-[26rem] animate-pulse" style={{ backgroundColor: 'var(--surface)' }} />
-          <div className="rounded-[2rem] h-[26rem] animate-pulse" style={{ backgroundColor: 'var(--surface)' }} />
+          <div className="rounded-xl h-[26rem] animate-pulse" style={{ backgroundColor: 'var(--surface)' }} />
+          <div className="rounded-xl h-[26rem] animate-pulse" style={{ backgroundColor: 'var(--surface)' }} />
         </div>
       </div>
     ))}
@@ -49,9 +49,9 @@ const ArchiveSkeleton = () => (
 const FeaturedLeadCard = ({ post, badge = 'Featured Story' }) => (
   <Link
     href={`/blog/${post.slug}`}
-    className="group relative min-h-[22rem] sm:min-h-[26rem] rounded-[2rem] overflow-hidden block"
+    className="group relative min-h-[22rem] sm:min-h-[26rem] rounded-xl overflow-hidden block"
     style={{
-      backgroundColor: 'var(--surface)',
+      backgroundColor: 'var(--bg-secondary)',
       borderWidth: '1px',
       borderColor: 'var(--border)'
     }}
@@ -59,11 +59,11 @@ const FeaturedLeadCard = ({ post, badge = 'Featured Story' }) => (
     <OptimizedImage src={post.featuredImage} alt={post.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
     <div className="relative h-full flex flex-col justify-end p-6 sm:p-8">
-      <span className="inline-flex w-fit px-3 py-1 rounded-full text-xs font-semibold bg-white/20 text-white backdrop-blur mb-4">
+      <span className="inline-flex w-fit px-3 py-1 rounded-full text-xs font-semibold bg-white/20 text-white mb-4">
         {badge}
       </span>
-      <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white leading-tight mb-3 sm:mb-4 max-w-2xl">{post.title}</h2>
-      <p className="text-white/80 text-sm sm:text-base md:text-lg max-w-2xl line-clamp-3 mb-4 sm:mb-6">{post.excerpt}</p>
+      <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white leading-tight mb-3 sm:mb-4 public-content">{post.title}</h2>
+      <p className="text-white/80 text-sm sm:text-base md:text-lg public-content line-clamp-3 mb-4 sm:mb-6">{post.excerpt}</p>
       <div className="flex items-center gap-4 text-sm text-white/80">
         <span className="flex items-center gap-1"><Clock className="h-4 w-4" />{post.readTime} min</span>
         <BlogViewCount views={post.views} className="flex items-center gap-1" />
@@ -73,6 +73,14 @@ const FeaturedLeadCard = ({ post, badge = 'Featured Story' }) => (
 );
 
 const BLOG_PATH = '/blog';
+
+// Keep query reading in a small client boundary so the public hub can be ISR.
+function BlogQueryState({ onTagChange }) {
+  const searchParams = useSearchParams();
+  const tag = (searchParams.get('tag') || '').trim();
+  useEffect(() => { onTagChange(tag); }, [tag, onTagChange]);
+  return null;
+}
 
 const BlogContent = ({ initialData }) => {
   const router = useRouter();
@@ -92,34 +100,9 @@ const BlogContent = ({ initialData }) => {
   const showArchive = Boolean(selectedTag);
   const heroFeaturedPosts = featuredPosts.slice(0, 2);
 
-  useEffect(() => {
-    setSelectedTag(initialData?.initialTag || '');
-  }, [initialData?.initialTag]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const refreshFromApi = async () => {
-      blogService.clearBlogCache();
-      try {
-        const [categoriesData, featuredData, popularData] = await Promise.all([
-          blogService.getBlogCategories(),
-          blogService.getFeaturedPosts(2),
-          blogService.getPopularPosts(2),
-        ]);
-        if (cancelled) return;
-        setCategories(mapBlogNavCategories(categoriesData?.data));
-        setFeaturedPosts(featuredData.data || []);
-        setPopularPosts((popularData.data || []).slice(0, 2));
-      } catch {
-        // background refresh — keep SSR / fallback chips
-      }
-    };
-
-    refreshFromApi();
-    return () => {
-      cancelled = true;
-    };
+  const onTagChange = useCallback(tag => {
+    setSelectedTag(tag);
+    setCurrentPage(1);
   }, []);
 
   useEffect(() => {
@@ -128,20 +111,22 @@ const BlogContent = ({ initialData }) => {
       return;
     }
 
+    let cancelled = false;
     const fetchData = async () => {
       setLoading(true);
       setError(null);
 
       try {
-        const [categoriesData, featuredData, popularData] = await Promise.all([
-          blogService.getBlogCategories(),
-          blogService.getFeaturedPosts(2),
-          blogService.getPopularPosts(2),
-        ]);
-
-        setCategories(mapBlogNavCategories(categoriesData?.data));
-        setFeaturedPosts(featuredData.data || []);
-        setPopularPosts((popularData.data || []).slice(0, 2));
+        // SSR already supplied the shared hub data; tag/page changes only need posts.
+        if (!initialData) {
+          const [categoriesData, featuredData, popularData] = await Promise.all([
+            blogService.getBlogCategories(), blogService.getFeaturedPosts(2), blogService.getPopularPosts(2),
+          ]);
+          if (cancelled) return;
+          setCategories(mapBlogNavCategories(categoriesData?.data));
+          setFeaturedPosts(featuredData.data || []);
+          setPopularPosts((popularData.data || []).slice(0, 2));
+        }
 
         if (!selectedTag) {
           setPosts([]);
@@ -156,17 +141,19 @@ const BlogContent = ({ initialData }) => {
         };
 
         const data = await blogService.getAllPosts(params);
+        if (cancelled) return;
         setPosts(data.data || []);
         setTotalPages(Math.max(1, Math.ceil((data.total || 0) / ARCHIVE_PAGE_SIZE)));
       } catch {
-        setError('Failed to load blog posts. Please try again later.');
+        if (!cancelled) setError('Failed to load blog posts. Please try again later.');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     fetchData();
-  }, [currentPage, selectedTag]);
+    return () => { cancelled = true; };
+  }, [currentPage, selectedTag, initialData]);
 
   useEffect(() => {
     if (!shouldScrollToResultsRef.current || loading) {
@@ -185,16 +172,12 @@ const BlogContent = ({ initialData }) => {
 
   return (
     <>
+      <Suspense fallback={null}><BlogQueryState onTagChange={onTagChange} /></Suspense>
       <section className="relative overflow-hidden border-b py-5 sm:py-8" style={{ borderColor: 'var(--border)' }}>
-        <div className="relative z-10 max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
+        <div className="relative z-10 public-shell">
           <div>
             <div
-              className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-4 backdrop-blur"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)'
-              }}
+              className="public-eyebrow"
             >
               <BookOpen className="h-4 w-4" style={{ color: 'var(--text-secondary)' }} />
               <span className="text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
@@ -202,10 +185,10 @@ const BlogContent = ({ initialData }) => {
               </span>
             </div>
 
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-semibold tracking-tighter leading-none mb-4" style={{ color: 'var(--text-primary)' }}>
+            <h1 className="public-page-title mb-4" style={{ color: 'var(--text-primary)' }}>
               Travel Journal
             </h1>
-            <p className="text-lg sm:text-xl max-w-3xl" style={{ color: 'var(--text-secondary)' }}>
+            <p className="public-page-intro" style={{ color: 'var(--text-secondary)' }}>
               Expert guides, travel tips, and inspiring stories from America&apos;s national parks.
             </p>
           </div>
@@ -219,7 +202,7 @@ const BlogContent = ({ initialData }) => {
       </section>
 
       <section className="pb-24">
-        <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
+        <div className="public-shell">
           {loading ? (
             showArchive ? <ArchiveSkeleton /> : <HubSkeleton />
           ) : (
@@ -311,6 +294,7 @@ const BlogContent = ({ initialData }) => {
                           disabled={currentPage === 1}
                           variant="secondary"
                           size="sm"
+                          aria-label="Previous page"
                           icon={ChevronLeft}
                         />
 
@@ -339,6 +323,7 @@ const BlogContent = ({ initialData }) => {
                           disabled={currentPage === totalPages}
                           variant="secondary"
                           size="sm"
+                          aria-label="Next page"
                           icon={ChevronRight}
                         />
                       </div>
@@ -357,10 +342,8 @@ const BlogContent = ({ initialData }) => {
 
           <a
             href={reportHref('/reports/national-parks-2025.html', { from: BLOG_PATH })}
-            className="block mt-12 rounded-[2rem] p-6 sm:p-8 transition hover:shadow-lg group"
+            className="block mt-12 border-t py-6 transition group"
             style={{
-              backgroundColor: 'var(--surface)',
-              borderWidth: '1px',
               borderColor: 'var(--border)',
             }}
           >
@@ -390,10 +373,8 @@ const BlogContent = ({ initialData }) => {
 
           <a
             href={reportHref('/reports/when-to-go', { from: BLOG_PATH })}
-            className="block mt-4 rounded-[2rem] p-6 sm:p-8 transition hover:shadow-lg group"
+            className="block mt-4 border-t py-6 transition group"
             style={{
-              backgroundColor: 'var(--surface)',
-              borderWidth: '1px',
               borderColor: 'var(--border)',
             }}
           >

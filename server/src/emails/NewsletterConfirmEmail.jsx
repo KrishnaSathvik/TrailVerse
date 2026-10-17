@@ -19,7 +19,7 @@ const NewsletterConfirmEmail = ({
   firstName = 'there',
   confirmUrl = 'https://nationalparksexplorerusa.com/api/subscribers/confirm/abc123',
 }) => {
-  const previewText = 'Confirm your TrailVerse newsletter subscription';
+  const previewText = 'Confirm your Where Next? subscription';
 
   return (
     <Html>
@@ -50,7 +50,7 @@ const NewsletterConfirmEmail = ({
               </Text>
 
               <Text style={{ margin: '0 0 24px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                Thanks for subscribing to the <span style={{ backgroundColor: '#D1FAE5', padding: '2px 4px' }}>TrailVerse</span> newsletter! Please confirm your email to start receiving updates about new blog posts, park guides, and trail stories.
+                You&apos;re one click away from joining Where Next? by TrailVerse. Confirm your email to get one place worth going each week.
               </Text>
 
               {/* CTA */}
@@ -59,12 +59,12 @@ const NewsletterConfirmEmail = ({
                   href={confirmUrl}
                   style={{ display: 'inline-block', padding: '12px 24px', backgroundColor: '#06B569', color: '#ffffff', textDecoration: 'none', fontWeight: 700, fontSize: '15px', borderRadius: '8px' }}
                 >
-                  Confirm Subscription
+                  Confirm subscription
                 </Button>
               </div>
 
               <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                If you didn't subscribe to the TrailVerse newsletter, you can safely ignore this email.
+                If you didn't subscribe to Where Next?, you can safely ignore this email.
               </Text>
 
               <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
@@ -82,7 +82,7 @@ const NewsletterConfirmEmail = ({
                   </span>
                 </div>
                 <Text style={{ margin: '0 0 8px', fontSize: '11px', color: '#6b7280' }}>
-                  You're receiving this because someone subscribed to the TrailVerse newsletter with this email.
+                  You're receiving this because someone subscribed to Where Next? by TrailVerse with this email.
                 </Text>
                 <Text style={{ margin: 0, fontSize: '11px' }}>
                   <Link href="https://nationalparksexplorerusa.com/faq" style={{ color: '#06B569', textDecoration: 'underline' }}>

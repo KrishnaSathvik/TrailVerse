@@ -4,6 +4,8 @@ const { signup, login, getMe, logout, forgotPassword, resetPassword, verifyEmail
 const { protect } = require('../middleware/auth');
 const AnonymousSession = require('../models/AnonymousSession');
 const TripPlan = require('../models/TripPlan');
+const { migrateGuestConversation } = require('../services/guestConversationMigration');
+const { isValidGuestSessionId } = require('../utils/anonymousIdGenerator');
 
 router.post('/signup', signup);
 router.post('/login', login);
@@ -17,77 +19,33 @@ router.get('/verify-email/:token', verifyEmail);
 // Migrate anonymous conversation to user account
 router.post('/migrate-chat', protect, async (req, res) => {
   try {
-    const { anonymousId } = req.body;
+    const { anonymousId, conversationId } = req.body;
     const userId = req.user._id || req.user.id;
 
-    if (!anonymousId) {
+    if (!isValidGuestSessionId(anonymousId)) {
       return res.status(400).json({
         success: false,
-        error: 'Anonymous ID is required'
+        error: 'A valid guest session ID is required'
       });
     }
 
-    // Find the anonymous session
-    const anonymousSession = await AnonymousSession.findOne({ 
-      anonymousId,
-      isConverted: false 
+    const tripId = await migrateGuestConversation({
+      AnonymousSession, TripPlan, anonymousId, conversationId, userId, keyTopics: extractKeyTopics,
     });
-
-    if (!anonymousSession) {
-      return res.status(404).json({
-        success: false,
-        error: 'Anonymous session not found or already converted'
-      });
-    }
-
-    // Create new trip in user's account
-    const newTrip = await TripPlan.create({
-      userId: userId,
-      parkName: anonymousSession.parkName,
-      parkCode: anonymousSession.parkCode,
-      title: anonymousSession.parkName ? `${anonymousSession.parkName} Trip Plan` : 'General Planning Session',
-      formData: anonymousSession.formData,
-      conversation: anonymousSession.messages.map(msg => ({
-        role: msg.role,
-        content: msg.content,
-        timestamp: msg.timestamp,
-        provider: msg.provider,
-        model: msg.model,
-        responseTime: msg.responseTime
-      })),
-      status: 'active',
-      summary: {
-        totalMessages: anonymousSession.messages.length,
-        userQuestions: anonymousSession.messages.filter(m => m.role === 'user').slice(0, 3).map(m => m.content),
-        hasPlan: anonymousSession.messages.some(m => 
-          m.role === 'assistant' && /(Day\s*\d+[:\-\s]|Itinerary|Schedule|Plan|## Day)/i.test(m.content)
-        ),
-        lastActivity: anonymousSession.lastActivity,
-        keyTopics: extractKeyTopics(anonymousSession.messages)
-      }
-    });
-
-    // Mark anonymous session as converted
-    anonymousSession.isConverted = true;
-    anonymousSession.convertedUserId = userId;
-    anonymousSession.convertedAt = new Date();
-    await anonymousSession.save();
-
-    console.log(`✅ Migrated anonymous session ${anonymousId} to user ${userId}, created trip ${newTrip._id}`);
 
     res.status(200).json({
       success: true,
       data: {
-        tripId: newTrip._id,
+        tripId,
         message: 'Conversation migrated successfully'
       }
     });
 
   } catch (error) {
     console.error('Error migrating anonymous conversation:', error);
-    res.status(500).json({
+    res.status(error.status || 500).json({
       success: false,
-      error: 'Failed to migrate conversation'
+      error: error.status ? error.message : 'Failed to migrate conversation'
     });
   }
 });

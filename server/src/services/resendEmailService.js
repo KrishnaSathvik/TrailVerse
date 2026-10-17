@@ -4,10 +4,64 @@ const fs = require('fs').promises;
 const path = require('path');
 const reactEmailRenderer = require('./reactEmailRenderer');
 
-// Initialize Resend with API key
-const apiKey = process.env.RESEND_API_KEY;
-console.log('🔑 Resend API Key:', apiKey ? 'Found' : 'Missing');
-const resend = new Resend(apiKey);
+/**
+ * Resend is built lazily, mirroring the OpenAI (Stage 14.7C) and NPS (Stage
+ * 14.7D1) accessors.
+ *
+ * The defect this replaces: `new Resend(apiKey)` ran at module scope and the
+ * SDK throws when the key is absent, so importing src/app.js — which reaches
+ * this module via routes/auth → authController → resendEmailService — required
+ * a live email key. That blocked keyless application imports entirely.
+ */
+const RESEND_NOT_CONFIGURED = 'resend_not_configured';
+
+let cachedResend = null;
+let cachedApiKey = null;
+let ResendCtor = Resend;
+
+function notConfigured() {
+  const error = new Error(RESEND_NOT_CONFIGURED);
+  error.code = RESEND_NOT_CONFIGURED;
+  return error;
+}
+
+function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    cachedResend = null;
+    cachedApiKey = null;
+    throw notConfigured();
+  }
+  if (cachedResend && cachedApiKey === apiKey) return cachedResend;
+
+  let created;
+  try {
+    created = new ResendCtor(apiKey);
+  } catch (error) {
+    // Never surface the SDK message (it quotes a key shape) and never cache a
+    // failed construction.
+    cachedResend = null;
+    cachedApiKey = null;
+    throw notConfigured();
+  }
+  cachedResend = created;
+  cachedApiKey = apiKey;
+  return cachedResend;
+}
+
+function __setResendConstructorForTests(ctor) {
+  ResendCtor = ctor || Resend;
+  cachedResend = null;
+  cachedApiKey = null;
+}
+
+// Preserves the existing `resend.emails.send(...)` call sites unchanged while
+// deferring construction to first use.
+const resend = {
+  get emails() {
+    return getResendClient().emails;
+  }
+};
 
 // Helper to compile email template
 const compileTemplate = async (templateName, data) => {
@@ -278,7 +332,7 @@ class ResendEmailService {
         mapUrl: `${baseUrl}/map`,
         compareUrl: `${baseUrl}/compare`,
         chatgptUrl:
-          'https://chatgpt.com/apps/trailverse/asdk_app_69e9c67943c08191a37c464b803ebdbe',
+          'https://chatgpt.com/plugins/plugin_asdk_app_69e9c67943c08191a37c464b803ebdbe',
         exploreUrl: `${baseUrl}/explore`,
         testimonialsUrl: `${baseUrl}/testimonials`,
         unsubscribeUrl: `${baseUrl}/unsubscribe?email=${encodeURIComponent(user.email || '')}`
@@ -441,7 +495,7 @@ class ResendEmailService {
         from: `${process.env.EMAIL_FROM_NAME || 'TrailVerse'} <${process.env.EMAIL_FROM_ADDRESS || 'noreply@nationalparksexplorerusa.com'}>`,
         to: subscriber.email,
         reply_to: 'trailverseteam@gmail.com',
-        subject: 'Confirm your TrailVerse newsletter subscription',
+        subject: 'Confirm your Where Next? subscription',
         html,
         tags: [
           { name: 'category', value: 'newsletter-confirm' }
@@ -461,4 +515,8 @@ class ResendEmailService {
 }
 
 module.exports = new ResendEmailService();
+
+module.exports.getResendClient = getResendClient;
+module.exports.RESEND_NOT_CONFIGURED = RESEND_NOT_CONFIGURED;
+module.exports.__setResendConstructorForTests = __setResendConstructorForTests;
 

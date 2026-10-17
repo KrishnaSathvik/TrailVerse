@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import PlanAIShell from '@components/plan-ai/PlanAIShell';
 import { seedGuestSessionFromLink } from '@/lib/seedGuestSession';
 
@@ -11,6 +11,7 @@ import { seedGuestSessionFromLink } from '@/lib/seedGuestSession';
  */
 export default function GuestResumePageClient({ anonymousId }) {
   const router = useRouter();
+  const conversationId = useSearchParams().get('conversation');
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -18,7 +19,7 @@ export default function GuestResumePageClient({ anonymousId }) {
 
     const resume = async () => {
       try {
-        const result = await seedGuestSessionFromLink(anonymousId);
+        const result = await seedGuestSessionFromLink(anonymousId, conversationId);
         if (cancelled) return;
 
         if (!result.ok) {
@@ -26,7 +27,9 @@ export default function GuestResumePageClient({ anonymousId }) {
           return;
         }
 
-        router.replace('/plan-ai');
+        if (conversationId) sessionStorage.setItem('trailieActiveConversation', conversationId);
+        else sessionStorage.removeItem('trailieActiveConversation');
+        router.replace(conversationId ? `/plan-ai?entry=continue&conversation=${encodeURIComponent(conversationId)}` : '/plan-ai');
       } catch (err) {
         console.error('Guest resume failed:', err);
         if (!cancelled) {
@@ -39,7 +42,7 @@ export default function GuestResumePageClient({ anonymousId }) {
     return () => {
       cancelled = true;
     };
-  }, [anonymousId, router]);
+  }, [anonymousId, router, conversationId]);
 
   if (error) {
     return (

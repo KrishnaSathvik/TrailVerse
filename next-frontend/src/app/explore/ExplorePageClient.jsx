@@ -388,21 +388,22 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
     <>
       {/* Search & filters — page title/intro is server-rendered in ExploreSeoShell */}
       <section className="relative overflow-hidden py-4 sm:py-10">
-        <div className="relative z-10 max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
+        <div className="relative z-10 public-shell">
           {/* Search Bar */}
-          <div className="max-w-3xl">
+          <div className="public-content">
             <div className="relative">
               <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5"
                 style={{ color: 'var(--text-tertiary)' }}
               />
               <input
                 type="text"
+                  aria-label="Search parks"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search parks by name, state, or description..."
-                className="w-full pl-12 pr-12 py-4 sm:pl-14 sm:pr-14 sm:py-5 rounded-2xl text-base font-medium outline-none transition"
+                className="w-full pl-12 pr-12 py-3 sm:pl-14 sm:pr-14 public-search text-base font-medium outline-none transition"
                 style={{
-                  backgroundColor: 'var(--surface)',
+                  backgroundColor: 'var(--bg-secondary)',
                   borderWidth: '1px',
                   borderColor: 'var(--border)',
                   color: 'var(--text-primary)'
@@ -410,8 +411,9 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
               />
               {searchTerm && (
                 <button
+                  aria-label="Clear search"
                   onClick={() => setSearchTerm('')}
-                  className="absolute right-5 top-1/2 -translate-y-1/2 p-1 rounded-lg hover:bg-white/5 transition"
+                  className="absolute right-5 top-1/2 -translate-y-1/2 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-white/5 transition"
                   style={{ color: 'var(--text-tertiary)' }}
                 >
                   <X className="h-5 w-5" />
@@ -439,7 +441,7 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
                 onClick={clearAllFilters}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-white/5 transition"
                 style={{
-                  backgroundColor: 'var(--surface)',
+                  backgroundColor: 'var(--bg-secondary)',
                   borderWidth: '1px',
                   borderColor: 'var(--border)',
                 }}
@@ -454,7 +456,7 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
 
       {/* Main Content */}
       <section className="pb-24">
-        <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
+        <div className="public-shell">
           {/* Mobile toolbar — original layout */}
           <div className="mb-6 flex items-center justify-between lg:hidden">
             <div className="flex items-center gap-3">
@@ -542,7 +544,7 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
           <div
             className="mb-6 hidden rounded-2xl p-3 sm:p-4 lg:block"
             style={{
-              backgroundColor: 'var(--surface)',
+              backgroundColor: 'var(--bg-secondary)',
               borderWidth: '1px',
               borderColor: 'var(--border)',
             }}
@@ -831,8 +833,8 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
       {/* Plan CTA — mobile only (desktop users see it in the header nav) */}
       <section className="pb-16 px-4 sm:px-6 lg:hidden">
         <div
-          className="max-w-3xl mx-auto rounded-2xl p-6 sm:p-8 backdrop-blur text-left"
-          style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)' }}
+          className="public-content rounded-2xl p-6 sm:p-8 text-left"
+          style={{ backgroundColor: 'var(--bg-secondary)', borderWidth: '1px', borderColor: 'var(--border)' }}
         >
           <div className="flex items-start gap-4 mb-4">
             <TrailieAvatar className="!h-12 !w-12 shrink-0" />
@@ -865,7 +867,7 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
       {/* Mobile Filters Modal */}
       {showFilters && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowFilters(false)} />
+          <div className="absolute inset-0 bg-black/80" onClick={() => setShowFilters(false)} />
           <div className="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-y-auto rounded-t-3xl p-6"
             style={{ backgroundColor: 'var(--bg-secondary)', borderTopWidth: '1px', borderColor: 'var(--border)' }}
           >
@@ -913,7 +915,7 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
             </div>
             <div className="mt-8 flex gap-3">
               <button onClick={clearAllFilters} className="flex-1 py-3 rounded-xl font-semibold transition"
-                style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)', color: 'var(--text-primary)' }}>Clear All</button>
+                style={{ backgroundColor: 'var(--bg-secondary)', borderWidth: '1px', borderColor: 'var(--border)', color: 'var(--text-primary)' }}>Clear All</button>
               <button
                 onClick={() => setShowFilters(false)}
                 className="flex-1 py-3 rounded-xl font-semibold transition"

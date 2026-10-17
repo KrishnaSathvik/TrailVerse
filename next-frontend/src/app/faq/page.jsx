@@ -1,8 +1,9 @@
+import InfoPageHeader from '@/components/info/InfoPageHeader';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
 import Button from '@/components/common/Button';
 import FAQAccordionClient from './FAQAccordionClient';
-import { NPS_OFFICIAL_FAQ_ANSWER, PARKS_COVERAGE_ANSWER } from '@/lib/npsDisclaimer';
+import { FAQ_CATEGORIES } from '@/data/faqContent';
 
 export const metadata = {
   title: 'FAQ — Trailie, Trip Planning & TrailVerse Features',
@@ -27,208 +28,10 @@ export const metadata = {
 const faqStructuredData = {
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
-  mainEntity: [
-    {
-      '@type': 'Question',
-      name: 'What is TrailVerse?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: "TrailVerse is your comprehensive guide to exploring America's 470+ parks and sites. We combine real-time weather data, interactive maps, community reviews, and smart trip planning to help you discover and plan the perfect park adventure."
-      }
-    },
-    {
-      '@type': 'Question',
-      name: 'How do I get started?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: "Getting started is easy! Create a free account by clicking 'Sign Up', enter your email and create a password. Once logged in, you can explore parks, save favorites, plan with Trailie, view real-time weather, check NPS events, and read travel guides. No credit card required!"
-      }
-    },
-    {
-      '@type': 'Question',
-      name: 'What makes TrailVerse different?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'TrailVerse uniquely combines Trailie outdoor trip planning, real-time weather, live NPS events, interactive maps, community reviews with photos, and expert travel guides all in one platform. We help you discover, compare, and plan visits across all 470+ parks and sites with personalized recommendations.'
-      }
-    },
-    {
-      '@type': 'Question',
-      name: 'Is TrailVerse free?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'Yes. Browsing parks, maps, weather, alerts, compare, Explore by Activity, and blog content is free with no credit card. Trailie offers free anonymous messages before signup; a free account unlocks saved trips, chat history, and PDF export.'
-      }
-    },
-    {
-      '@type': 'Question',
-      name: 'Do I need an account to explore parks?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'No account is required to browse parks, compare destinations, read guides, or check live weather and alerts. Sign up when you want to save favorites, continue Trailie plans, or export itineraries.'
-      }
-    },
-    {
-      '@type': 'Question',
-      name: 'How is TrailVerse different from AllTrails?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'AllTrails excels at individual trail hikes, GPS navigation, and crowdsourced trail conditions. TrailVerse focuses on full trip planning across 470+ NPS sites — park comparison, live NPS alerts, ranger events, and Trailie day-by-day itineraries.'
-      }
-    },
-    {
-      '@type': 'Question',
-      name: 'How does Trailie trip planning work?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'Trailie analyzes your preferences, travel dates, interests, and available time to create personalized itineraries. It weaves in live NPS data when available — weather, closures, permits — and can use web search for state parks when you are signed in. Tell Trailie where you want to go and what matters; it builds a day-by-day plan from there.'
-      }
-    },
-    {
-      '@type': 'Question',
-      name: 'What AI powers Trailie?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: "Trailie runs on Anthropic Claude Sonnet 5 — one assistant for quick tips and full day-by-day itineraries. You don't pick a model; Trailie uses live NPS data and web search (when signed in) to keep answers current. Signed-in trips save to your chat history automatically."
-      }
-    },
-    {
-      '@type': 'Question',
-      name: 'How does trip history and archiving work?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: "All your Trailie conversations are automatically saved to your Trip History. Active trips appear in the 'Active' tab for easy continuation. Archive completed trips to the 'Archived' tab where you can restore them anytime with full context and conversation history preserved."
-      }
-    },
-    {
-      '@type': 'Question',
-      name: 'Are my Trailie conversations private?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'Yes! Your Trailie conversations are private and stored securely. Website chat goes to Anthropic (Claude Sonnet 5); Talk to Trailie voice uses OpenAI Realtime — all without personal identifiers in the prompts we send. You can delete any conversation from your trip history at any time. Do not enter sensitive personal information into Trailie chats.'
-      }
-    },
-    {
-      '@type': 'Question',
-      name: 'How is TrailVerse different from using ChatGPT alone?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'Generic ChatGPT can outline trip ideas but may miss current closures and 2026 rule changes. TrailVerse Trailie and the TrailVerse ChatGPT app pull live NPS alerts, weather, events, and park details for 470+ sites so plans reflect real conditions.'
-      }
-    },
-    {
-      '@type': 'Question',
-      name: 'What parks are included?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: PARKS_COVERAGE_ANSWER
-      }
-    },
-    {
-      '@type': 'Question',
-      name: 'Is TrailVerse an official National Park Service website?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: NPS_OFFICIAL_FAQ_ANSWER
-      }
-    },
-    {
-      '@type': 'Question',
-      name: 'How do Google Maps features work?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'All devices get interactive maps with park markers and search. Browse all 470+ parks on the map, filter by state or activity, and click any park to see details, alerts, and weather. Mobile users enjoy smooth map browsing with park details.'
-      }
-    },
-    {
-      '@type': 'Question',
-      name: 'How accurate is the weather information?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'We provide real-time weather data from OpenWeather API with 5-day forecasts, updated regularly throughout the day. Weather in National Parks can change rapidly, so we recommend checking official NPS sources before your trip for critical updates.'
-      }
-    },
-    {
-      '@type': 'Question',
-      name: 'What are park events and how do I save them?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'Our Events page displays live ranger programs, guided tours, educational activities, and special events from the National Park Service. Filter by date, park, or activity type, and click the bookmark icon to save events to your profile for easy access.'
-      }
-    },
-    {
-      '@type': 'Question',
-      name: 'How do favorites and collections work?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: "Click the heart icon on parks, blogs, or events to save them to your Favorites. Access all saved items from your profile dashboard, organized by type. Use your collections for trip planning and tracking your journey across America's parks."
-      }
-    },
-    {
-      '@type': 'Question',
-      name: 'How do I track visited parks?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: "Go to your Profile page and select 'Visited Parks' tab. Click 'Mark Park as Visited' to add a park, select the visit date, and add optional memories. This builds your personal National Park passport and tracks your adventure journey."
-      }
-    },
-    {
-      '@type': 'Question',
-      name: 'How do I customize my avatar?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'TrailVerse offers 1000+ unique auto-generated avatar combinations! Go to your profile settings and click your avatar to open the Avatar Selector. Browse styles, use the random generator, or upload your own photo. Your avatar displays with all your reviews and comments.'
-      }
-    },
-    {
-      '@type': 'Question',
-      name: 'How do I write reviews with photos?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: "Visit any park's detail page and click 'Write Review'. Upload up to 5 photos per review (JPEG, PNG, GIF, or WebP, max 10MB each). We automatically optimize images for faster loading. Your reviews help other travelers plan better trips!"
-      }
-    },
-    {
-      '@type': 'Question',
-      name: 'How do blog comments work?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'Our blog posts feature nested replies, likes, and threaded discussions. Comment on articles, reply to other users, like helpful comments, and edit or delete your own comments anytime. Join the community discussion around National Park topics!'
-      }
-    },
-    {
-      '@type': 'Question',
-      name: 'Can I use TrailVerse offline?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'Yes! TrailVerse securely saves park information, saved trips, and your favorites so you can access them without cell service or internet. Features requiring live data (like map routing, live weather, or Trailie chat) still require a connection. Tip: You can install our app to your home screen for the best offline experience.'
-      }
-    },
-    {
-      '@type': 'Question',
-      name: 'Is my data safe and private?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'Absolutely. We never sell your personal information. Your account data, favorites, and preferences are securely stored and used only to enhance your TrailVerse experience. All data is encrypted in transit and at rest. Read our Privacy Policy for complete details.'
-      }
-    },
-    {
-      '@type': 'Question',
-      name: 'How do I delete my account?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: "Go to your Profile > Settings > Privacy & Security section and click 'Delete Account'. Confirm your password and follow the prompts. All your data will be permanently deleted in accordance with our Privacy Policy."
-      }
-    },
-    {
-      '@type': 'Question',
-      name: 'Can I contact support?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'Yes! We love hearing from our community. For feature suggestions, bug reports, or questions, contact us at trailverseteam@gmail.com. We typically respond within 24-48 hours.'
-      }
-    }
-  ]
+  mainEntity: FAQ_CATEGORIES.flatMap(category => category.questions.map(({ question, answer }) => ({
+    '@type': 'Question', name: question,
+    acceptedAnswer: { '@type': 'Answer', text: answer },
+  }))),
 };
 
 export default function FAQPage() {
@@ -241,47 +44,28 @@ export default function FAQPage() {
       <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <Header />
 
-        <main className="pt-3 sm:pt-16">
-          <section className="py-8 sm:py-16 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: 'var(--bg-primary)' }}>
-            <div className="max-w-4xl mx-auto text-center">
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6" style={{ color: 'var(--text-primary)' }}>
-                Frequently Asked Questions
-              </h1>
-              <p className="text-lg sm:text-xl mb-8 max-w-3xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
-                Find answers to common questions about TrailVerse and start planning your perfect park adventure.
-              </p>
-              <div
-                className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium ring-1 backdrop-blur"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  borderColor: 'var(--border)',
-                  color: 'var(--text-primary)'
-                }}
-              >
-                <span>Still have questions? Email us</span>
-              </div>
-            </div>
-          </section>
+        <main className="info-page">
+          <InfoPageHeader title="Frequently Asked Questions" description={<>
+                How TrailVerse works, what your account saves, and what to check before you travel.
+              </>} />
 
           <FAQAccordionClient />
 
-          <section className="py-16 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: 'var(--bg-primary)' }}>
-            <div className="max-w-4xl mx-auto">
+          <section className="info-section" style={{ backgroundColor: 'var(--bg-primary)' }}>
+            <div className="max-w-6xl mx-auto">
               <div
-                className="rounded-3xl p-8 sm:p-12 text-center backdrop-blur"
+                className="public-editorial-section py-6 h-full"
                 style={{
-                  backgroundColor: 'var(--surface)',
-                  borderWidth: '1px',
                   borderColor: 'var(--border)'
                 }}
               >
                 <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4" style={{ color: 'var(--text-primary)' }}>
                   Still have questions?
                 </h2>
-                <p className="text-base mb-6 max-w-2xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
+                <p className="text-base mb-6 public-content" style={{ color: 'var(--text-secondary)' }}>
                   Can&apos;t find the answer you&apos;re looking for? Our support team is here to help.
                 </p>
-                <Button href="mailto:trailverseteam@gmail.com" variant="secondary" size="md">
+                <Button href="mailto:trailverseteam@gmail.com" variant="secondary" size="md" className="public-action" style={{ borderRadius: '12px', boxShadow: 'none', outline: undefined }}>
                   Contact Support
                 </Button>
               </div>

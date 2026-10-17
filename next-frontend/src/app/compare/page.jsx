@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import Header from '@/components/common/Header';
+import Footer from '@/components/common/Footer';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import ComparePageSeo from './ComparePageSeo';
 import ComparePageClient from './ComparePageClient';
@@ -41,6 +42,7 @@ export default async function ComparePage({ searchParams }) {
       >
         <ComparePageClient initialParkCodes={initialParkCodes} />
       </Suspense>
+      <Footer />
     </div>
   );
 }

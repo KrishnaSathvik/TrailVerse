@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
-import { Serwist, StaleWhileRevalidate, NetworkFirst, CacheFirst } from "serwist";
+import { Serwist, StaleWhileRevalidate, NetworkOnly, CacheFirst } from "serwist";
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -11,6 +11,7 @@ declare global {
 declare const self: ServiceWorkerGlobalScope;
 
 /** Bump when runtime SW caches should be invalidated on deploy */
+// Retain existing static/image caches; only legacy data caches need purging.
 const SW_CACHE_VERSION = "v5";
 
 const serwist = new Serwist({
@@ -19,70 +20,32 @@ const serwist = new Serwist({
   clientsClaim: true,
   navigationPreload: true,
   runtimeCaching: [
+    // Let HTTP cache headers and the query client govern changing data.
+    // SW Cache Storage is shared across logins and must not store API responses.
+    // Cookie authentication cannot reliably be detected from request headers.
+    {
+      matcher({ url, request }) {
+        return request.headers.has("authorization") ||
+          url.pathname.startsWith("/api/") || url.pathname.startsWith("/_next/data/");
+      },
+      handler: new NetworkOnly(),
+    },
+
     // Next.js static assets — immutable hashed bundles
     {
       matcher({ url }) {
-        return url.pathname.startsWith("/_next/static/");
+        return url.origin === self.location.origin && url.pathname.startsWith("/_next/static/");
       },
       handler: new CacheFirst({
         cacheName: `next-static-${SW_CACHE_VERSION}`,
       }),
     },
-    // Next.js data routes
+    // Versioned logo assets never need background revalidation.
     {
-      matcher({ url }) {
-        return url.pathname.startsWith("/_next/data/");
+      matcher({ url, sameOrigin }) {
+        return sameOrigin && /^\/brand\/trailverse-logo-(40|80|120)\.[a-f0-9]{12}\.webp$/.test(url.pathname);
       },
-      handler: new NetworkFirst({
-        cacheName: `next-data-${SW_CACHE_VERSION}`,
-        networkTimeoutSeconds: 5,
-      }),
-    },
-    // Parks API — StaleWhileRevalidate
-    {
-      matcher({ url }) {
-        return url.pathname.startsWith("/api/parks");
-      },
-      handler: new StaleWhileRevalidate({
-        cacheName: `api-parks-${SW_CACHE_VERSION}`,
-      }),
-    },
-    // User & trip APIs — NetworkFirst
-    {
-      matcher({ url }) {
-        return url.pathname.startsWith("/api/users") || url.pathname.startsWith("/api/trips");
-      },
-      handler: new NetworkFirst({
-        cacheName: `api-user-data-${SW_CACHE_VERSION}`,
-        networkTimeoutSeconds: 5,
-      }),
-    },
-    // Reviews API — StaleWhileRevalidate
-    {
-      matcher({ url }) {
-        return url.pathname.startsWith("/api/reviews");
-      },
-      handler: new StaleWhileRevalidate({
-        cacheName: `api-reviews-${SW_CACHE_VERSION}`,
-      }),
-    },
-    // Blog API — StaleWhileRevalidate
-    {
-      matcher({ url }) {
-        return url.pathname.startsWith("/api/blog");
-      },
-      handler: new StaleWhileRevalidate({
-        cacheName: `api-blog-${SW_CACHE_VERSION}`,
-      }),
-    },
-    // Events API — StaleWhileRevalidate
-    {
-      matcher({ url }) {
-        return url.pathname.startsWith("/api/events");
-      },
-      handler: new StaleWhileRevalidate({
-        cacheName: `api-events-${SW_CACHE_VERSION}`,
-      }),
+      handler: new CacheFirst({ cacheName: `brand-${SW_CACHE_VERSION}` }),
     },
     // Google Maps tiles — CacheFirst
     {
@@ -131,6 +94,17 @@ const serwist = new Serwist({
       },
     ],
   },
+});
+
+// Remove caches that could contain another user's data from older workers.
+// Match only TrailVerse-owned legacy runtime caches, never unrelated caches.
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys().then((names) => Promise.all(
+      names.filter((name) => /^(api-(parks|user-data|reviews|blog|events)|next-data)-v\d+$/.test(name))
+        .map((name) => caches.delete(name)),
+    )),
+  );
 });
 
 serwist.addEventListeners();

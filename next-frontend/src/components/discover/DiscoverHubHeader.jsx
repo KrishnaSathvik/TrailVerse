@@ -32,7 +32,7 @@ export default function DiscoverHubHeader({
         <ExpandableDescription
           text={intro}
           collapsedChars={400}
-          className="text-base leading-relaxed max-w-3xl whitespace-pre-line"
+          className="text-base leading-relaxed public-content whitespace-pre-line"
         />
       )}
 

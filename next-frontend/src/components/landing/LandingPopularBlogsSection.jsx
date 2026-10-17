@@ -22,7 +22,7 @@ export default function LandingPopularBlogsSection({ posts = [] }) {
       className={LANDING_SECTION}
       style={{ backgroundColor: 'var(--bg-primary)' }}
     >
-      <div className="max-w-[92rem] mx-auto">
+      <div className="public-shell">
         <div className={`flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between ${LANDING_SECTION_HEADER_MB}`}>
           <div>
             <div

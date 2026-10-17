@@ -1,0 +1,12 @@
+/* Demo playback uses the shared rich content canvas end-to-end. */
+.playback :global(.trailie-response),
+.playback :global(.prose),
+.playback :global(.prose) > *,
+.playback :global(.trailie-narrative),
+.playback :global(.trailie-narrative) > h3,
+.playback :global(.trailie-table-breakout),
+.playback :global([data-presentation-kind="rich_trip"]),
+.playback :global([aria-label="Destination comparison"]) {
+  max-width: var(--public-rich-width);
+  margin-inline: auto;
+}

@@ -1,6 +1,7 @@
 import ReactGA from 'react-ga4';
 import { track as vercelTrack } from '@vercel/analytics';
 import { getApiBaseUrl } from '@/lib/apiBase';
+import { sanitizeWhereNextAnalytics } from '@/lib/whereNext';
 
 const VERCEL_FIELD_MAX = 255;
 const getTrackingId = () => process.env.NEXT_PUBLIC_GA_TRACKING_ID;
@@ -15,6 +16,41 @@ export const isAnalyticsAllowed = () => {
 const getUserType = () => (
   typeof window !== 'undefined' && localStorage.getItem('user') ? 'authenticated' : 'anonymous'
 );
+
+const BROWSER_ID_KEY = 'tv_browser_id';
+
+export const getAnalyticsBrowserId = () => {
+  if (typeof window === 'undefined') return null;
+  let id = localStorage.getItem(BROWSER_ID_KEY);
+  if (!id) {
+    id = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    localStorage.setItem(BROWSER_ID_KEY, id);
+  }
+  return id;
+};
+
+const getAuthUserId = () => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem('user');
+    if (!raw) return null;
+    const user = JSON.parse(raw);
+    return user?._id || user?.id || null;
+  } catch {
+    return null;
+  }
+};
+
+const getAuthToken = () => {
+  if (typeof window === 'undefined') return null;
+  try {
+    return localStorage.getItem('token') || null;
+  } catch {
+    return null;
+  }
+};
 
 export const getAnalyticsSessionId = () => {
   if (typeof window === 'undefined') return 'server';
@@ -61,10 +97,19 @@ const flushBackendEvents = () => {
   if (backendEventBuffer.length === 0) return;
   const events = [...backendEventBuffer];
   backendEventBuffer = [];
+  const token = getAuthToken();
   fetch(`${getApiBaseUrl()}/analytics/track`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sessionId: getAnalyticsSessionId(), events }),
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({
+      sessionId: getAnalyticsSessionId(),
+      browserId: getAnalyticsBrowserId(),
+      userId: getAuthUserId(),
+      events,
+    }),
   }).catch((error) => {
     if (process.env.NODE_ENV === 'development') {
       console.warn('[analytics] backend track failed:', error?.message || error);
@@ -79,7 +124,20 @@ const trackBackend = (eventType, eventCategory, metadata = {}) => {
     eventCategory,
     pageUrl: window.location.pathname,
     pageTitle: document.title,
-    metadata,
+    userId: getAuthUserId(),
+    browserId: getAnalyticsBrowserId(),
+    userType: getUserType(),
+    referrer: document.referrer || null,
+    metadata: {
+      path: window.location.pathname,
+      referrer: document.referrer || null,
+      source: metadata.source || null,
+      ctaId: metadata.ctaId || null,
+      parkCode: metadata.parkCode || null,
+      ...metadata,
+      userType: getUserType(),
+      browserId: getAnalyticsBrowserId(),
+    },
     timestamp: new Date().toISOString(),
   });
   if (backendEventBuffer.length >= 10) {
@@ -185,6 +243,16 @@ const sendPageView = (page) => {
     });
   }
   trackBackend('page_view', 'content', { page });
+
+  const path = window.location.pathname;
+  if (path === '/map' || path.startsWith('/map/')) {
+    trackBackend('user_action', 'engagement', { action: 'map_view' });
+    trackVercel('map_view', {});
+  }
+  if (path === '/compare' || path.startsWith('/compare')) {
+    trackBackend('user_action', 'engagement', { action: 'compare_view' });
+    trackVercel('compare_view', {});
+  }
 };
 
 export const logPageView = () => {
@@ -431,13 +499,14 @@ export const logLoginPromptShown = (reason, surface = null) => {
 
 export const logAIChat = (message, responseTime = 0, success = true) => {
   emitProductEvent({
-    vercelName: success ? 'ai_chat_success' : 'ai_chat_error',
+    vercelName: success ? 'trailie_message' : 'trailie_message_error',
     eventType: 'ai_chat',
     eventCategory: 'engagement',
     metadata: {
       messageLength: message.length,
       responseTimeMs: responseTime,
       success,
+      userId: getAuthUserId(),
     },
     ga: {
       category: 'AI',
@@ -451,11 +520,11 @@ export const logAIChat = (message, responseTime = 0, success = true) => {
 
 export const logPlanAiSessionStart = ({ userType = null, parkCode = null } = {}) => {
   emitProductEvent({
-    vercelName: 'plan_ai_session_start',
+    vercelName: 'trailie_session_start',
     eventType: 'user_action',
     eventCategory: 'engagement',
     metadata: {
-      action: 'plan_ai_session_start',
+      action: 'trailie_session_start',
       sessionUserType: userType || getUserType(),
       parkCode,
     },
@@ -475,10 +544,10 @@ export const logAIFeedback = ({ feedback, conversationId = null }) => {
 
 export const logTripShareCreated = ({ tripId = null, parkCode = null } = {}) => {
   emitProductEvent({
-    vercelName: 'trip_share_created',
+    vercelName: 'trip_shared',
     eventType: 'user_action',
     eventCategory: 'engagement',
-    metadata: { action: 'trip_share_created', tripId, parkCode },
+    metadata: { action: 'trip_shared', tripId, parkCode },
     ga: { category: 'AI', action: 'Trip_Share', label: parkCode || tripId || 'trip' },
   });
 };
@@ -579,20 +648,20 @@ export const logShare = (platform, content, contentType = 'unknown') => {
 
 export const logUserSignup = (userId = null) => {
   emitProductEvent({
-    vercelName: 'user_signup',
+    vercelName: 'signup_success',
     eventType: 'user_signup',
     eventCategory: 'business',
-    metadata: { userId },
+    metadata: { userId: userId || getAuthUserId() },
     ga: { category: 'Auth', action: 'Signup', label: 'success' },
   });
 };
 
 export const logUserLogin = (userId = null) => {
   emitProductEvent({
-    vercelName: 'user_login',
+    vercelName: 'login_success',
     eventType: 'user_login',
     eventCategory: 'business',
-    metadata: { userId },
+    metadata: { userId: userId || getAuthUserId() },
     ga: { category: 'Auth', action: 'Login', label: 'success' },
   });
 };
@@ -744,4 +813,66 @@ export const optOutAnalytics = () => {
 
 export const optInAnalytics = () => {
   localStorage.removeItem('analytics_opt_out');
+};
+
+export const logPdfExport = ({ tripId = null, parkCode = null } = {}) => {
+  emitProductEvent({
+    vercelName: 'pdf_export',
+    eventType: 'user_action',
+    eventCategory: 'engagement',
+    metadata: { action: 'pdf_export', tripId, parkCode },
+    ga: { category: 'AI', action: 'PDF_Export', label: parkCode || tripId || 'trip' },
+  });
+};
+
+export const logWhereNext = (action, metadata = {}) => {
+  const safe = sanitizeWhereNextAnalytics(metadata);
+  emitProductEvent({
+    vercelName: action,
+    eventType: 'user_action',
+    eventCategory: 'engagement',
+    metadata: { action, ...safe },
+    ga: { category: 'WhereNext', action, label: safe.parkCode || null },
+  });
+};
+
+const NEWSLETTER_SIGNUP_EVENTS = new Set([
+  'newsletter_signup_view',
+  'newsletter_signup_submit',
+  'newsletter_signup_success',
+  'newsletter_signup_error',
+]);
+
+const NEWSLETTER_PII_KEYS = new Set([
+  'email',
+  'firstName',
+  'first_name',
+  'confirmToken',
+  'confirm_token',
+  'unsubscribeToken',
+  'unsubscribe_token',
+  'token',
+]);
+
+/** Strip PII before newsletter analytics. Success = double-opt-in started, not confirmed. */
+export const sanitizeNewsletterAnalytics = (metadata = {}) => {
+  const out = {};
+  for (const [key, value] of Object.entries(metadata)) {
+    if (NEWSLETTER_PII_KEYS.has(key)) continue;
+    if (value === undefined || value === null || value === '') continue;
+    out[key] = value;
+  }
+  return out;
+};
+
+export const logNewsletterSignup = (action, metadata = {}) => {
+  if (!NEWSLETTER_SIGNUP_EVENTS.has(action)) return;
+  const safe = sanitizeNewsletterAnalytics(metadata);
+  emitProductEvent({
+    vercelName: action,
+    eventType: 'user_action',
+    eventCategory: 'engagement',
+    metadata: { action, ...safe },
+    ga: { category: 'Newsletter', action, label: safe.source || null },
+  });
 };
