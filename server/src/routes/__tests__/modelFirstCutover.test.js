@@ -254,7 +254,9 @@ test.each(['/chat', '/chat-anonymous', '/chat-stream', '/chat-anonymous-stream',
     expect(second.responseVersion).toBe(2);
     expect(second.canonicalPlan.itineraryHash).toBe(second.itineraryHash);
     expect(second.itineraryHash).toBe(hashPayload(second.itineraryData));
-    fs.writeFileSync(path.resolve(__dirname, '../../../../artifacts/trailie-model-first-cutover-2026-09-30/contract-fixture.json'), JSON.stringify(second, null, 2));
+    const fixturePath = path.resolve(__dirname, '../../../../artifacts/trailie-model-first-cutover-2026-09-30/contract-fixture.json');
+    fs.mkdirSync(path.dirname(fixturePath), { recursive: true });
+    fs.writeFileSync(fixturePath, JSON.stringify(second, null, 2));
   });
 
 test.each(['/chat-stream', '/chat-anonymous-stream'])('%s disconnect aborts the model and leaves state/quota untouched', async endpoint => {

@@ -31,6 +31,28 @@ function harness(outputs, options = {}) {
   return { model, travelTools, run: createSimpleRuntime({ model, travelTools, verifyMemory: stubMemoryVerifier(), now: () => NOW, ...options }) };
 }
 
+test.each(['Would an early flight work?', 'We only want one hotel change.'])('advice records unchanged saved state without a second model call: %s', async message => {
+  const saved = plan();
+  const h = harness([generation({ outputText: 'Here is the relevant tradeoff.' })]);
+  const result = await h.run({ message, snapshot: { plan: saved } });
+  expect(result.response.content).toContain('Your saved itinerary is unchanged.');
+  expect(result.response.itineraryData).toBeNull();
+  expect(result.telemetry.mutationAccepted).toBe(false);
+  expect(h.model).toHaveBeenCalledTimes(1);
+  expect(saved).toEqual(plan());
+});
+
+test('new guidance rejects an invented resource and accepts a sourced resource', () => {
+  const candidate = plan();
+  candidate.narrativeSections = [{ placement: 'after_plan', heading: 'Shuttle', markdown: 'Check [the schedule](https://www.nps.gov/schedule.htm).' }];
+  const args = { proposal: { response: 'Your trip.', plan: candidate }, message: 'Plan a day', evidence: [source()], now: NOW };
+  expect(validateSimpleMutation(args).issues).toContain('guidance_link_unsupported');
+  args.evidence[0].source.url = 'https://www.nps.gov/schedule.htm';
+  expect(validateSimpleMutation(args).issues).not.toContain('guidance_link_unsupported');
+  args.evidence[0].observation.expiresAt = '2025-01-01T00:00:00Z';
+  expect(validateSimpleMutation(args).issues).toContain('guidance_link_unsupported');
+});
+
 test.each(['success', 'conflict', 'failure'])('completed-action reply is withheld until commit: %s', async outcome => {
   let release, entered;
   const waiting = new Promise(resolve => { release = resolve; });
@@ -269,7 +291,7 @@ test('live evidence observed during a fetch survives freshness validation', asyn
 
 test('model request hides provider choreography and coordinate input', () => {
   const { READ_TOOL } = require('../trailieTravelData');
-  expect(Object.keys(READ_TOOL.input_schema.properties)).toEqual(['destination', 'question', 'topics', 'dates', 'constraints', 'context', 'places', 'travelMode']);
+  expect(Object.keys(READ_TOOL.input_schema.properties)).toEqual(['destination', 'question', 'topics', 'dates', 'constraints', 'context', 'places', 'resources', 'travelMode']);
   expect(JSON.stringify(READ_TOOL.input_schema)).not.toMatch(/latitude|longitude|provider|routeScope/);
 });
 
@@ -524,4 +546,85 @@ test('recovery may retain a traveler-requested outing as an explicitly non-spati
  const h=harness([proposal({response:'Trip',plan:original}),proposal({response:'A flexible outing, not a verified mapped trail.',plan:flexible})],{travelTools});
  const r=await h.run({message:'I want to visit Unrecorded Creek'});
  expect(r.telemetry.mutationAccepted).toBe(true);expect(r.mutation.plan.days[0].stops).toEqual([]);expect(r.mutation.plan.days[0].travelEdges).toEqual([]);
+});
+
+test('a chat answer never labels a park homepage as its alerts page', async () => {
+  const h = harness([generation({ outputText: 'Check the [official Zion alerts](https://www.nps.gov/zion/index.htm) before you go.' })]);
+  const result = await h.run({ message: 'Any closures at Zion?', snapshot: {} });
+  expect(result.response.content).toContain('[the official NPS park page](https://www.nps.gov/zion/index.htm)');
+  expect(result.response.content).not.toContain('official Zion alerts');
+  expect(h.model).toHaveBeenCalledTimes(1);
+});
+
+describe('two-base duration repair preserves the trip', () => {
+  test.each([
+    ['Zion', 'Bryce Canyon', 'Springdale', 'Bryce Canyon City'],
+    ['Boston', 'Portland', 'Boston Hotel', 'Portland Hotel'],
+    ['Olympic', 'Mount Rainier', 'Port Angeles', 'Ashford'],
+  ])('%s to %s repairs only the unsupported stop duration', async (first, second, base1, base2) => {
+    const evidence = [first, second].map((name, i) => source({ evidenceId: `place-${i + 1}`,
+      entityId: `place-${i + 1}`, claim: { identity: `place-${i + 1}`, normalizedValue: {
+        name, latitude: 40 + i, longitude: -110, duration: '1-2 Hours',
+      } } }));
+    const candidate = plan();
+    candidate.days = [first, first, second, second].map((name, i) => {
+      const day = structuredClone(plan().days[0]);
+      Object.assign(day, { id: `d${i + 1}`, dayNumber: i + 1, overnightLocation: i < 2 ? base1 : base2 });
+      Object.assign(day.stops[0], { name, evidenceRef: i < 2 ? 'place-1' : 'place-2', duration: i === 2 ? 150 : 60, revisitReason: 'Continue exploring this destination from the same overnight base.' });
+      if (i === 2) day.dayStructure.blocks.unshift({ kind: 'transfer', periods: ['morning'], label: `Move to ${base2}`, note: 'Travel time unverified.', stopIds: [] });
+      return day;
+    });
+    const corrected = structuredClone(candidate);
+    corrected.days[2].stops[0].duration = 120;
+    const snapshot = { planningState: { dates: { durationDays: 4 }, lodging: { maxHotelChanges: 1 } } };
+    const store = { load: async () => snapshot, commit: jest.fn(async () => ({ ok: true, tripId: 'two-base' })) };
+    const h = harness([call('read_travel', {}), proposal({ response: 'Ready', plan: candidate }),
+      proposal({ response: 'Ready', plan: corrected })], { store });
+    h.travelTools.execute.mockResolvedValue({ status: 'fulfilled', evidence });
+    const result = await h.run({ message: `Four days in ${first} and ${second}, one hotel change.` });
+    expect({ status: result.status, rounds: result.telemetry.mutationRounds }).toEqual({ status: 'complete', rounds: [{ issues: ['duration_exceeds_source'] }, { issues: [] }] });
+    expect(result.telemetry.mutationRounds).toEqual([{ issues: ['duration_exceeds_source'] }, { issues: [] }]);
+    const feedback = JSON.parse(h.model.mock.calls[2][0].input.at(-1).output);
+    expect(feedback.durationFindings).toEqual([{ dayNumber: 3, stopId: 's1', stopName: second,
+      evidenceRef: 'place-2', proposedMinutes: 150, maximumMinutes: 120, sourceDuration: '1-2 Hours' }]);
+    expect(store.commit).toHaveBeenCalledTimes(1);
+    expect(result.response.itineraryData.days.map(d => d.overnightLocation)).toEqual([base1, base1, base2, base2]);
+    expect(result.response.itineraryData.days.map(d => d.stops[0].name)).toEqual([first, first, second, second]);
+    expect(h.model).toHaveBeenCalledTimes(3);
+    expect(validateSimpleMutation({ proposal: { response: 'Ready', plan: corrected }, snapshot: { planningState: {
+      dates: { durationDays: 5 }, lodging: { maxHotelChanges: 0 },
+    } }, evidence, now: NOW }).issues).toEqual(expect.arrayContaining(['plan_day_count_mismatch', 'hotel_change_limit_exceeded']));
+  });
+});
+
+test('duration repair does not turn a resolved destination alias into a second rejection', async () => {
+  const row = source();
+  row.source.provider = 'named_place';
+  Object.assign(row.claim.normalizedValue, { name: 'Bryce Canyon National Park', requestedName: 'Bryce', duration: '1-2 Hours' });
+  const candidate = plan();
+  Object.assign(candidate.days[0].stops[0], { name: 'Bryce Canyon National Park', duration: 150 });
+  const corrected = structuredClone(candidate); corrected.days[0].stops[0].duration = 120;
+  const store = { load: async () => ({}), commit: jest.fn(async () => ({ ok: true, tripId: 'alias' })) };
+  const h = harness([call('read_travel', {}), proposal({ response: 'Ready', plan: candidate }),
+    proposal({ response: 'Ready', plan: corrected })], { store });
+  h.travelTools.execute.mockResolvedValue({ status: 'fulfilled', evidence: [row], unresolved: [{ place: 'Bryce' }] });
+  const result = await h.run({ message: 'Visit Bryce' });
+  expect(result.telemetry.mutationRounds).toEqual([{ issues: ['duration_exceeds_source'] }, { issues: [] }]);
+  expect(result.status).toBe('complete');
+  expect(store.commit).toHaveBeenCalledTimes(1);
+});
+
+test('booking help returns verified links directly and removes invented links without a repair call', async () => {
+  const url = 'https://hotel.example/reservations';
+  const row = source(); row.source.url = url;
+  const h = harness([call('read_travel', { destination: 'Portland', question: 'Booking help',
+    resources: [{ name: 'Harbor Hotel', destination: 'Portland', kind: 'hotel' }] }),
+    generation({ outputText: `Check [Harbor Hotel](${url}). Availability is unknown. [Other booking](https://invented.example/book)` })]);
+  h.travelTools.execute.mockResolvedValue({ status: 'fulfilled', evidence: [row] });
+  const result = await h.run({ message: 'Where can I book Harbor Hotel in Portland?' });
+  expect(result.status).toBe('complete');
+  expect(result.response.content).toContain(`[Harbor Hotel](${url})`);
+  expect(result.response.content).not.toContain('https://invented.example');
+  expect(result.telemetry.corrections).toBe(0); expect(h.model).toHaveBeenCalledTimes(2);
+  expect(result.response.itineraryData).toBeNull();
 });

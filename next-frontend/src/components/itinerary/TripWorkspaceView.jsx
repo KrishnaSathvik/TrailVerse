@@ -111,26 +111,22 @@ export function TripGuidance({ plan, headingLevel = 'h2', collapsible = false, s
   const requirements = (plan?.requirements || []).filter(Boolean);
   // Day notes no longer repeat "unconfirmed"; the trip says it once here.
   const confirmNote = showDateReminder || planHasQuietedUncertainty(plan);
-  return <>
-    {sections.length > 0 && <Section aria-label="Before booking" className="min-w-0">
-      <H className={collapsible ? "min-h-11 cursor-pointer py-3 text-sm font-semibold" : "text-lg font-semibold"}>Before booking</H>
+  if (!sections.length && !rules.length && !roadNote && !confirmNote && !requirements.length) return null;
+  return <Section aria-label="Things to know" className="min-w-0">
+      <H className={collapsible ? "min-h-11 cursor-pointer py-3 text-sm font-semibold" : "text-lg font-semibold"}>Things to Know</H>
       <div className="mt-3 space-y-4 text-sm leading-6 text-[var(--text-secondary)]">
         {sections.map((section, i) => <div key={i}>
           {section.heading && !/^(before booking|before you book|before you go|things to know)$/i.test(section.heading) && <p className="mb-1 font-semibold text-[var(--text-primary)]">{section.heading}</p>}
           <TrailieMarkdown text={section.markdown} />
         </div>)}
       </div>
-    </Section>}
-    {(rules.length > 0 || roadNote || confirmNote || requirements.length > 0) && <Section aria-label="Things to know" className="min-w-0">
-      <H className={collapsible ? "min-h-11 cursor-pointer py-3 text-sm font-semibold" : "text-lg font-semibold"}>Things to know</H>
       <ItineraryRequirements requirements={requirements} compact />
-      <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-[var(--text-secondary)]">
+      {(rules.length > 0 || roadNote || confirmNote) && <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-[var(--text-secondary)]">
         {rules.map(item => <li key={item.text}>{item.text} <a href={item.source} target="_blank" rel="noreferrer" className="text-[var(--text-tertiary)] underline underline-offset-2">Source</a></li>)}
         {roadNote && <li>{ROAD_ACCESS_NOTE.replace(/^Getting around: /, '')}</li>}
         {confirmNote && <li>{showDateReminder ? 'Seasonal access, reservations and conditions change; confirm them for your dates.' : 'Trail conditions, opening hours and drive times change. Confirm them for your dates before setting out.'}</li>}
-      </ul>
-    </Section>}
-  </>;
+      </ul>}
+    </Section>;
 }
 
 function TripOverview({ plan, map, title, onOpenDay, onOpenMap, sampleReadingMode = false }) {

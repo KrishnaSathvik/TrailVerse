@@ -13,3 +13,14 @@ test('composite destination obtains structured anchors without becoming administ
  expect(request.queryProvenance.destinationAnchors.map(a=>a.sourceId)).toEqual(['nps:park:zion','nps:park:brca']);
  expect(request.queryProvenance.destinationAnchors.every(a=>a.states[0]==='UT')).toBe(true);
 });
+
+test('both catalog destinations resolve by their official short names without external place lookup', async () => {
+ const dispatchEphemeral = jest.fn(async () => ({ status: 'no_result', normalizedCandidates: [] }));
+ const tools = createSimpleTravelTools({ broker: { dispatchEphemeral } });
+ const result = await tools.execute('read_travel', { destination: 'Zion and Bryce Canyon', question: 'Two bases',
+   topics: ['activities'], places: ['Zion', 'Bryce Canyon'] }, { requestId: 'two-catalog-bases', userMessage: 'Zion and Bryce Canyon' });
+ expect(result.namedPlaceResolutions.map(row => row.status)).toEqual(['resolved', 'resolved']);
+ expect(result.namedPlaceResolutions.map(row => row.canonicalPlaceId)).toEqual(['nps:park:zion', 'nps:park:brca']);
+ expect(result.evidence.filter(row => row.topic === 'destination_identity')).toHaveLength(2);
+ expect(dispatchEphemeral.mock.calls.some(([call]) => call.requirement.preferredProviders.includes('named_place'))).toBe(false);
+});

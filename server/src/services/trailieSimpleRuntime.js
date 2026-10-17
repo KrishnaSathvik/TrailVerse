@@ -7,6 +7,7 @@ const { PROPOSE_TOOL, validateSimpleMutation } = require('./trailieSimpleGuard')
 const { memoryAdmission } = require('./trailieMemoryAuthority');
 const { explainMutationIssues } = require('../utils/mutationIssueMeanings');
 const { withTripIdentity } = require('../utils/tripIdentity');
+const { normalizeGuidanceLinkLabels, stripUnverifiedLinks } = require('../utils/itineraryReliability');
 const { tripGuidanceFromRules } = require('../utils/parkWideAccess');
 const { transferDates } = require('../utils/transferOperationalAccess');
 const { buildPlaceRecovery, requiredPlaceRecoveryIssues } = require('./trailiePlaceRecovery');
@@ -38,6 +39,7 @@ function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = 
     let lastProgress = null;
     const progress = stage => { if (signal?.aborted || stage === lastProgress) return; lastProgress = stage; try { if (onProgress({ stage }) && telemetry.timings.firstVisibleProgressMs == null) telemetry.timings.firstVisibleProgressMs = Date.now() - started; } catch { /* progress never changes state */ } };
     progress('understanding_request');
+    let resourceHelp = false;
     const evidence = new Map();
     const input = [];
     // Hard restrictions the model stated this turn (research constraints and
@@ -97,6 +99,13 @@ function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = 
     const cancelled = () => signal?.aborted === true;
     const accept = async (text, mutation, generation, artifactStatus = null) => {
       if (cancelled()) return finish('cancelled');
+      // Same deterministic label precision as saved trip guidance, for chat prose.
+      if (resourceHelp) text = stripUnverifiedLinks(text, [...evidence.values()].filter(row => usableEvidence(row, now())), snapshot.plan?.narrativeSections || []);
+      text = normalizeGuidanceLinkLabels([{ markdown: text }], [...evidence.values()])[0].markdown;
+      if (snapshot.plan?.days?.length && !mutation?.plan && !artifactStatus
+        && !text.includes('Your saved itinerary is unchanged.')) {
+        text = `${text.trim()}\n\nYour saved itinerary is unchanged.`;
+      }
       if (mutation?.plan?.days?.length && groundedParkRules.length) {
         // Official park-wide rules become trip-level guidance, resolved only
         // against verified traveler dates. A turn without them keeps the prior guidance.
@@ -265,7 +274,7 @@ function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = 
             message: travelerText, evidence: [...evidence.values()], scope, now: now(), memoryAuthority, ...constraintArgs() }); }
           catch { retained = { ok: false }; }
           if (retained.ok && correcting) {
-            const recoveryIssues = requiredPlaceRecoveryIssues(placeRecovery, retained.plan);
+            const recoveryIssues = requiredPlaceRecoveryIssues(placeRecovery, retained.plan, [...evidence.values()], now());
             if (recoveryIssues.length) retained = { ...retained, ok: false, issues: recoveryIssues };
           }
           if (retained.ok) {
@@ -281,7 +290,7 @@ function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = 
           }
         }
         if (correcting && verdict.ok) {
-          const recoveryIssues = requiredPlaceRecoveryIssues(placeRecovery, verdict.plan);
+          const recoveryIssues = requiredPlaceRecoveryIssues(placeRecovery, verdict.plan, [...evidence.values()], now());
           if (recoveryIssues.length) verdict = { ...verdict, ok: false, issues: recoveryIssues };
         }
         telemetry.timings.validationMs += Date.now() - validationStarted;
@@ -320,6 +329,7 @@ function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = 
             placeRecovery: correctionPlaceRecovery,
             existingCanonicalPlan: snapshot.plan || null,
             activeRestrictions: verdict.activeRestrictions || null, restrictionFindings: verdict.restrictionFindings || [],
+            durationFindings: verdict.durationFindings || [],
             groundedPlaces: [...evidence.values()].filter(e => e.claim?.normalizedValue?.name).map(e => ({ evidenceRef:e.evidenceId, name:e.claim.normalizedValue.name, value:modelEvidenceValue(e.claim.normalizedValue),
               ...(verdict.activeRestrictions?.avoidExposure ? { restrictionEligibility: ({ eligible: 'meets', incompatible: 'conflicts', unknown: 'unconfirmed' })[assessPlaceEligibility(e, [...evidence.values()].filter(row => usableEvidence(row, now(), { authoritative: true })), { avoidExposure: true }).status] } : {}) })),
             unresolvedPlaces: telemetry.finalization?.unresolved || [],
@@ -341,6 +351,7 @@ function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = 
       catch { result = { status: 'unavailable', evidence: [], unresolved: [{ reason: 'Travel information could not be retrieved.' }] }; }
       if (cancelled()) return finish('cancelled');
       researched = true;
+      resourceHelp = Boolean(call.input?.resources?.length);
       telemetry.timings.travelDataMs += Date.now() - dataStarted;
       telemetry.providerAttempts += result.providerAttemptCount || 0;
       telemetry.tools.push({ name: call.name, requestedTopics: call.input?.topics || null, constraints: call.input?.constraints || null, requestedGoal: call.input?.question || null, namedEntities: [call.input?.destination, ...(call.input?.places || [])].filter(Boolean),

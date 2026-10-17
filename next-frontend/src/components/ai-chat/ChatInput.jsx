@@ -10,6 +10,7 @@ const ChatInput = ({
   disabled = false,
   placeholder = 'Type your message...',
   initialValue = '',
+  draft = null,
 }) => {
   const [message, setMessage] = useState(initialValue);
   const [isComposing, setIsComposing] = useState(false);
@@ -17,6 +18,11 @@ const ChatInput = ({
   const [isMultiline, setIsMultiline] = useState(false);
   const inputRef = useRef(null);
   const singleLineHeightRef = useRef(INPUT_MIN_HEIGHT);
+  useEffect(() => {
+    if (!draft) return;
+    setMessage(previous => draft.preserveExisting && previous.trim() ? previous : draft.text);
+    inputRef.current?.focus();
+  }, [draft]);
 
   const measureInput = useCallback(() => {
     const el = inputRef.current;

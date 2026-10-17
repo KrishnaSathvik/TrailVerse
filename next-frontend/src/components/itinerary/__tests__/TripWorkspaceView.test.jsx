@@ -28,7 +28,9 @@ it('opens on Overview with the trip story, day list, map preview and trip-level 
   expect(screen.getByRole('button', { name: 'Open the map for Example park' })).toBeInTheDocument();
   expect(screen.getByText('3 places on the map')).toBeInTheDocument();
   expect(screen.queryByText(/in the itinerary only/)).not.toBeInTheDocument();
-  expect(screen.getByRole('heading', { name: 'Before booking' })).toBeInTheDocument();
+  // Trip-level notes live in the single Things to Know panel, not a second heading.
+  expect(screen.getByRole('heading', { name: 'Things to Know' })).toBeInTheDocument();
+  expect(screen.queryByText('Before booking')).not.toBeInTheDocument();
   expect(screen.getByText('Reserve lodging early.')).toBeInTheDocument();
   expect(screen.queryByTestId('itinerary')).not.toBeInTheDocument();
 });

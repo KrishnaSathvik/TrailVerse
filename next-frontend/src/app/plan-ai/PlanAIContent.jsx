@@ -136,9 +136,6 @@ const PlanAIContent = ({ tripId }) => {
       setSelectedParkName(park.fullName);
     }
 
-    // Build a summary message to auto-send to the AI. P0-4: the message
-    // speaks AS the traveler, so it may only state fields they actually
-    // touched — an untouched wizard default is not "my trip details".
     const parts = buildQuickFillSummaryParts(data, park?.fullName || null);
 
     const message = hasAppliedQuickFill

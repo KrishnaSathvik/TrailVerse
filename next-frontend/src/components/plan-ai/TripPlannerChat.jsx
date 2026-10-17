@@ -365,6 +365,8 @@ const TripPlannerChat = ({
   const personalizedSentRef = useRef(false);
   const personalizedInitRef = useRef(false);
   const initialAskSentRef = useRef(false);
+  const [composerDraft, setComposerDraft] = useState(null);
+  const entryDraftAppliedRef = useRef(false);
   const sessionStartTrackedRef = useRef(false);
   const parkContextRef = useRef(null);
   const pendingParkImagesRef = useRef([]);
@@ -373,8 +375,9 @@ const TripPlannerChat = ({
 
   const SCROLL_NEAR_BOTTOM_PX = 80;
 
-  const handleChatScroll = useCallback((e) => {
-    const { scrollTop, scrollHeight, clientHeight } = e.target;
+  // The page itself scrolls (no nested chat scroller), so track the document.
+  const handleChatScroll = useCallback(() => {
+    const { scrollTop, scrollHeight, clientHeight } = document.scrollingElement || document.documentElement;
     const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
     const nearBottom = distanceFromBottom <= SCROLL_NEAR_BOTTOM_PX;
     isNearBottomRef.current = nearBottom;
@@ -384,10 +387,14 @@ const TripPlannerChat = ({
     }
   }, []);
 
+  useEffect(() => {
+    window.addEventListener('scroll', handleChatScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleChatScroll);
+  }, [handleChatScroll]);
+
   const scrollChatToBottom = useCallback(() => {
-    const el = chatContainerRef.current;
-    if (!el) return;
-    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    const el = document.scrollingElement || document.documentElement;
+    window.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
     isNearBottomRef.current = true;
     messagesLengthWhenAtBottomRef.current = messagesRef.current.length;
     setShowScrollToLatest(false);
@@ -1268,7 +1275,7 @@ const TripPlannerChat = ({
 
   // Clear anonymous session when user becomes authenticated
   useEffect(() => {
-    if (isAuthenticated && isAnonymous) {
+    if (isAuthenticated && isAnonymous && !localStorage.getItem('returnToChat')) {
       clearAnonymousSession();
       setIsAnonymous(false);
     }
@@ -1481,45 +1488,29 @@ const TripPlannerChat = ({
     showWelcomeMessage,
   ]);
 
-  // Auto-send Quick Fill summary when applied
   useEffect(() => {
-    if (quickFillMessage && providersLoaded && providers.length > 0 && !isGenerating) {
+    if (quickFillMessage) {
       setHasUsedQuickFill(true);
-      handleSendMessage(quickFillMessage);
+      setComposerDraft({ text: quickFillMessage });
       onQuickFillSent?.();
     }
-  }, [quickFillMessage, providersLoaded, providers.length]);
+  }, [quickFillMessage, onQuickFillSent]);
 
-  // Deep link from demo / marketing (?ask=) — welcome first, then send once
   useEffect(() => {
     if (
       !initialAskMessage ||
       (isAnonymous && guestConversationId && !['restored', 'empty'].includes(anonymousRestoreStatus)) ||
       initialAskSentRef.current ||
-      isPersonalized ||
-      isNewChat ||
       existingTripId ||
-      providersLoaded === false ||
-      providers.length === 0 ||
       isGenerating
     ) {
       return;
     }
 
-    const welcomeReady =
-      messages.length >= 1 &&
-      messages.some((m) => m.role === 'assistant') &&
-      !messages.some((m) => m.role === 'user' && !m.hiddenFromUi);
-
-    if (!welcomeReady) return;
-
-    const timer = setTimeout(() => {
-      initialAskSentRef.current = true;
-      handleSendMessage(initialAskMessage);
-      onInitialAskSent?.();
-    }, 600);
-
-    return () => clearTimeout(timer);
+    initialAskSentRef.current = true;
+    entryDraftAppliedRef.current = true;
+    setComposerDraft({ text: initialAskMessage, preserveExisting: true });
+    onInitialAskSent?.();
   }, [
     initialAskMessage,
     isPersonalized,
@@ -1535,7 +1526,17 @@ const TripPlannerChat = ({
     isAnonymous,
   ]);
 
-  // Auto-send first message in personalized mode only (never on regular New Chat)
+  useEffect(() => {
+    if (entryDraftAppliedRef.current || initialAskMessage || existingTripId || fromChatHistory || isPersonalized || isNewChat || entryContext?.source === 'guest_resume' || messages.some(message => message.role === 'user')) return;
+    const text = suggestText
+      ? `Help me plan a trip to ${suggestText}.`
+      : parkName ? `Help me plan a trip to ${parkName}.`
+        : intentContext?.searchQuery ? `Help me plan a trip: ${intentContext.searchQuery}.` : '';
+    if (!text) return;
+    entryDraftAppliedRef.current = true;
+    setComposerDraft({ text, preserveExisting: true });
+  }, [initialAskMessage, existingTripId, fromChatHistory, isPersonalized, isNewChat, entryContext, messages, suggestText, parkName, intentContext]);
+
   useEffect(() => {
     if (
       !isPersonalized ||
@@ -1551,9 +1552,9 @@ const TripPlannerChat = ({
     personalizedSentRef.current = true;
     const hasTrips = tripHistory.length > 0;
     const autoMessage = hasTrips
-      ? 'I opened My Recommendations — help me pick my next park trip based on my history. Ask me exactly ONE short question first (trip length, region, or vibe). Do not list destinations yet.'
-      : 'I opened My Recommendations — help me discover parks that fit me. Ask exactly ONE question about my travel style before suggesting places.';
-    handleSendMessage(autoMessage, { hiddenFromUi: true });
+      ? 'Help me pick my next park trip based on my history.'
+      : 'Help me discover parks that fit my travel style.';
+    setComposerDraft({ text: autoMessage, preserveExisting: true });
   }, [isPersonalized, isNewChat, providersLoaded, providers.length, isGenerating, messages.length, tripHistory.length]);
 
   useEffect(() => {
@@ -3072,14 +3073,9 @@ ${[
     // Clear any saved session state
     localStorage.removeItem('planai-chat-state');
 
-    // If custom message provided, show welcome first, then send message
     if (customMessage) {
-      // Show welcome message first
       showWelcomeMessage();
-      // Then send the custom message after a delay to ensure welcome is rendered
-      setTimeout(() => {
-        handleSendMessage(customMessage);
-      }, 300);
+      setComposerDraft({ text: customMessage });
     } else {
       const content = resolvePlanAiWelcomeMessage({
         entryMode,
@@ -3574,15 +3570,14 @@ ${[
 
   return (
     <div
-      className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden"
+      className="relative flex flex-1 flex-col"
       style={{ backgroundColor: 'transparent' }}
       onPointerDownCapture={() => primeCompletionSound?.()}
     >
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col">
       <div
         ref={chatContainerRef}
-        className="relative flex-1 min-h-0 overflow-y-auto chat-messages-container"
-        onScroll={handleChatScroll}
+        className="relative flex-1 chat-messages-container"
       >
           <div className={`public-shell ${isWelcomeState ? 'py-8 sm:py-12' : 'py-5 sm:py-8'}`}>
             <div className="space-y-6 sm:space-y-9">
@@ -3662,7 +3657,8 @@ ${[
                     onFollowup={async (prompt) => {
                       // Recheck revision at submission; no direct plan/memory writes.
                       if (guestTrip?.index !== index || (currentPlanRef.current && tripRevision(currentPlanRef.current) !== tripRevision(message.canonicalPlan || message.itineraryPlan))) return null;
-                      return handleSendMessage(prompt);
+                      setComposerDraft({ text: prompt });
+                      return { drafted: true };
                     }}
                     hideActions={Boolean(message.isStreaming || message.isFinalizing)}
                     afterContent={
@@ -3910,7 +3906,7 @@ ${[
                   <SuggestedPrompts
                     hideTitle={Boolean(onOpenQuickFill || isPersonalized)}
                     prompts={isPersonalized ? TRAILIE_PERSONALIZED_PROMPTS : TRAILIE_DEMO_PROMPTS}
-                    onSelect={(text) => handleSendMessage(text)}
+                    onSelect={(text) => setComposerDraft({ text })}
                     title={isPersonalized ? 'Suggestions for you' : 'Try asking...'}
                     subtitle={null}
                   />
@@ -3958,39 +3954,39 @@ ${[
             </div>
           </div>
 
-        {showScrollToLatest && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-center px-3">
-            <button
-              type="button"
-              onClick={scrollChatToBottom}
-              className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium shadow-lg transition-all duration-200 hover:scale-105"
-              style={{
-                backgroundColor: 'var(--surface)',
-                color: 'var(--text-secondary)',
-                border: '1px solid var(--border)',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-              }}
-              aria-label={isGenerating ? 'Scroll to new reply' : 'Scroll to latest messages'}
-            >
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 5v14M19 12l-7 7-7-7" />
-              </svg>
-              {isGenerating ? 'New reply' : 'Jump to latest'}
-            </button>
-          </div>
-        )}
         </div>
       </div>
 
       {/* Composer — the primary interaction surface; utilities remain secondary. */}
-      <div className="relative z-20 flex-shrink-0 border-t chat-input-area"
+      <div className="sticky bottom-0 z-20 flex-shrink-0 border-t chat-input-area"
           style={{
-            backgroundColor: 'color-mix(in srgb, var(--bg-primary) 94%, transparent)',
+            backgroundColor: 'var(--bg-primary)',
             borderColor: 'var(--border)',
             boxShadow: '0 -8px 28px rgba(31, 41, 35, 0.04)',
             paddingBottom: 'env(safe-area-inset-bottom, 12px)'
           }}
         >
+          {showScrollToLatest && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-full mb-2 z-10 flex justify-center px-3">
+              <button
+                type="button"
+                onClick={scrollChatToBottom}
+                className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium shadow-lg transition-all duration-200 hover:scale-105"
+                style={{
+                  backgroundColor: 'var(--surface)',
+                  color: 'var(--text-secondary)',
+                  border: '1px solid var(--border)',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                }}
+                aria-label={isGenerating ? 'Scroll to new reply' : 'Scroll to latest messages'}
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 5v14M19 12l-7 7-7-7" />
+                </svg>
+                {isGenerating ? 'New reply' : 'Jump to latest'}
+              </button>
+            </div>
+          )}
           <div className="trailie-composer-column mx-auto w-full px-4 pb-1.5 pt-1.5 sm:px-6 sm:pb-4 sm:pt-3">
             {draftPreviewEnabled() && draftPreview?.status === 'generating' && (
               <div className="mb-2 flex min-h-14 items-center justify-between gap-3 rounded-xl border border-[var(--border)] bg-[var(--bg-primary)] px-3 py-2" aria-label="Draft preview availability">
@@ -4002,9 +3998,9 @@ ${[
                   className="min-h-11 shrink-0 rounded-lg px-3 text-sm font-semibold text-[var(--accent-green)] disabled:opacity-40"
                   onClick={() => {
                     const day = draftPreviewRef.current?.querySelector('article');
-                    const container = chatContainerRef.current;
-                    if (!day || !container) return;
-                    container.scrollTo({ top: container.scrollTop + day.getBoundingClientRect().top - container.getBoundingClientRect().top - 16, behavior: 'instant' });
+                    if (!day) return;
+                    const headerOffset = document.querySelector('header')?.getBoundingClientRect().bottom || 0;
+                    window.scrollTo({ top: window.scrollY + day.getBoundingClientRect().top - headerOffset - 16, behavior: 'instant' });
                     day.focus({ preventScroll: true });
                   }}>View draft</button>
               </div>
@@ -4149,6 +4145,7 @@ ${[
               disabled={conversationSendBlocked({generating:isGenerating,recovering:historySyncBusy,recoveryPending:historyRecovery,restoreStatus:isAnonymous?anonymousRestoreStatus:authRestoreStatus}) || (isAnonymous && (!canSendMore || messages.some(msg => msg.isConversionMessage)))}
               placeholder={isAnonymous && (!canSendMore || messages.some(msg => msg.isConversionMessage)) ? "Sign in to keep chatting with Trailie" : "Ask Trailie about a park or trip…"}
               initialValue=""
+              draft={composerDraft}
             />
           </div>
         </div>

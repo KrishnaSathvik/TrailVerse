@@ -560,11 +560,15 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  overflow-x: hidden; /* Prevent horizontal scrollbar */
+  /* Prevent horizontal scrollbar. clip (not hidden) keeps body from becoming a
+     scroll container, so sticky header/composer stick to the viewport. */
+  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 html {
   overflow-x: hidden; /* Prevent horizontal scrollbar */
+  overflow-x: clip;
   width: 100%;
 }
 
@@ -813,6 +817,12 @@ section {
 
 .park-tabs-scroll::-webkit-scrollbar {
   display: none;
+}
+
+.trailie-account-dialog input:not([type="checkbox"]):focus {
+  border-color: var(--accent-green) !important;
+  outline: 2px solid color-mix(in srgb, var(--accent-green) 25%, transparent);
+  outline-offset: 2px;
 }
 
 /* ============================================

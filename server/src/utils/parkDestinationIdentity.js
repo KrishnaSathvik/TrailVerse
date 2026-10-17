@@ -33,10 +33,12 @@ const US_STATES = Object.freeze({
   PR: 'puerto rico', VI: 'virgin islands',
 });
 const COUNTRY = new Set(['us', 'usa', 'u s', 'u s a', 'united states', 'united states of america']);
+const REGIONS = new Set([...Object.values(US_STATES), ...Object.keys(US_STATES).map(code => code.toLowerCase()), ...COUNTRY]);
 const SEGMENT_SPLIT = /\s*[,;()]\s*|\s+[-–—]\s+/;
 
 const shortName = (park) => String(park?.fullName || '').replace(park?.designation || '', '').trim();
-const keys = (park) => [park?.fullName, shortName(park), park?.parkCode].map(lexical).filter(Boolean);
+const parkIdentityKeys = (park) => [park?.fullName, shortName(park), park?.parkCode].map(lexical).filter(key => key && !REGIONS.has(key));
+const keys = parkIdentityKeys;
 const stateCodes = (park) => String(park?.states || '').split(',').map((c) => c.trim().toUpperCase()).filter(Boolean);
 
 function exactMatches(parks, text) {
@@ -72,4 +74,4 @@ function resolveParkIdentity(name, parks = []) {
   return segments.slice(1).every((q) => qualifierConsistent(q, head[0], parks)) ? { park: head[0], match: 'qualified' } : null;
 }
 
-module.exports = { resolveParkIdentity };
+module.exports = { resolveParkIdentity, parkIdentityKeys };

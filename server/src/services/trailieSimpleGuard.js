@@ -24,6 +24,7 @@ const {
   stampTripSchemaVersion,
 } = require('../../../shared/tripSchemaVersion.cjs');
 const { evaluateUsPlanGeography } = require('../utils/usPlanGeography');
+const { validateOvernightLimit, validateGuidanceLinks, normalizeGuidanceLinkLabels } = require('../utils/itineraryReliability');
 
 // Reuse storage shapes, without the old prompt's quality/stance instructions or
 // advanced surfaces this small validator does not yet validate.
@@ -67,10 +68,11 @@ const PROPOSE_TOOL = { name: 'propose_trip_update', description:
         value: { type: 'object', description: 'Fields by memory group: dates {startDate,endDate,durationDays,travelMonth (month name only, e.g. October)}; lodging {baseTown,booked}; mobility {maxWalkMilesPerSegment,maxWalkMinutesPerSegment,wheelchair,stroller,avoidStairs,requiresFrequentBreaks}; preferences {avoidExposure,interests (activities they enjoy),pace (whole-trip pace such as relaxed, only when the traveler describes the whole trip — a request about one day changes that day, not memory),fitness (the hiking difficulty they want, e.g. easy hikes or shorter hikes),maxDailyDriveMinutes}; travelers {adults,children,pets}; travelerFacts {fact}; transportation {mode,rentalCar,drivingPolicy,drivingPolicyReason} (transportation.mode accepts only drive or fly, and only when supported by the traveler’s journey. rentalCar separately records explicitly stated rental-car availability. A traveler may fly and rent a car. A rental car alone does not establish how the traveler reaches the destination. Omit unsupported or unknown values.); budget {amount,currency,scope}. Omit unknown fields.' }, sourceQuote: { type: 'string' },
   } } }, plan: withoutDescriptions(planSchema), plan_patch: withoutDescriptions(patchSchema),
   } } };
+PROPOSE_TOOL.input_schema.properties.memory_updates.items.properties.value.description += ' lodging also accepts maxHotelChanges, a nonnegative integer explicitly requested by the traveler.';
 
 const FIELDS = {
   dates: { startDate: 'date', endDate: 'date', durationDays: 'positive', travelMonth: 'month' },
-  lodging: { baseTown: 'string', booked: 'boolean' },
+  lodging: { baseTown: 'string', booked: 'boolean', maxHotelChanges: 'nonnegative' },
   budget: { amount: 'nonnegative', currency: 'string', scope: 'string' },
   mobility: { maxWalkMilesPerSegment: 'positive', maxWalkMinutesPerSegment: 'positive',
     wheelchair: 'boolean', stroller: 'boolean', avoidStairs: 'boolean', requiresFrequentBreaks: 'boolean' },
@@ -150,6 +152,7 @@ function validateSimpleMutation({ proposal, snapshot = {}, message, evidence = [
   // Which stops failed which traveler restriction, and the evidence behind it,
   // so a correction can repair those stops instead of guessing.
   const restrictionFindings = [];
+  const durationFindings = [];
   const reject = code => issues.push(code);
   // Unsupported future TripPlan schemas fail closed before any reinterpretation.
   const priorPlan = snapshot.plan || null;
@@ -190,6 +193,10 @@ function validateSimpleMutation({ proposal, snapshot = {}, message, evidence = [
       // is invalidated at this accepted update boundary, before any new geocoding.
       if (update.value.baseTown) state.lodging = transitionLodging(state.lodging || {}, { place: update.value.baseTown, kindOfChange: 'relocation' });
       if (update.value.booked !== undefined) state.lodging = { ...state.lodging, booked: update.value.booked };
+      if (update.value.maxHotelChanges !== undefined) {
+        if (!Number.isInteger(update.value.maxHotelChanges)) reject('memory_schema_invalid');
+        else state.lodging = { ...state.lodging, maxHotelChanges: update.value.maxHotelChanges };
+      }
     } else if (update.field === 'travelerFacts') {
       state.travelerFacts = [...(Array.isArray(state.travelerFacts) ? state.travelerFacts : []),
         { fact: update.value.fact, sourceQuote: update.sourceQuote }].slice(-100);
@@ -262,7 +269,7 @@ function validateSimpleMutation({ proposal, snapshot = {}, message, evidence = [
   if (plan) {
     if (!isAcceptedCanonicalPlan(plan)) reject('plan_not_accepted');
     plan = Object.fromEntries(Object.entries(plan).filter(([key]) => Object.hasOwn(BASE_ITINERARY_SCHEMA.properties, key) || key === 'parkName'));
-    if (!touched && Number.isInteger(state.dates?.durationDays) && plan.days.length !== state.dates.durationDays) reject('plan_day_count_mismatch');
+    if (Number.isInteger(state.dates?.durationDays) && plan.days.length !== state.dates.durationDays) reject('plan_day_count_mismatch');
     const fresh = evidence.filter(row => usableEvidence(row, now, { authoritative: true }));
     const bundle = { evidence: fresh };
     const operational = indexFactsByPlace({ facts: operationalFactsFromBundle(bundle), bundle });
@@ -341,7 +348,12 @@ function validateSimpleMutation({ proposal, snapshot = {}, message, evidence = [
           reject('official_closure_conflict');
         }
         const maximum = supportedDurationMaximum(value);
-        if (maximum > 0 && stop.duration > maximum) reject('duration_exceeds_source');
+        if (maximum > 0 && stop.duration > maximum) {
+          reject('duration_exceeds_source');
+          durationFindings.push({ dayNumber: day.dayNumber, stopId: stop.id, stopName: value.name,
+            evidenceRef: row.evidenceId, proposedMinutes: stop.duration, maximumMinutes: maximum,
+            sourceDuration: value.duration || null });
+        }
         const result = assessPlaceEligibility(row, fresh, { avoidExposure: constraintState.preferences?.avoidExposure,
           planningState: { mobility: constraintState.mobility, travelers: constraintState.travelers,
             preferences: { avoidExposure: constraintState.preferences?.avoidExposure } } }, stop);
@@ -453,6 +465,13 @@ function validateSimpleMutation({ proposal, snapshot = {}, message, evidence = [
         : edge);
     }
   }
+  if (plan || prior) issues.push(...validateOvernightLimit(plan || prior, state.lodging));
+  if (plan?.narrativeSections?.length) {
+    plan = { ...plan, narrativeSections: normalizeGuidanceLinkLabels(plan.narrativeSections, evidence.filter(row => usableEvidence(row, now)), prior?.narrativeSections || []) };
+  }
+  if (plan) issues.push(...validateGuidanceLinks(plan.narrativeSections || [], evidence.filter(row => usableEvidence(row, now)), prior?.narrativeSections || []));
+  if (!plan && prior?.days?.length && Number.isInteger(state.dates?.durationDays)
+    && state.dates.durationDays !== prior.days.length) reject('plan_day_count_mismatch');
   if (!updates.length && !plan) reject('empty_mutation');
   const uniqueIssues = [...new Set(issues)];
   // Stamp only on a successful accept. Never rewrite itinerary content to
@@ -463,7 +482,7 @@ function validateSimpleMutation({ proposal, snapshot = {}, message, evidence = [
     else plan = stampTripSchemaVersion(plan);
   }
   return { ok: uniqueIssues.length === 0, issues: uniqueIssues, planningState: state, plan, touchedDayNumbers: touched,
-    restrictionFindings, activeRestrictions: validationConstraints };
+    restrictionFindings, durationFindings, activeRestrictions: validationConstraints };
 }
 
 module.exports = { PROPOSE_TOOL, validateSimpleMutation };

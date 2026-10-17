@@ -8,6 +8,7 @@ import DemoChatComposer from '@/components/trailie-demo/DemoChatComposer';
 import TrailieAvatar from '@/components/plan-ai/TrailieAvatar';
 import TrailieResponse from '@/components/trailie-response/TrailieResponse';
 import { toDemoTrailieResponseModel } from '@/lib/trailieResponseModel';
+import DemoTripActions from './DemoTripActions';
 
 function questionPromptLabel(turnIndex) {
   return turnIndex >= 1 ? 'Follow up' : 'Sample question';
@@ -78,6 +79,8 @@ export default function TrailieDemoPlaybackStage({
   const isFollowUpTyping = isTyping && completedTurns.length > 0;
   const isFirstTurnTyping = isTyping && completedTurns.length === 0;
   const latestTripIndex = completedTurns.findLastIndex(turn => (turn.canonicalPlan || turn.plan)?.days?.length);
+  const latestTrip = completedTurns[latestTripIndex];
+  const complete = !isTyping && !activeTurn && completedTurns.length >= (scenario?.turns?.length || 1);
 
   const typingBlock = <div className="public-reading"><DemoChatComposer value={typedQuestion} isTyping={isTyping} /></div>;
   const openFollowupInTrailie = (prompt) => {
@@ -109,7 +112,7 @@ export default function TrailieDemoPlaybackStage({
               <TrailieResponse
                 response={toDemoTrailieResponseModel({ turn })}
                 example
-                showDemoActions={index === latestTripIndex}
+                showDemoActions={false}
                 hideActions
                 artifactAccess="demo"
                 onOpenArtifact={() => { setView('itinerary'); setOpenPlan(turn.canonicalPlan || turn.plan); }}
@@ -149,6 +152,10 @@ export default function TrailieDemoPlaybackStage({
                 />
               ) : null}
             </section>
+          )}
+          {complete && latestTrip && (
+            <DemoTripActions plan={latestTrip.canonicalPlan || latestTrip.plan}
+              onOpen={() => { setView('itinerary'); setOpenPlan(latestTrip.canonicalPlan || latestTrip.plan); }} />
           )}
         </div>
       )}

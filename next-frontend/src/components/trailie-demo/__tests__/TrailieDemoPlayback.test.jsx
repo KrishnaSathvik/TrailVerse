@@ -45,6 +45,19 @@ describe('TrailieDemoPlaybackStage', () => {
     expect(screen.getAllByRole('button', { name: /plan my version/i })).toHaveLength(1);
     expect(screen.getAllByRole('button', { name: 'Explore this sample' })).toHaveLength(1);
     expect(screen.getAllByRole('group', { name: 'When' })).toHaveLength(1);
+    const answers = screen.getAllByLabelText('Assistant message');
+    expect(answers.at(-1).compareDocumentPosition(screen.getByRole('region', { name: 'Make this trip yours' })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByText('Trip updated')).not.toBeInTheDocument();
+  });
+
+  it('waits for every follow-up before offering customization', () => {
+    const scenario = SCENARIOS.find(item => item.id === 'wildlife');
+    const { rerender } = render(<TrailieDemoPlaybackStage scenario={scenario} completedTurns={scenario.turns.slice(0, 1)} showMessagePane />);
+    expect(screen.queryByRole('region', { name: 'Make this trip yours' })).not.toBeInTheDocument();
+    rerender(<TrailieDemoPlaybackStage scenario={scenario} completedTurns={scenario.turns.slice(0, 2)} showMessagePane />);
+    expect(screen.queryByRole('region', { name: 'Make this trip yours' })).not.toBeInTheDocument();
+    rerender(<TrailieDemoPlaybackStage scenario={scenario} completedTurns={scenario.turns} showMessagePane />);
+    expect(screen.getByRole('region', { name: 'Make this trip yours' })).toBeInTheDocument();
   });
 
   it('renders an itinerary card for a turn with a captured plan', () => {
@@ -67,7 +80,7 @@ describe('TrailieDemoPlaybackStage', () => {
 
     const card = screen.getByLabelText('Trip created');
     expect(within(card).getByText('Scenic drive')).toBeInTheDocument();
-    expect(within(card).getByRole('button', { name: 'Explore this sample' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Explore this sample' })).toBeInTheDocument();
     // Chat confirms day purpose; stop details live in the workspace.
     expect(within(card).queryByText('Riverside Walk')).not.toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: 'Fall' })).toBeEnabled();
@@ -193,7 +206,7 @@ describe('TrailieDemoPlaybackStage', () => {
       />
     );
 
-    expect(screen.getByText('Trailie')).toBeInTheDocument();
+    expect(within(screen.getByLabelText('Assistant message')).getByText('Trailie')).toBeInTheDocument();
     expect(screen.getByText('Sample conversation')).toBeInTheDocument();
     expect(screen.queryByText('Example using live park data · Conditions change')).not.toBeInTheDocument();
     expect(screen.queryByText('Checked live info')).not.toBeInTheDocument();

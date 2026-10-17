@@ -1,0 +1,436 @@
+{
+  "tripSchemaVersion": 1,
+  "parkName": "Zion National Park and Bryce Canyon National Park",
+  "parkCode": "zion",
+  "intro": "Five days including Las Vegas arrival and return-flight days, with two nights in Springdale followed by two nights in Bryce Canyon City: exactly one hotel change. Assumes access to a car, an arrival early enough to reach Springdale comfortably, and a late-afternoon or evening flight home. Flight times are not yet known; an early return flight would require reconsidering this layout. Easy, adjustable walks take priority over steep canyon hikes. Driving durations have not been confirmed; keep generous transfer windows.",
+  "destinations": [
+    {
+      "name": "Zion National Park",
+      "type": "nps_park",
+      "parkCode": "zion"
+    },
+    {
+      "name": "Bryce Canyon National Park",
+      "type": "nps_park",
+      "parkCode": "brca"
+    }
+  ],
+  "tripGuidance": [
+    {
+      "text": "During the shuttle season, private vehicles aren’t allowed on Zion Canyon Scenic Drive. Check the current shuttle schedule once your travel dates are set.",
+      "source": "https://www.nps.gov/zion/planyourvisit/zion-canyon-shuttle-system.htm",
+      "applicability": "date_dependent"
+    }
+  ],
+  "narrativeSections": [
+    {
+      "heading": "Things to know",
+      "markdown": "**Season and conditions:** Travel dates are not yet set. Confirm road and trail conditions before departure; Bryce’s elevation brings colder weather and potential snow or ice, and summer heat can affect Zion walks. If walking conditions are poor, shorten outings to safe viewpoints or rest instead. Museum visits and steep below-rim hikes are not needed for this plan.\n\n**Zion transport:** When the canyon shuttles operate, private vehicles cannot use Zion Canyon Scenic Drive. The shuttle requires no reservation or ticket; check the [official shuttle schedule](https://www.nps.gov/zion/planyourvisit/zion-canyon-shuttle-system.htm) for your dates. The park describes about 45 minutes each way between the visitor center and Temple of Sinawava, before queues.\n\n**Bryce transport:** For a standard passenger car, the seasonal shuttle is optional but can simplify parking. Check the [official Bryce shuttle guidance](https://www.nps.gov/brca/planyourvisit/shuttle.htm) for your dates.",
+      "placement": "after_plan"
+    }
+  ],
+  "days": [
+    {
+      "id": "day-1",
+      "dayNumber": 1,
+      "label": "Arrive and settle into Springdale",
+      "overnightLocation": "Springdale",
+      "dayStructure": {
+        "type": "arrival",
+        "summary": "An arrival day devoted to reaching the Zion base without a scheduled hike.",
+        "startPeriod": "midday",
+        "endPeriod": "evening",
+        "blocks": [
+          {
+            "kind": "arrival",
+            "label": "Arrive in Las Vegas",
+            "note": "Collect bags and your vehicle; this day’s timing depends on your flight.",
+            "periods": [
+              "midday"
+            ],
+            "stopIds": []
+          },
+          {
+            "kind": "transfer",
+            "label": "Las Vegas to Springdale",
+            "note": "Allow a generous afternoon for the drive and a food stop; Utah is one hour ahead of Nevada.",
+            "periods": [
+              "afternoon"
+            ],
+            "stopIds": []
+          },
+          {
+            "kind": "downtime",
+            "label": "Check in and unwind",
+            "note": "Have dinner and settle in for two nights at the same hotel.",
+            "periods": [
+              "evening"
+            ],
+            "stopIds": []
+          }
+        ]
+      },
+      "stops": [],
+      "travelEdges": []
+    },
+    {
+      "id": "day-2",
+      "dayNumber": 2,
+      "label": "Zion canyon and Riverside Walk",
+      "overnightLocation": "Springdale",
+      "dayStructure": {
+        "type": "sightseeing",
+        "summary": "One signature Zion canyon outing with time for transport and recovery rather than multiple hikes.",
+        "startPeriod": "morning",
+        "endPeriod": "evening",
+        "blocks": [
+          {
+            "kind": "transfer",
+            "label": "Travel into Zion Canyon",
+            "note": "Allow time for the journey to Temple of Sinawava and possible shuttle queues.",
+            "periods": [
+              "morning"
+            ],
+            "stopIds": []
+          },
+          {
+            "kind": "outing",
+            "label": "Walk beside the river beneath canyon walls",
+            "note": "Make this the day’s main walk and adjust the turnaround to your energy.",
+            "periods": [
+              "morning",
+              "midday"
+            ],
+            "stopIds": [
+              "riverside"
+            ]
+          },
+          {
+            "kind": "transfer",
+            "label": "Return from the canyon",
+            "note": "Leave ample time to return to Springdale rather than relying on the last transport of the day.",
+            "periods": [
+              "midday"
+            ],
+            "stopIds": []
+          },
+          {
+            "kind": "meal",
+            "label": "Lunch break",
+            "note": "Have a relaxed lunch after the outing or carry food if your canyon visit runs longer.",
+            "periods": [
+              "midday"
+            ],
+            "stopIds": []
+          },
+          {
+            "kind": "downtime",
+            "label": "Rest in Springdale",
+            "note": "Keep the afternoon free for recovery, followed by dinner and a second night without packing.",
+            "periods": [
+              "afternoon",
+              "evening"
+            ],
+            "stopIds": []
+          }
+        ]
+      },
+      "stops": [
+        {
+          "id": "riverside",
+          "order": 1,
+          "name": "Riverside Walk",
+          "type": "trail",
+          "startTime": "",
+          "timeWindow": "Morning",
+          "duration": 90,
+          "note": "Up to about 2 miles round trip on concrete beside the Virgin River. Not uniformly flat: some sections are steep or uneven, and sand can make paving slippery. The first half-mile is mostly flat; turn back whenever comfortable. Stay on the dry trail rather than continuing into the river.",
+          "difficulty": "easy",
+          "canonicalPlaceId": "thingstodo:823a078c-d324-4648-b910-f15507e67244",
+          "canonicalPlaceName": "Riverside Walk",
+          "location": {
+            "lat": 37.2852131123,
+            "lon": -112.947693774,
+            "source": "resolved_metadata",
+            "authority": "official_owner",
+            "status": "resolved",
+            "sourceRef": "public-evidence-1",
+            "sourceEntity": "thingstodo:823a078c-d324-4648-b910-f15507e67244"
+          },
+          "sourceReferences": [
+            {
+              "evidenceId": "public-evidence-1",
+              "url": "https://www.nps.gov/thingstodo/hike-riverside-walk.htm",
+              "observedAt": "2026-10-17T05:05:12.717Z"
+            }
+          ]
+        }
+      ],
+      "travelEdges": []
+    },
+    {
+      "id": "day-3",
+      "dayNumber": 3,
+      "label": "Pa’rus Trail and the move to Bryce",
+      "overnightLocation": "Bryce Canyon City",
+      "dayStructure": {
+        "type": "transfer",
+        "summary": "A final easy Zion walk before the trip’s only hotel change.",
+        "startPeriod": "morning",
+        "endPeriod": "evening",
+        "blocks": [
+          {
+            "kind": "outing",
+            "label": "A short riverside walk on Pa’rus",
+            "note": "Enjoy a different, more open side of Zion before leaving the area.",
+            "periods": [
+              "morning"
+            ],
+            "stopIds": [
+              "parus"
+            ]
+          },
+          {
+            "kind": "meal",
+            "label": "Lunch and check-out logistics",
+            "note": "Arrange luggage and check-out around the walk so you are ready to leave after lunch.",
+            "periods": [
+              "midday"
+            ],
+            "stopIds": []
+          },
+          {
+            "kind": "transfer",
+            "label": "Springdale to Bryce Canyon City",
+            "note": "Reserve the afternoon for the drive, breaks and check-in; confirm road conditions for your travel dates.",
+            "periods": [
+              "afternoon"
+            ],
+            "stopIds": []
+          },
+          {
+            "kind": "downtime",
+            "label": "Settle into the Bryce base",
+            "note": "Have dinner and rest; stay at this same hotel for the final two nights.",
+            "periods": [
+              "evening"
+            ],
+            "stopIds": []
+          }
+        ]
+      },
+      "stops": [
+        {
+          "id": "parus",
+          "order": 1,
+          "name": "Pa'rus Trail",
+          "type": "trail",
+          "startTime": "",
+          "timeWindow": "Morning",
+          "duration": 60,
+          "note": "Take a short out-and-back rather than committing to the entire trail. The paved river route has gentle grades overall but some steeper sections and shared bicycle traffic; choose your own turnaround.",
+          "difficulty": "easy",
+          "canonicalPlaceId": "thingstodo:6fd175ef-a82f-47aa-b055-8833ea1c1162",
+          "canonicalPlaceName": "Pa'rus Trail",
+          "location": {
+            "lat": 37.2010471279,
+            "lon": -112.986788497,
+            "source": "resolved_metadata",
+            "authority": "official_owner",
+            "status": "resolved",
+            "sourceRef": "public-evidence-2",
+            "sourceEntity": "thingstodo:6fd175ef-a82f-47aa-b055-8833ea1c1162"
+          },
+          "sourceReferences": [
+            {
+              "evidenceId": "public-evidence-2",
+              "url": "https://www.nps.gov/thingstodo/hike-pa-rus-trail.htm",
+              "observedAt": "2026-10-17T05:05:12.717Z"
+            }
+          ]
+        }
+      ],
+      "travelEdges": []
+    },
+    {
+      "id": "day-4",
+      "dayNumber": 4,
+      "label": "Bryce hoodoos from the rim",
+      "overnightLocation": "Bryce Canyon City",
+      "dayStructure": {
+        "type": "sightseeing",
+        "summary": "An unhurried rim-focused Bryce day that avoids strenuous climbs back out of the amphitheater.",
+        "startPeriod": "morning",
+        "endPeriod": "evening",
+        "blocks": [
+          {
+            "kind": "outing",
+            "label": "Take in the hoodoos at Sunset Point",
+            "note": "Start with Bryce’s defining rock formations while you are fresh.",
+            "periods": [
+              "morning"
+            ],
+            "stopIds": [
+              "sunset"
+            ]
+          },
+          {
+            "kind": "outing",
+            "label": "Compare the view at Sunrise Point",
+            "note": "Allow time between overlooks rather than rushing through a checklist.",
+            "periods": [
+              "morning",
+              "midday"
+            ],
+            "stopIds": [
+              "sunrise"
+            ]
+          },
+          {
+            "kind": "meal",
+            "label": "Lunch near your base",
+            "note": "Return for a proper break after the morning views.",
+            "periods": [
+              "midday"
+            ],
+            "stopIds": []
+          },
+          {
+            "kind": "downtime",
+            "label": "A deliberately open afternoon",
+            "note": "Rest at the hotel and enjoy the contrast with Zion; there is no need to add a strenuous trail to fill the day.",
+            "periods": [
+              "afternoon"
+            ],
+            "stopIds": []
+          },
+          {
+            "kind": "meal",
+            "label": "Dinner and prepare for the return drive",
+            "note": "Pack tonight so departure tomorrow is straightforward.",
+            "periods": [
+              "evening"
+            ],
+            "stopIds": []
+          }
+        ]
+      },
+      "stops": [
+        {
+          "id": "sunset",
+          "order": 1,
+          "name": "Sunset Point",
+          "type": "viewpoint",
+          "startTime": "",
+          "timeWindow": "Morning",
+          "duration": 45,
+          "note": "Enjoy the colorful hoodoo panorama from the rim. Keep this a viewpoint visit rather than starting a steep descent below the rim.",
+          "difficulty": "easy",
+          "canonicalPlaceId": "place:7ec48803-29af-461b-91d5-cde636676f03",
+          "canonicalPlaceName": "Sunset Point",
+          "location": {
+            "lat": 37.6225682448,
+            "lon": -112.165987692,
+            "source": "resolved_metadata",
+            "authority": "official_owner",
+            "status": "resolved",
+            "sourceRef": "public-evidence-3",
+            "sourceEntity": "place:7ec48803-29af-461b-91d5-cde636676f03"
+          },
+          "sourceReferences": [
+            {
+              "evidenceId": "public-evidence-3",
+              "url": "https://www.nps.gov/places/000/sunset-point.htm",
+              "observedAt": "2026-10-17T05:05:13.521Z"
+            }
+          ]
+        },
+        {
+          "id": "sunrise",
+          "order": 2,
+          "name": "Sunrise Point",
+          "type": "viewpoint",
+          "startTime": "",
+          "timeWindow": "Late morning",
+          "duration": 45,
+          "note": "See the amphitheater from a contrasting angle; the name does not mean you need a dawn start. Visit as a separate overlook outing, choosing transport appropriate to the day’s conditions.",
+          "difficulty": "easy",
+          "canonicalPlaceId": "place:1fee5fe0-ea61-46a0-8639-08b518112acf",
+          "canonicalPlaceName": "Sunrise Point",
+          "location": {
+            "lat": 37.6282153854,
+            "lon": -112.162963526,
+            "source": "resolved_metadata",
+            "authority": "official_owner",
+            "status": "resolved",
+            "sourceRef": "public-evidence-4",
+            "sourceEntity": "place:1fee5fe0-ea61-46a0-8639-08b518112acf"
+          },
+          "sourceReferences": [
+            {
+              "evidenceId": "public-evidence-4",
+              "url": "https://www.nps.gov/places/sunrise-point.htm",
+              "observedAt": "2026-10-17T05:05:13.521Z"
+            }
+          ]
+        }
+      ],
+      "travelEdges": [
+        {
+          "sourceStopId": "sunset",
+          "targetStopId": "sunrise",
+          "relationship": "transfer",
+          "modeIntent": "drive",
+          "travelMode": "driving",
+          "modeAuthority": "practical_default",
+          "status": "verified",
+          "durationSeconds": 293,
+          "distanceMeters": 1519,
+          "source": {
+            "evidenceId": "public-evidence-5",
+            "provider": "google_maps"
+          },
+          "operationalAccess": {
+            "status": "unknown",
+            "sources": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "day-5",
+      "dayNumber": 5,
+      "label": "Return to Las Vegas and fly home",
+      "dayStructure": {
+        "type": "departure",
+        "summary": "A protected return-travel day with no sightseeing commitments before the flight.",
+        "startPeriod": "morning",
+        "endPeriod": "evening",
+        "blocks": [
+          {
+            "kind": "transfer",
+            "label": "Bryce Canyon City to Las Vegas",
+            "note": "Leave after breakfast and protect a generous half-day driving window including breaks and traffic contingency. Set the actual departure time once the flight and road journey are confirmed.",
+            "periods": [
+              "morning",
+              "afternoon"
+            ],
+            "stopIds": []
+          },
+          {
+            "kind": "departure",
+            "label": "Vehicle return and flight home",
+            "note": "Allow separate time for fuel, vehicle return, airport transfer and the airline’s recommended check-in buffer. This layout assumes a late-afternoon or evening flight.",
+            "periods": [
+              "afternoon",
+              "evening"
+            ],
+            "stopIds": []
+          }
+        ]
+      },
+      "stops": [],
+      "travelEdges": []
+    }
+  ]
+}

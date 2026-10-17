@@ -7,9 +7,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SOURCE = fs.readFileSync(path.resolve(__dirname, '../PlanAIShell.jsx'), 'utf8');
 
 describe('PlanAIShell — Phase 10B chrome', () => {
-  it('keeps the dvh shell and a single nested main scroller contract', () => {
-    expect(SOURCE).toMatch(/plan-ai-shell h-dvh flex flex-col overflow-hidden/);
-    expect(SOURCE).toMatch(/flex flex-1 min-h-0 flex-col overflow-hidden/);
+  it('lets the page scroll instead of nesting a fixed-height scroller', () => {
+    expect(SOURCE).toMatch(/plan-ai-shell min-h-dvh flex flex-col"/);
+    expect(SOURCE).not.toMatch(/h-dvh flex flex-col overflow-hidden/);
+    expect(SOURCE).not.toMatch(/overflow-hidden/);
   });
 
   it('tightens mobile subhead padding without removing the active-trip heading', () => {

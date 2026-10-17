@@ -235,3 +235,14 @@ describe('WP6 direct official-page adapter', () => {
       .supports(requirement('roads', { entity, webScope: { sourceUrl: url } }))).toBe(false);
   });
 });
+
+test('business discovery keeps the returned website and rejects a mismatched destination', async () => {
+  const provider = createSerperEvidenceProvider({ serperClient: { searchPlaces: async () => ({ places: [
+    { title: 'Yosemite Cafe', website: 'https://cafe.example/reservations', link: 'https://maps.example/listing' },
+    { title: 'Acadia National Park Cafe', website: 'https://other.example/book' },
+  ] }) }, stageRaw: async () => ({}), now: () => NOW });
+  const request = provider.buildRequest(requirement('local_business'));
+  const fetched = await provider.fetch(request); const rows = provider.normalize(fetched.raw, request, fetched.metadata);
+  expect(rows).toHaveLength(1);
+  expect(rows[0].claim.normalizedValue).toMatchObject({ listingUrl: 'https://cafe.example/reservations', reservationUrl: null, currentAvailability: null });
+});

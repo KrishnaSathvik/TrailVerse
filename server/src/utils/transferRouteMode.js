@@ -16,6 +16,7 @@ function transferRouteMode(transport = {}, { requiredMode, requestedMode } = {})
     const reasonMode = { walking_only: 'walking', bike_only: 'bicycling', shuttle_only: 'shuttle' }[transport.drivingPolicyReason];
     return { mode: reasonMode || (alternatives.has(requestedMode) ? requestedMode : null), authority: 'traveler' };
   }
+  if (alternatives.has(aliases[requestedMode] || requestedMode)) return { mode: aliases[requestedMode] || requestedMode, authority: 'practical_default' };
   if (transport.rentalCar === true || explicit === 'driving') return { mode: 'driving', authority: 'traveler' };
   return { mode: alternatives.has(requestedMode) ? requestedMode : 'driving', authority: 'practical_default' };
 }

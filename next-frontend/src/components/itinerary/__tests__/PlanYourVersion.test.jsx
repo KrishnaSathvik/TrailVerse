@@ -10,7 +10,7 @@ it('EMPTY: no preview, Plan my version disabled, Explore this sample still works
   const explore = vi.fn();
   render(<PlanYourVersion {...props} onExplore={explore} />);
   expect(screen.getByRole('region', { name: 'Make this trip yours' })).toHaveAttribute('data-version-state', 'empty');
-  expect(screen.getByText('Change anything about this trip.')).toBeInTheDocument();
+  expect(screen.getByText('Pick your season, who’s going, and your travel style to start planning with Trailie.')).toBeInTheDocument();
   expect(screen.getByText('Choose at least one preference to start your version.')).toBeInTheDocument();
   expect(screen.queryByText('I’ll ask Trailie')).not.toBeInTheDocument();
   expect(screen.queryByRole('link', { name: /Plan my version/ })).not.toBeInTheDocument();
