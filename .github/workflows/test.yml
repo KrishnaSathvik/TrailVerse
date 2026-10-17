@@ -81,6 +81,11 @@ jobs:
         cd server
         npm ci
     
+    # Backend subprocess qualification tests execute the frontend vite-node runner.
+    - name: Install subprocess test dependencies
+      working-directory: next-frontend
+      run: npm ci
+
     - name: Run server tests
       run: |
         cd server

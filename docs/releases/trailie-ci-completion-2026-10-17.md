@@ -27,6 +27,10 @@ Two failures were stale assertions: About uses a typographic apostrophe, and Tes
 
 Local browser verification uses separate ports and installed Chrome. This worktree requires webpack because Turbopack rejects its shared node_modules symlink; hosted CI has real dependency directories. Latest hosted E2E/SSR results must be verified before release.
 
-## Independent review
+## Release verification update
 
-GitHub lists only the PR author as a collaborator. Bot comments are not approving reviews. An eligible independent reviewer is needed after the final changes; no branch protection is bypassed and no deployment has been initiated.
+Full local backend verification passed: 551 suites and 7,670 tests, with zero live provider calls. The hosted backend job lacked the frontend dependencies required by two subprocess qualification suites; the workflow now installs those locked dependencies before testing. Hosted frontend, integration, build, SSR and One-Brain checks passed at f2bb8d50.
+
+The latest audit reverted only the previously documented Jest range metadata to its original values. Production findings remain zero. The owner explicitly instructed that these documented development-only findings must not block release; the fail-closed exception policy remains unchanged.
+
+The owner removed required reviews/checks from master protection; persisted GitHub settings and an empty ruleset list confirm this. Normal merges are permitted without bypass. MCP still reports autoDeploy=yes, trigger=commit, branch=master. Merge is paused pending the owner's disabling automatic MCP deployment to preserve the requested manual backend/MCP order. No Render settings or deployments have been changed.
