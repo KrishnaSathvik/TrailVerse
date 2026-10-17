@@ -151,6 +151,8 @@ jobs:
         CI: true
         NODE_ENV: test
         MONGODB_URI: mongodb://mongodb:27017/test-npe-usa
+        # Disposable Actions service hostname inside the Playwright container only.
+        MONGODB_DANGEROUSLY_ALLOW_REMOTE_HOSTS: mongodb
         JWT_SECRET: test_jwt_secret
         CLIENT_URL: http://localhost:3000
         PORT: 5001
@@ -272,7 +274,7 @@ jobs:
         cache: 'npm'
     
     - name: Verify audit collector behavior (offline)
-      run: node --test scripts/ci/collect-security-audits.test.mjs
+      run: node --test scripts/ci/collect-security-audits.test.mjs scripts/ci/development-exception.test.mjs scripts/ci/wait-for-vercel-preview.test.mjs
 
     - name: Collect all audits and enforce existing gate
       run: node scripts/ci/collect-security-audits.mjs

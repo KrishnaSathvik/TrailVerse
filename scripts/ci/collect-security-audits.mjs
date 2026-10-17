@@ -1,9 +1,10 @@
-// Collect every scope before failing. No advisory allowlist or exception logic.
+// Collect every scope before deciding. Raw results are never rewritten.
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { evaluateException } from './development-exception.mjs';
 
 export function assess(result, production) {
   if (result.error || result.signal || ![0, 1].includes(result.status)) return 'audit execution failed';
@@ -29,9 +30,10 @@ export function assess(result, production) {
   return null;
 }
 
-export function collect({ root, output, run = spawnSync }) {
+export function collect({ root, output, run = spawnSync, now }) {
   mkdirSync(output, { recursive: true });
   const records = [];
+  const reports = new Map();
   for (const scope of ['.', 'next-frontend', 'server']) {
     for (const production of [false, true]) {
       const name = `${scope === '.' ? 'root' : scope}-${production ? 'production' : 'full'}`;
@@ -49,16 +51,28 @@ export function collect({ root, output, run = spawnSync }) {
       }
       writeFileSync(resolve(output, `${name}.json`), result.stdout || '');
       writeFileSync(resolve(output, `${name}.stderr.txt`), result.stderr || '');
+      const rawFailure = assess(result, production);
+      try { reports.set(`${scope}:${production}`, JSON.parse(result.stdout)); } catch { /* Retain invalid raw output. */ }
       records.push({ scope, production, command: ['npm', ...args], lockHash,
         exitCode: result.status ?? null, signal: result.signal ?? null,
         executionError: result.error ? String(result.error.message) : null,
-        failure: assess(result, production) });
+        rawFailure, failure: rawFailure });
+    }
+  }
+  const exception = evaluateException({ root, records, reports, now });
+  if (exception.status === 'accepted') {
+    for (const record of records) {
+      if (!record.production && exception.waived.includes(record.scope)) {
+        record.failure = null;
+        record.exceptionId = exception.id;
+      }
     }
   }
   const summary = { revision: process.env.GITHUB_SHA || null, collectedAt: new Date().toISOString(),
-    policy: 'Full trees: moderate threshold; production trees: zero findings; no exceptions.', records };
+    policy: 'Full trees: moderate threshold except explicitly approved frozen scope; production: zero findings.',
+    exception, records };
   writeFileSync(resolve(output, 'summary.json'), JSON.stringify(summary, null, 2) + '\n');
-  return records.every(record => record.failure === null);
+  return exception.status !== 'rejected' && records.every(record => record.failure === null);
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

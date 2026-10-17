@@ -1,5 +1,5 @@
 # Post-deploy SSR regression: first-response HTML vs route-tier expectations.
-# PRs audit the Vercel preview URL when available; main uses production.
+# PRs require a successful preview for their exact head commit; main uses production.
 
 name: SSR route audit
 
@@ -49,12 +49,11 @@ jobs:
 
       - name: Wait for Vercel preview (pull requests)
         if: github.event_name == 'pull_request'
-        uses: patrickedigital/wait-for-vercel-preview@v1.0.9
         id: vercel-preview
-        continue-on-error: true
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          max_timeout: 600
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PREVIEW_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/ci/wait-for-vercel-preview.mjs
 
       - name: Resolve BASE_URL
         id: base
@@ -66,7 +65,8 @@ jobs:
         run: |
           if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ -n "$DISPATCH_URL" ]; then
             URL="$DISPATCH_URL"
-          elif [ "$EVENT_NAME" = "pull_request" ] && [ -n "$VERCEL_URL" ]; then
+          elif [ "$EVENT_NAME" = "pull_request" ]; then
+            [ -n "$VERCEL_URL" ] || { echo "Missing exact-commit preview" >&2; exit 1; }
             URL="$VERCEL_URL"
           elif [ -n "$VAR_URL" ]; then
             URL="$VAR_URL"
