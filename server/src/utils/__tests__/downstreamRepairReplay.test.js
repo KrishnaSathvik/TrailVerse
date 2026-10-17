@@ -33,5 +33,6 @@ test('exact captured identity and final coverage snapshots replay without provid
   capturedCatalogVerified:offered.length,compactMultiScopeContextTokens:compact.telemetry.repairPromptTokens,compactCandidateCardTokens:compact.telemetry.candidateCardTokens,completePostIdentityFailures:projectPlan(merged.plan,{bundle}).days.filter(d=>d.codes.length),coverageAffectedDays:after.actionability.affectedDays,
   finalTerminalReason:last.reasonCodes[0],originalSameFamilyDispatchCount:dispatches.filter(d=>d.purpose==='insufficient_day_coverage_repair').length,
   repairBudget:require('../focusedRepairBudget').MAX_FOCUSED_REPAIRS,providerCalls:0};
+ fs.mkdirSync(path.resolve(dir,'../trailie-downstream-repair-offline-2026-09-24'),{recursive:true});
  fs.writeFileSync(path.resolve(dir,'../trailie-downstream-repair-offline-2026-09-24/replay.json'),JSON.stringify(report,null,2)+'\n');
 });

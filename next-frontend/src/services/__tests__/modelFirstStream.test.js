@@ -13,7 +13,7 @@ const response = events => {
 };
 
 test.each(['done', 'response_finalized'])('model-first %s preserves canonical, memory and persistence fields', async type => {
-  const data = JSON.parse(fs.readFileSync(path.resolve('../artifacts/trailie-model-first-cutover-2026-09-30/contract-fixture.json')));
+  const data = JSON.parse(fs.readFileSync(path.resolve('../mcp-server/tests/fixtures/model-first-contract.json')));
   const onDone = vi.fn();
   await consumeAiSseStream(response([{ type, ...data }]), { onDone });
   expect(onDone).toHaveBeenCalledWith(expect.objectContaining(data));

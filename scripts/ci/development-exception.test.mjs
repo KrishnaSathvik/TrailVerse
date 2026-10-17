@@ -181,3 +181,10 @@ caseTest('collector rejects malformed scan after approval and still retains ever
   assert.equal(summary.records.find(r => r.scope === 'server' && !r.production).failure,
     'moderate-or-higher findings');
 });
+
+caseTest('actual approved record validates against retained reports at its approval time', c => {
+  if (proposal.status !== 'approved') return;
+  const result = evaluateException({ root: repository, records: c.records, reports: c.reports,
+    now: Date.parse(proposal.approval.approvedAt) + 1 });
+  assert.equal(result.status, 'accepted', result.reason);
+});

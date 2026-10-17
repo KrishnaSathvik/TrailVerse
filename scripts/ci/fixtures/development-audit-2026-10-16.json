@@ -827,7 +827,7 @@
               "jest-cli"
             ],
             "effects": [],
-            "range": "24.2.0-alpha.0 - 30.2.0",
+            "range": "23.5.0 - 30.2.0",
             "nodes": [
               "node_modules/jest"
             ],
@@ -1021,7 +1021,7 @@
             "effects": [
               "@jest/core"
             ],
-            "range": "23.3.0 - 30.2.0",
+            "range": "27.0.0-next.0 - 30.2.0",
             "nodes": [
               "node_modules/jest-resolve-dependencies"
             ],

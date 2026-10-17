@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
@@ -78,9 +78,20 @@ function IntentFaqAccordion({ items }) {
   );
 }
 
-export default function IntentLandingClient({ landing, canonicalUrl, children }) {
+export default function IntentLandingClient(props) {
+  return (
+    <Suspense fallback={<IntentLandingContent {...props} returnFrom={null} />}>
+      <IntentLandingWithNavigation {...props} />
+    </Suspense>
+  );
+}
+
+function IntentLandingWithNavigation(props) {
   const searchParams = useSearchParams();
-  const returnFrom = sanitizeFromPath(searchParams.get('from'));
+  return <IntentLandingContent {...props} returnFrom={sanitizeFromPath(searchParams.get('from'))} />;
+}
+
+function IntentLandingContent({ landing, canonicalUrl, children, returnFrom }) {
   const relatedLandings = (landing.relatedLinks ?? [])
     .map((link) => getIntentLandingByPath(link.href))
     .filter(Boolean);

@@ -17,7 +17,7 @@ async function openPlanAi(page) {
 
 test.describe('Phase 8D.1 anonymous browser isolation (no model dispatch)', () => {
   test('reload and a new page in one browser context preserve one guest bearer', async ({ browser }) => {
-    const context = await browser.newContext(SHARED_CONTEXT_OPTIONS);
+    const context = await browser.newContext({ ...SHARED_CONTEXT_OPTIONS, baseURL: test.info().project.use.baseURL });
     const page = await context.newPage();
     await openPlanAi(page);
     const initialId = (await storedGuest(page)).anonymousId;
@@ -32,8 +32,8 @@ test.describe('Phase 8D.1 anonymous browser isolation (no model dispatch)', () =
   });
 
   test('two clean contexts with identical browser headers receive distinct bearers', async ({ browser }) => {
-    const contextA = await browser.newContext(SHARED_CONTEXT_OPTIONS);
-    const contextB = await browser.newContext(SHARED_CONTEXT_OPTIONS);
+    const contextA = await browser.newContext({ ...SHARED_CONTEXT_OPTIONS, baseURL: test.info().project.use.baseURL });
+    const contextB = await browser.newContext({ ...SHARED_CONTEXT_OPTIONS, baseURL: test.info().project.use.baseURL });
     const pageA = await contextA.newPage();
     const pageB = await contextB.newPage();
 
@@ -49,7 +49,7 @@ test.describe('Phase 8D.1 anonymous browser isolation (no model dispatch)', () =
   });
 
   test('a legacy browser rotates once and drops local conversation authority', async ({ browser }) => {
-    const context = await browser.newContext(SHARED_CONTEXT_OPTIONS);
+    const context = await browser.newContext({ ...SHARED_CONTEXT_OPTIONS, baseURL: test.info().project.use.baseURL });
     await context.addInitScript(() => {
       if (localStorage.getItem('phase8d_legacy_seeded') === '1') return;
       localStorage.setItem('phase8d_legacy_seeded', '1');
@@ -87,7 +87,7 @@ test.describe('Phase 8D.1 anonymous browser isolation (no model dispatch)', () =
   });
 
   test('the first AI request already carries the client-minted bearer', async ({ browser }) => {
-    const context = await browser.newContext(SHARED_CONTEXT_OPTIONS);
+    const context = await browser.newContext({ ...SHARED_CONTEXT_OPTIONS, baseURL: test.info().project.use.baseURL });
     const page = await context.newPage();
     let submittedBody = null;
     let chatRequests = 0;

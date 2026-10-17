@@ -406,7 +406,7 @@ describe('final canonical itinerary contract', () => {
 
 it('maps the exact saved backend v2 fixture without a second artifact', async () => {
   const {readFileSync} = await import('node:fs');
-  const fixture=JSON.parse(readFileSync((await import('node:path')).resolve(process.cwd(),'../artifacts/trailie-final-merge-gpt61-2026-09-30/contract-fixture.json'),'utf8'));
+  const fixture=JSON.parse(readFileSync((await import('node:path')).resolve(process.cwd(),'../mcp-server/tests/fixtures/model-first-contract.json'),'utf8'));
   const before=JSON.stringify(fixture.canonicalPlan);
   const map=buildTripMapModel(fixture.canonicalPlan);
   expect(map.mappedCount).toBe(2);

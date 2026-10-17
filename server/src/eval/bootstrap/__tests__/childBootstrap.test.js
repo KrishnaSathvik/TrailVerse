@@ -19,7 +19,7 @@ const JEST_TIMEOUT_MS = 180000;
 /** One sweep shared by the assertions that only read its results. */
 let sweep;
 beforeAll(async () => {
-  sweep = await runChildBootstrap({ task: 'adapters', timeoutMs: CHILD_TIMEOUT_MS });
+  sweep = await runChildBootstrap({ task: 'adapters', timeoutMs: CHILD_TIMEOUT_MS, env: { MONGODB_URI: 'mongodb://127.0.0.1:27019/unused-test', OPENAI_API_KEY: 'offline-fixture-openai', NPS_API_KEY: 'offline-fixture-nps', ANTHROPIC_API_KEY: 'offline-fixture-anthropic' } });
 }, JEST_TIMEOUT_MS);
 
 const stepOrder = (payload) => payload.steps.map((s) => s.step);

@@ -116,7 +116,7 @@ describe('WeatherWidget', () => {
     render(<WeatherWidget parkCode="acad" latitude={40.7128} longitude={-74.0060} />);
 
     await waitFor(() => {
-      expect(screen.getByText('Mon')).toBeInTheDocument();
+      expect(screen.getByText(new Date(mockForecastData.list[0].dt * 1000).toLocaleDateString('en-US', { weekday: 'short' }))).toBeInTheDocument();
       expect(screen.getByText((_, element) => element?.textContent === '82°F')).toBeInTheDocument();
       expect(screen.getByText((_, element) => element?.textContent === '68°F')).toBeInTheDocument();
     });

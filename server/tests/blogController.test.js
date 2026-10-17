@@ -1,6 +1,11 @@
 const request = require('supertest');
 const mongoose = require('mongoose');
-const app = require('../src/app');
+jest.mock('../src/services/resendEmailService', () => ({ sendNewBlogNotification: jest.fn().mockResolvedValue({}) }));
+jest.mock('../src/services/schedulerService', () => ({ getScheduledPostsInfo: jest.fn().mockResolvedValue([]) }));
+const app = require('express')();
+app.use(require('express').json());
+app.use('/api/blogs', require('../src/routes/blogs'));
+app.use(require('../src/middleware/errorHandler'));
 const BlogPost = require('../src/models/BlogPost');
 const User = require('../src/models/User');
 
@@ -9,12 +14,8 @@ describe('Blog Controller', () => {
   let testUser;
   let testPost;
 
-  beforeAll(async () => {
-    // Connect to test database
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/trailverse-test');
-  });
-
   beforeEach(async () => {
+    require('../src/middleware/cache').clearCache();
     // Clean up database
     await BlogPost.deleteMany({});
     await User.deleteMany({});
@@ -27,15 +28,7 @@ describe('Blog Controller', () => {
       role: 'admin'
     });
 
-    // Create auth token
-    const loginResponse = await request(app)
-      .post('/api/auth/login')
-      .send({
-        email: 'test@example.com',
-        password: 'password123'
-      });
-    
-    authToken = loginResponse.body.token;
+    authToken = require('jsonwebtoken').sign({ id: testUser._id }, process.env.JWT_SECRET);
 
     // Create test blog post
     testPost = await BlogPost.create({
@@ -44,14 +37,10 @@ describe('Blog Controller', () => {
       content: 'This is test content',
       excerpt: 'Test excerpt',
       author: testUser._id,
-      category: 'Travel',
+      category: 'trip-planning',
       tags: ['hiking', 'adventure'],
       status: 'published'
     });
-  });
-
-  afterAll(async () => {
-    await mongoose.connection.close();
   });
 
   describe('GET /api/blogs', () => {
@@ -67,7 +56,7 @@ describe('Blog Controller', () => {
 
     it('should filter by category', async () => {
       const response = await request(app)
-        .get('/api/blogs?category=Travel')
+        .get('/api/blogs?category=trip-planning')
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -119,7 +108,7 @@ describe('Blog Controller', () => {
         title: 'New Blog Post',
         content: 'New content',
         excerpt: 'New excerpt',
-        category: 'Adventure',
+        category: 'national-parks',
         tags: ['camping']
       };
 
@@ -140,7 +129,7 @@ describe('Blog Controller', () => {
           title: 'New Post',
           content: 'Content',
           excerpt: 'Excerpt',
-          category: 'Travel'
+          category: 'trip-planning'
         })
         .expect(401);
 

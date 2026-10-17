@@ -35,7 +35,7 @@
       ]
     },
     "server": {
-      "findingsSha256": "dd5a5a69494123bd30896bebbe863e1f338b7191f88f94591c2c03d6fd14e7f1",
+      "findingsSha256": "fbdccbde33a8607eed11d8fc53498b2fb682cfe0f2b82d017fd2ef2d5c4c589c",
       "advisoryPaths": [
         {
           "advisory": "GHSA-vfj7-8cjw-p6xm",
@@ -55,11 +55,11 @@
     "server/package-lock.json": "3c4e9df241b504af1be94a0d7a14f5d8ad2cf9104e53c06d3e55a2cbca1bbcfb",
     "docs/releases/remaining-ci-dependency-paths-2026-10-16.json": "564693615c871444c96f8e793a26e10efdc9a565182959425549ac675658d8a0"
   },
-  "scopeSha256": "86ac582ea55d17d50fc9d6b092650152747c671f5fd32d9a2c0211177a30a54e",
+  "scopeSha256": "54b5ecb03bb460cf5cf29976bf7b5a3ee502dd324f2027f5f5524ba544c18689",
   "approval": {
     "approvedBy": "KrishnaSathvik",
-    "approvedAt": "2026-10-16T19:39:53Z",
-    "decisionReference": "docs/releases/development-exception-activation-2026-10-16.md#owner-decision",
-    "scopeSha256": "86ac582ea55d17d50fc9d6b092650152747c671f5fd32d9a2c0211177a30a54e"
+    "approvedAt": "2026-10-17T21:07:26Z",
+    "decisionReference": "docs/releases/security-metadata-refresh-2026-10-17.md",
+    "scopeSha256": "54b5ecb03bb460cf5cf29976bf7b5a3ee502dd324f2027f5f5524ba544c18689"
   }
 }
