@@ -145,6 +145,9 @@ jobs:
 
     - name: Run E2E tests
       run: |
+        # Provision only the empty disposable Actions database before app startup.
+        node server/scripts/provision-application-indexes.js --apply
+        node server/scripts/provision-application-indexes.js --check
         cd next-frontend
         npm run test:e2e
       env:

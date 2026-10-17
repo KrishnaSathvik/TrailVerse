@@ -18,3 +18,10 @@
 The completed GitHub run exposed more failures than the earlier in-progress snapshot: backend 27 failed suites (92 failed tests, 7,541 passed), frontend 3 failed files (4 failed tests, 1,564 passed), E2E startup failed. Backend failures include uncommitted historical/private capture dependencies, email JSX loading in the blog test, and evaluation guard assertions. Frontend failures include missing historical contract fixtures and a weather weekday assertion. No tests have been skipped to hide these failures, and private captures have not been published wholesale. These require bounded fixture/test-harness follow-up; they are not evidence of a new itinerary runtime defect.
 
 Build, lint, Vercel preview and One-Brain passed on fb5ff3ba. New CI results must be checked after publication. Independent approval remains required. No merge, deployment or hosted setting change is part of this follow-up.
+
+## First published follow-up results (3ee6f52f)
+
+- Integration, One-Brain, lint, build and Vercel preview passed in GitHub.
+- Preview discovery succeeded for the exact head. The actual SSR audit now exposes four existing page findings: `/about` missing expected h1; `/testimonials` title/h1/bailout; `/explore` body; `/parks-for-couples` h1/body. Audit expectations remain intact.
+- E2E passed the hostname guard and then correctly refused an empty database without required application indexes. Added explicit index provisioning/checking against that disposable Actions database before server startup; no hosted database is touched. Local disposable-Mongo verification created 161 indexes across 35 models; the subsequent check returned ready with no missing indexes.
+- Fresh security reports retained zero production findings and the same 45 development findings, but npm changed Jest's propagated affected range from `24.2.0-alpha.0 - 30.2.0` to `23.5.0 - 30.2.0`. The approved frozen fingerprint rejected this change as designed. No other finding field changed apart from nonbinding upgrade recommendations. The exact proposed replacement scope is `8410bb4375dca31f430da7e5b59fcfabb0b06772bf49f6f0a49a7bd876b35096`; approval remains pending before activation.
