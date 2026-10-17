@@ -169,6 +169,70 @@ describe('updateTrip — response-coupled atomic gating', () => {
   });
 });
 
+describe('status-only PUT deployment compatibility', () => {
+  test.each([['active', 'archived'], ['archived', 'active'], ['active', 'active'], ['archived', 'archived']])('%s → %s changes status only', async (from, to) => {
+    const cap = wireUpdate({ ...storedTrip(planV(4), [asstV(4)]), status: from });
+    const res = mockRes();
+    const next = jest.fn();
+    await controller.updateTrip(reqFor({ status: to }), res, next);
+    expect(next).not.toHaveBeenCalled();
+    expect(res.statusCode).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(cap.set).toEqual({ status: to });
+    expect(TripPlan.findOneAndUpdate).toHaveBeenCalledWith(
+      { _id: 'trip-1', userId: OWNER, status: from },
+      { $set: { status: to } }, { new: true, runValidators: true });
+  });
+
+  test('another owner cannot archive', async () => {
+    wireUpdate({ ...storedTrip(planV(4), []), status: 'active', userId: 'another-user' });
+    const res = mockRes();
+    await controller.updateTrip(reqFor({ status: 'archived' }), res, jest.fn());
+    expect(res.statusCode).toBe(403);
+    expect(TripPlan.findOneAndUpdate).not.toHaveBeenCalled();
+  });
+
+  test.each(['deleted', 'invalid', null, { $ne: 'active' }])('rejects invalid status %p', async status => {
+    wireUpdate({ ...storedTrip(planV(4), []), status: 'active' });
+    const res = mockRes();
+    await controller.updateTrip(reqFor({ status }), res, jest.fn());
+    expect(res.statusCode).toBe(400);
+    expect(TripPlan.findOneAndUpdate).not.toHaveBeenCalled();
+  });
+
+  test('cannot restore a deleted trip', async () => {
+    wireUpdate({ ...storedTrip(planV(4), []), status: 'deleted' });
+    const res = mockRes();
+    await controller.updateTrip(reqFor({ status: 'active' }), res, jest.fn());
+    expect(res.statusCode).toBe(409);
+    expect(TripPlan.findOneAndUpdate).not.toHaveBeenCalled();
+  });
+
+  test('concurrent status/ownership change fails closed', async () => {
+    wireUpdate({ ...storedTrip(planV(4), []), status: 'active' });
+    TripPlan.findOneAndUpdate.mockResolvedValue(null);
+    const res = mockRes();
+    await controller.updateTrip(reqFor({ status: 'archived' }), res, jest.fn());
+    expect(res.statusCode).toBe(409);
+  });
+
+  test('status plus plan cannot bypass manual mutation protection', async () => {
+    wireUpdate({ ...storedTrip(planV(4), []), status: 'archived' });
+    const res = mockRes();
+    await controller.updateTrip(reqFor({ status: 'active', plan: planV(3) }), res, jest.fn());
+    expect(res.body.code).toBe('manual_mutation_required');
+    expect(TripPlan.findOneAndUpdate).not.toHaveBeenCalled();
+  });
+
+  test.each(['active', 'archived'])('new metadata contract still writes %s', async status => {
+    const cap = wireUpdate({ ...storedTrip(planV(4), []), status: 'active' });
+    const res = mockRes();
+    await controller.updateTripMetadata(reqFor({ status }), res, jest.fn());
+    expect(res.statusCode).toBe(200);
+    expect(cap.set).toEqual({ status });
+  });
+});
+
 describe('updateTrip — legacy hardening (8.3)', () => {
   test('legacy request migrates a legacy-stored trip and stamps canonical identity', async () => {
     const cap = wireUpdate(storedTrip(null, [])); // legacy stored (no identity)

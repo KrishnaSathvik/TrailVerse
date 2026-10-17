@@ -288,6 +288,26 @@ exports.updateTrip = async (req, res, next) => {
       });
     }
 
+    // Deployment compatibility: the old frontend archives/restores with an
+    // exact status-only PUT. Never let a response save enter this metadata path.
+    if (Object.keys(req.body).length === 1 && Object.hasOwn(req.body, 'status')) {
+      if (!['active', 'archived'].includes(req.body.status)) {
+        return res.status(400).json({ success: false, error: 'Status must be active or archived' });
+      }
+      if (!['active', 'archived'].includes(trip.status)) {
+        return res.status(409).json({ success: false, error: 'Trip cannot be archived or restored from its current status' });
+      }
+      const updatedTrip = await TripPlan.findOneAndUpdate(
+        { _id: trip._id, userId: req.user._id, status: trip.status },
+        { $set: { status: req.body.status } },
+        { new: true, runValidators: true }
+      );
+      if (!updatedTrip) {
+        return res.status(409).json({ success: false, error: 'Trip changed; reload before retrying' });
+      }
+      return res.status(200).json({ success: true, data: updatedTrip });
+    }
+
     // Stage 8.3 — this route persists ONLY the canonical response unit. Independent
     // trip-management fields (title, status, shareScope, …) are NOT accepted here;
     // they have narrow commands (PATCH /trips/:id/metadata), so a stale or routine
