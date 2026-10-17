@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import { AuthProvider, useAuth } from '../AuthContext';
@@ -74,7 +75,8 @@ describe('AuthContext', () => {
     const destination = vi.spyOn(tripPaths, 'tripSurfacePath').mockReturnValue('#itinerary');
     let performLogin;
     function RetryHarness() {
-      performLogin = useAuth().login;
+      const { login } = useAuth();
+      useEffect(() => { performLogin = login; }, [login]);
       return null;
     }
     render(<AuthProvider><RetryHarness /></AuthProvider>);

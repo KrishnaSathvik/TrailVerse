@@ -62,7 +62,10 @@
     "server/src/utils/itineraryReliability.js",
     "server/src/utils/travelResourceLinks.js",
     "docs/audits/trailie-itinerary-comparison-2026-10-16-plans.json",
-    "server/src/routes/__tests__/modelFirstCutover.test.js"
+    "server/src/routes/__tests__/modelFirstCutover.test.js",
+    "mcp-server/requirements.txt",
+    "mcp-server/tests/test_model_first_contract.py",
+    "mcp-server/tests/fixtures/model-first-contract.json"
   ],
   "excluded": [
     ".github/workflows/test.yml",

@@ -28,3 +28,13 @@ Current master protection requires an up-to-date `security` status and one indep
 Read-only Render inspection confirmed backend `srv-d3il0cpr0fns73cvjq0g` uses master with manual deployment and MCP `srv-d7kql4navr4c73e3gth0` auto-deploys master commits. Both have previews off. Before an approved merge, coordinate MCP auto-deploy with the backend rollout so the services use the intended commit. The committed MCP blueprint already specifies `PLAN_TRIP_TIMEOUT=180` and `BACKEND_TIMEOUT=30`; saved/live runtime settings must still be verified during rollout. Do not assume a blueprint value is the running setting.
 
 After required review/checks: deploy the exact approved backend/MCP revision in the coordinated order, verify effective planning timeout 180, then confirm Vercel's frontend revision and production status. Run only a brief bounded smoke on the deployed candidate and record immutable deployment IDs. Until then, production and hosted settings remain unchanged.
+
+## First hosted CI result and packaging follow-up
+
+PR #48: https://github.com/KrishnaSathvik/TrailVerse/pull/48. Initial acceptance commit `e1ba9105e521b9c5fcb9f5cfc35ac50d631fe3d4` built successfully both locally and in GitHub; Vercel completed an automatic preview deployment. This is not a production deployment.
+
+The required security audit failed with 14 frontend development findings (11 high, 3 moderate) and 31 backend development findings (high). Root and all production-only audits reported zero. The audit uses the PR synthetic merge revision `7ae5edcd662ebb2fe83c2477a0390e2af457e9cd`; no exception was applied. Required independent review is also outstanding.
+
+CI additionally exposed fresh-checkout/install issues. A packaging follow-up pins the already locally validated `mcp` SDK to 1.27.0 (the unbounded requirement installed incompatible 2.x), makes the MCP contract fixture a committed test input rather than assuming another parallel job produced it, and moves the guest-login test harness assignment into an effect to satisfy lint. MCP parity passes 42 local tests with this fixture.
+
+Other observed CI failures remain separate: SSR setup references nonexistent action repository `patrickedigital/wait-for-vercel-preview`; the integration suite reports a JSX/ES-module transform error loading email templates. Other broad-suite results must be checked on the final revision. Do not treat the locally passing targeted tests as a green hosted pipeline. Production rollout is blocked pending required review/security resolution and CI closeout; no hosted environment or branch protections have changed.

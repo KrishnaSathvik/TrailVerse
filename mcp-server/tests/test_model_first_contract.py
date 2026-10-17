@@ -14,7 +14,7 @@ from server.plan_trip_service import slim_plan_trip_structured
 
 def test_local_planner_preserves_request_and_canonical_response():
     fixture = json.loads((Path(__file__).resolve().parents[2] /
-        os.environ.get("TRAILIE_CONTRACT_FIXTURE", "artifacts/trailie-model-first-cutover-2026-09-30/contract-fixture.json")).read_text())
+        os.environ.get("TRAILIE_CONTRACT_FIXTURE", "mcp-server/tests/fixtures/model-first-contract.json")).read_text())
     seen = []
 
     def handle(request):
@@ -44,7 +44,7 @@ def test_local_planner_preserves_request_and_canonical_response():
 def test_mcp_followup_keeps_backend_session_authority():
     from server.main import plan_trip
     fixture = json.loads((Path(__file__).resolve().parents[2] /
-        os.environ.get("TRAILIE_CONTRACT_FIXTURE", "artifacts/trailie-model-first-cutover-2026-09-30/contract-fixture.json")).read_text())
+        os.environ.get("TRAILIE_CONTRACT_FIXTURE", "mcp-server/tests/fixtures/model-first-contract.json")).read_text())
     client = MagicMock()
     client.__aenter__ = AsyncMock(return_value=client)
     client.__aexit__ = AsyncMock(return_value=None)
