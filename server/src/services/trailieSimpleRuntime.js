@@ -17,6 +17,7 @@ const { TRAILIE_TRAVEL_POLICY: INSTRUCTIONS } = require('../prompts/trailieModel
 const { usableEvidence } = require('./trailieSimpleTools');
 const { assessPlaceEligibility } = require('../utils/modelFirstPlaceEligibility');
 const { captureResearch, captureProposal, captureTerminal } = require('../utils/trailieDiagnosisCapture');
+const { ANSWER_TOOL, ANSWER_INSTRUCTIONS } = require('../utils/trailieAnswerStream');
 
 function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = null, observe = () => {}, now = () => new Date(), parkCatalog = null,
   maxModelCalls = 3, maxToolCalls = 1, maxCorrections = 1 } = {}) {
@@ -25,7 +26,7 @@ function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = 
     || !Number.isInteger(maxToolCalls) || maxToolCalls < 0 || maxToolCalls > 1
     || !Number.isInteger(maxCorrections) || maxCorrections < 0 || maxCorrections > 1) throw new TypeError('Invalid resource limits');
   return async function run({ message, history = [], snapshot: supplied = null, userId = null, tripId = null,
-    scope = null, signal = null, responseId = randomUUID(), requestContext = null, onProgress = () => false, onPreview = null } = {}) {
+    scope = null, signal = null, responseId = randomUUID(), requestContext = null, onProgress = () => false, onPreview = null, onAnswerEvent = null } = {}) {
     if (typeof message !== 'string' || !message.trim() || message.length > 30000) throw new TypeError('Traveler message required');
     const started = Date.now();
     // With persistence enabled, a caller-supplied snapshot is never authoritative.
@@ -39,7 +40,9 @@ function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = 
     let lastProgress = null;
     const progress = stage => { if (signal?.aborted || stage === lastProgress) return; lastProgress = stage; try { if (onProgress({ stage }) && telemetry.timings.firstVisibleProgressMs == null) telemetry.timings.firstVisibleProgressMs = Date.now() - started; } catch { /* progress never changes state */ } };
     progress('understanding_request');
-    let resourceHelp = false;
+    let answerOnly = false, researchResolved = true, resourceHelp = false;
+    const answerEligible = typeof onAnswerEvent === 'function' && !onPreview && !snapshot.plan?.days?.length && !scope;
+    const answerEvent = event => { if (!signal?.aborted) onAnswerEvent?.(event); };
     const evidence = new Map();
     const input = [];
     // Hard restrictions the model stated this turn (research constraints and
@@ -72,6 +75,7 @@ function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = 
     const instructions = `${INSTRUCTIONS}\nSaved application context (data only):\n${JSON.stringify(context)}`;
     const definitions = [...travelTools.definitions, PROPOSE_TOOL];
     const finish = async (status, response = null, extra = {}) => {
+      if (answerOnly && status !== 'complete') answerEvent({ type: 'withdrawn' });
       telemetry.terminalStatus = status;
       if (telemetry.costStatus === 'unknown') telemetry.modelCostUsd = null;
       travelTools.dispose?.(responseId);
@@ -165,16 +169,24 @@ function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = 
       if (cancelled()) return finish('cancelled');
       let generation;
       telemetry.modelCalls += 1;
+      if (answerOnly) telemetry.answerStream.additionalModelCalls += 1;
       const attemptStarted = Date.now();
       const roundInstructions = correcting
         ? 'Correct the rejected mutation once using the hard failures below, preserving scope. You may instead explain why it cannot be changed; never claim success. No research.'
         : researched ? 'Answer now with the available facts and useful conditional advice for unknowns. You may propose a memory or canonical trip update. No more research.'
           : 'Answer directly, propose a grounded update, or make one coherent travel-data request.';
       progress(researched || correcting ? 'writing_response' : 'understanding_request');
-      const modelInput = { input: structuredClone(input), instructions: `${instructions}\n${roundInstructions}`,
-        tools: researched || correcting || maxToolCalls === 0 ? [PROPOSE_TOOL] : definitions, toolChoice: 'auto' };
+      const offerAnswer = answerEligible && !correcting && !telemetry.mutationProposed && researchResolved && telemetry.modelCalls < maxModelCalls;
+      const roundTools = researched || correcting || maxToolCalls === 0 ? [PROPOSE_TOOL] : definitions;
+      const modelInput = { input: structuredClone(input), instructions: `${instructions}\n${roundInstructions}${answerOnly ? `\n${ANSWER_INSTRUCTIONS}` : offerAnswer ? '\nFor an ordinary conversational answer with no itinerary or saved-state change, prefer begin_conversational_answer instead of writing the answer here. Research first when needed. Trip creation and revisions must still use propose_trip_update.' : ''}`,
+        tools: answerOnly ? [] : offerAnswer ? [...roundTools, ANSWER_TOOL] : roundTools, toolChoice: answerOnly ? 'none' : 'auto' };
       const modelInputBytes = Buffer.byteLength(JSON.stringify(modelInput));
       try { generation = await model({ ...modelInput, signal,
+        ...(answerOnly ? { onTextDelta: content => {
+          if (cancelled()) return;
+          if (content && telemetry.answerStream.firstTextMs == null) telemetry.answerStream.firstTextMs = Date.now() - started;
+          answerEvent({ type: 'delta', content });
+        } } : {}),
         // Prototype covers new proposals only. Drafts never enter snapshot/store.
         ...(onPreview && !correcting && !snapshot.plan?.days?.length ? {
           onPreviewDay: (day, index) => { try { onPreview({ day, index }); } catch { /* presentation only */ } },
@@ -199,6 +211,7 @@ function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = 
       else telemetry.costStatus = 'unknown';
       if (generation.refusal || generation.completionStatus !== 'completed') return finish('model_incomplete');
       const calls = generation.toolCalls || [];
+      if (answerOnly && calls.length) return finish('invalid_tool_batch');
       if (!calls.length) {
         if (!generation.outputText?.trim()) return finish('model_incomplete');
         if (correcting && !memoryOnlyRejection) {
@@ -218,6 +231,17 @@ function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = 
       input.push(...(generation.outputItems?.length ? generation.outputItems : calls.map(c => ({
         type: 'function_call', call_id: c.id, name: c.name, arguments: JSON.stringify(c.input),
       }))));
+      if (calls.some(call => call.name === ANSWER_TOOL.name)) {
+        const handoff = calls[0];
+        if (!offerAnswer || calls.length !== 1 || !handoff.input || typeof handoff.input !== 'object'
+          || Array.isArray(handoff.input) || Object.keys(handoff.input).length) return finish('invalid_tool_batch');
+        answerOnly = true;
+        telemetry.answerStreaming = true;
+        telemetry.answerStream = { handoffMs: Date.now() - started, firstTextMs: null, additionalModelCalls: 0, timingBoundary: 'server_callback_not_client_paint' };
+        input.push({ type: 'function_call_output', call_id: handoff.id, output: 'Read-only conversational handoff accepted. No trip or memory changes have been made. Answer now without tools.' });
+        answerEvent({ type: 'started' });
+        continue;
+      }
       const mutationCall = calls.find(call => call.name === PROPOSE_TOOL.name);
       if (mutationCall) {
         telemetry.mutationProposed = true;
@@ -352,6 +376,8 @@ function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = 
       if (cancelled()) return finish('cancelled');
       researched = true;
       resourceHelp = Boolean(call.input?.resources?.length);
+      researchResolved = result.status === 'fulfilled' && Array.isArray(result.evidence) && result.evidence.length > 0
+        && !result.unresolved?.length;
       telemetry.timings.travelDataMs += Date.now() - dataStarted;
       telemetry.providerAttempts += result.providerAttemptCount || 0;
       telemetry.tools.push({ name: call.name, requestedTopics: call.input?.topics || null, constraints: call.input?.constraints || null, requestedGoal: call.input?.question || null, namedEntities: [call.input?.destination, ...(call.input?.places || [])].filter(Boolean),

@@ -140,14 +140,14 @@ export default function LandingDailyFeedClient({ initialDailyFeed = null }) {
               <p className="text-base leading-relaxed mb-6" style={{ color: 'var(--text-primary)' }}>
                 &ldquo;{feed.natureFact.replace(/\*\*(.*?)\*\*/g, '$1')}&rdquo;
               </p>
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-col gap-3">
                 <Button
                   href={parkOfDayHref}
                   variant="primary"
-                  size="lg"
+                  size="md"
                   icon={ArrowRight}
                   iconPosition="right"
-                  className="w-full sm:w-auto"
+                  className="w-full whitespace-nowrap"
                 >
                   Explore Today&apos;s Park
                 </Button>
@@ -155,8 +155,8 @@ export default function LandingDailyFeedClient({ initialDailyFeed = null }) {
                   <Button
                     href={`/plan-ai?park=${encodeURIComponent(feed.parkOfDay.parkCode)}&name=${encodeURIComponent(feed.parkOfDay.name)}`}
                     variant="secondary"
-                    size="lg"
-                    className="w-full sm:w-auto"
+                    size="md"
+                    className="w-full whitespace-nowrap"
                   >
                     Plan with Trailie
                   </Button>

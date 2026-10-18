@@ -1,0 +1,25 @@
+{
+  "status": "local-review-candidate-not-committed",
+  "baseHead": "6392da99f61246c4043ba8f87fddbd299d40cc1c",
+  "branch": "ci/security-controls-2026-10-16",
+  "scope": "Contextual-link file snapshots only; some files include earlier local fixes. Not a complete release manifest.",
+  "sha256": {
+    "server/src/utils/travelResourceLinks.js": "4922fb249f334cafa84d0167d32616a52b98b509e5f782b2bf9410e3fd44e2b3",
+    "server/src/services/providers/tavilyEvidenceProvider.js": "55b6ecbad771cb79297087e3a802d9ec5f8f324e28db56470d50aa41da8b6dd3",
+    "server/src/services/providers/serperEvidenceProvider.js": "c00022d0f73b736c3333b8fd8c1ed046840977995f89c2f986906bf3baff849d",
+    "server/src/services/trailieTravelData.js": "75876d6b469b617e5854378e627e59b0a18ed6187977ef6b7931272d08a8a358",
+    "server/src/utils/itineraryReliability.js": "326df70e9b5805e3da3cea4f85c519a21853d24824c07965106244327aa5b367",
+    "server/src/services/trailieSimpleRuntime.js": "353df8798dc8e5ba7d516f87950fde370764ba95e66904c4221dd13437bba6fb",
+    "server/src/prompts/trailieModelFirstPolicy.js": "737c751b8929a61e3a30bdd7fa3a4825c0321507e0cd36a53bc791dbb7c87a23",
+    "server/src/services/__tests__/travelResourceLinks.test.js": "61dbe7fa7e9b75910397fa9c8d425827f680075c977653a0895eb9f946057ba3",
+    "server/src/services/__tests__/webEvidenceProviders.test.js": "466224bda148bf19b884aa644029a8df90f678726d5bbe924afd93b916a9c5b9",
+    "server/src/services/__tests__/trailieSimpleRuntime.test.js": "59284b30aad74ab03f93e39033b0857e810377eea601918af518e61ed8eb3b4f",
+    "next-frontend/src/components/itinerary/__tests__/TripGuidance.test.jsx": "86998096e21c6f804decbff5f368a72526463bf2f2a155a50684e0a5ba8d1f47",
+    "docs/TRAILIE-CAPABILITIES-ACCURACY.md": "ba40c212762b5eb0ee9fcf1a71edde33c2bffbfac3341e058174922679b49721",
+    "docs/trailie-web-search-product-policy.md": "ff3e78968343fbe9dfec61ae420ec15973a8f188a021e77b51450a027a9cbf20",
+    "docs/audits/trailie-contextual-travel-links-2026-10-17.md": "d56c1227f9840edb7e3f192418e3d8a8b5bfd097f95651890ddd6813430eb3b8",
+    "server/src/services/__tests__/hotelDiscoveryCoverage.test.js": "805f61fe5c508e71f116b69e58789a5f7a12f05a7d4dad9e0eb51d59868f7597",
+    "docs/audits/trailie-hotel-discovery-coverage-2026-10-17.md": "ff2ec890eaa8d1b86edbdb78c5a1a9be5b45cef00e080e7a0a7811cc49a44e66",
+    "docs/audits/trailie-link-live-acceptance-2026-10-17.json": "00e0602d7ebf743e0fab7b9c0afeeaf45f9748e4f8ae6ba44e93018b2fd1bb12"
+  }
+}

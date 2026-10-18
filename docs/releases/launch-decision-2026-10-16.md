@@ -1,5 +1,9 @@
 # Frozen launch decision — October 16, 2026
 
+Latest owner direction supersedes the independent-security-approver wording below: [the repository owner decides the scoped risk](development-exception-owner-decision-2026-10-16.md). The exception is prepared locally and inactive. Existing GitHub independent code review is a merge requirement, not an invented organizational risk-approval role.
+
+Execution update: [master protection is now applied and CI evidence collected](ci-controls-executed-2026-10-16.md). The proposal and pending-state table below describe the original decision baseline; the execution report records completed controls. Exception approval and production release remain pending.
+
 **Current decision: HOLD.** Release readiness consists of the three gates below. Product work is locally validated; this record does not commission more itinerary changes, dependency experiments or general hardening. Local results do not substitute for hosted acceptance.
 
 ## Required gates

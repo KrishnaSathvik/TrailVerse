@@ -1,5 +1,9 @@
 # Coordinated release plan — prepared, not authorized to execute
 
+**Exception preparation:** [owner decision and inactive local enforcement](development-exception-owner-decision-2026-10-16.md). The four-advisory policy is implemented and tested locally; owner acceptance, activation, publication, normal CI and hosted authorization remain pending. No separate organizational security role is required by the latest user instruction.
+
+**Executed control update:** [applied master protection and hosted CI evidence](ci-controls-executed-2026-10-16.md). The isolated verification branch is published, master protection is enforced, and all six raw audits are retained on GitHub. The audit remains red and production remains HOLD. Earlier statements of no push or no applied GitHub controls are historical, not the current state.
+
 **Launch scope is frozen:** [three-gate launch decision](launch-decision-2026-10-16.md). Repository/CI controls, the explicit four-advisory security decision, and candidate-hosted acceptance are the remaining gates. Optional hardening does not independently expand release scope.
 
 **CI control follow-up:** [verification and local hardening](ci-control-verification-2026-10-16.md). GitHub reports the default branch is `master` and unprotected, with no rulesets. Local CI changes close source-level gaps but are not hosted evidence or an exception. A release incorporating these executable changes needs a new pinned candidate. HOLD remains in force.

@@ -1,5 +1,7 @@
 import TrailieDraftPreview from '@/components/itinerary/TrailieDraftPreview';
 import { draftPreviewEnabled, reduceDraftPreview } from '@/lib/trailieDraftPreview';
+import { answerStreamEnabled, reduceAnswerStream } from '@/lib/trailieAnswerStream';
+import ProvisionalAnswer from '@/components/ai-chat/ProvisionalAnswer';
 import { applyTerminalOwnership } from '@/utils/terminalOwnership';
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
@@ -19,7 +21,7 @@ import conversationService from '../../services/conversationService';
 import aiService from '../../services/aiService';
 import api from '../../services/api';
 import feedbackService from '../../services/feedbackService';
-import { logAIFeedback, logAIChat, logPlanAiSessionStart, logTripShareCreated } from '../../utils/analytics';
+import { logAIChat, logPlanAiSessionStart, logTrailieMessageSubmitted } from '../../utils/analytics';
 import { truncatePlainText } from '@/utils/stripMarkdown';
 import ChatInput from '../ai-chat/ChatInput';
 import MessageBubble from '../ai-chat/MessageBubble';
@@ -229,6 +231,7 @@ const TripPlannerChat = ({
   const abortControllerRef = useRef(null);
   const urlTripRestoreKeyRef = useRef(null);
   const [draftPreview, setDraftPreview] = useState(null);
+  const [provisionalAnswer, setProvisionalAnswer] = useState(null);
   const [previewOutcome, setPreviewOutcome] = useState(null);
   useEffect(() => () => { const active = abortControllerRef.current; abortControllerRef.current = null; active?.abort(); }, []);
   const streamFlushRafRef = useRef(null);
@@ -1290,8 +1293,9 @@ const TripPlannerChat = ({
   // (Component stays mounted when using "Start New Chat" or "Personalized Recommendations")
   useEffect(() => {
     const previousTripId = previousExistingTripIdRef.current;
-    if (draftPreviewEnabled() && (isNewChat || isPersonalized || existingTripId !== previousTripId)) {
+    if ((draftPreviewEnabled() || answerStreamEnabled()) && (isNewChat || isPersonalized || existingTripId !== previousTripId)) {
       abortControllerRef.current?.abort();
+      setProvisionalAnswer(null);
       setDraftPreview(null);
       setPreviewOutcome(null);
     }
@@ -1567,6 +1571,10 @@ const TripPlannerChat = ({
   const handleSendMessage = async (messageText, options = {}) => {
     const { hiddenFromUi = false, dayByDayPlanIntake = false, intakeParkName = null, intakeParkNames = null } = options;
     if (!messageText.trim() || conversationSendBlocked({generating:isGenerating,recovering:historySyncBusy,recoveryPending:historyRecovery,restoreStatus:isAnonymous?anonymousRestoreStatus:authRestoreStatus})) return;
+    logTrailieMessageSubmitted({
+      messageLength: messageText.trim().length,
+      turnIndex: messages.filter((message) => message.role === 'user' && !message.hiddenFromUi).length + 1,
+    });
 
     primeCompletionSound?.();
     pendingParkImagesRef.current = [];
@@ -1598,10 +1606,12 @@ const TripPlannerChat = ({
     earlyCoordinatorRef.current = null;
     const controller = new AbortController();
     abortControllerRef.current = controller;
+    setProvisionalAnswer(null);
     setDraftPreview(null);
     setPreviewOutcome(null);
     controller.signal.addEventListener('abort', () => {
       if (abortControllerRef.current === controller) {
+        setProvisionalAnswer(null);
         setDraftPreview(state => reduceDraftPreview(state, { type: 'draft_closed' }));
         if (draftPreviewEnabled()) setPreviewOutcome('uncertain');
       }
@@ -2001,6 +2011,10 @@ const TripPlannerChat = ({
       };
 
       const streamCallbacks = {
+        onAnswerEvent: answerStreamEnabled() ? event => {
+          if (abortControllerRef.current === controller && !controller.signal.aborted)
+            setProvisionalAnswer(state => reduceAnswerStream(state, event));
+        } : undefined,
         onDraftEvent: draftPreviewEnabled() ? event => {
           if (abortControllerRef.current === controller && !controller.signal.aborted)
             setDraftPreview(state => reduceDraftPreview(state, event));
@@ -2125,6 +2139,7 @@ const TripPlannerChat = ({
         },
         onDone: (result) => {
           if (controller.signal.aborted || abortControllerRef.current !== controller) return;
+          setProvisionalAnswer(null);
           if (draftPreviewEnabled() && abortControllerRef.current === controller && !controller.signal.aborted) {
             if (result.persisted === true && result.canonicalPlan?.days?.length) {
               setCurrentPlan(result.canonicalPlan);
@@ -2349,7 +2364,7 @@ const TripPlannerChat = ({
       if (earlyCoordinator) {
         await earlyCoordinator.drain();
         if (earlyOwnsTurn()) {
-          logAIChat(messageText.trim(), Date.now() - thinkingStartTime, true);
+          logAIChat(messageText.trim(), Date.now() - thinkingStartTime, true, { hasItinerary: Boolean(data?.plan?.days?.length) });
           setIsGenerating(false);
           setThinkingStartTime(null);
           setThinkingSources(null);
@@ -2654,7 +2669,7 @@ const TripPlannerChat = ({
       }
 
       // Track AI chat interaction
-      logAIChat(messageText.trim(), responseTime, true);
+      logAIChat(messageText.trim(), responseTime, true, { hasItinerary: Boolean(data?.plan?.days?.length) });
 
       // Phase 6A.1 — the server's own guest ledger (anonymousTurnLedger.js's
       // failGuestTurn, called from routes/ai.js for EVERY
@@ -3058,7 +3073,7 @@ ${[
   };
 
   const startFreshConversation = (customMessage = null, parkName = null) => {
-    if (draftPreviewEnabled()) abortControllerRef.current?.abort();
+    if (draftPreviewEnabled() || answerStreamEnabled()) abortControllerRef.current?.abort();
     // Set flag to prevent restoration
     setIsStartingFresh(true);
     
@@ -3175,10 +3190,6 @@ ${[
         const url = `${window.location.origin}/plan-ai/shared/${id}`;
         setShareUrl(url);
         setShowShareModal(true);
-        logTripShareCreated({
-          tripId: currentTripId,
-          parkCode: formData?.parkCode || null,
-        });
       } else {
         showToast('Failed to generate share link', 'error');
       }
@@ -3831,10 +3842,6 @@ ${[
                       });
 
                       await feedbackService.submitFeedback(feedbackData);
-                      logAIFeedback({
-                        feedback: type,
-                        conversationId: currentTripId,
-                      });
 
                       console.log('✅ Feedback submitted successfully!');
                       
@@ -3894,7 +3901,7 @@ ${[
               })}
 
               {isWelcomeState && (
-                <div className="max-w-[var(--public-rich-width)] pt-1 sm:pt-2">
+                <div className="mx-auto w-full max-w-[var(--public-rich-width)] pt-1 sm:pt-2">
                   {isPersonalized && (
                     <p
                       className="mb-2 text-xs leading-relaxed sm:mb-3 sm:text-sm"
@@ -3937,7 +3944,7 @@ ${[
                 />
               )}
 
-              {isGenerating &&
+              {isGenerating && !provisionalAnswer?.content &&
                 !displayMessages.some(
                   (m) => m.role === 'assistant' && (m.isStreaming || m.isFinalizing)
                 ) && (
@@ -3947,6 +3954,7 @@ ${[
                 inlineAvatarLayout
               />)}
 
+              <ProvisionalAnswer answer={provisionalAnswer} onCancel={() => abortControllerRef.current?.abort()} />
               {draftPreviewEnabled() && draftPreview && <div ref={draftPreviewRef} className="pb-8">
                 <TrailieDraftPreview preview={draftPreview} onCancel={() => abortControllerRef.current?.abort()} />
               </div>}
@@ -3958,11 +3966,11 @@ ${[
       </div>
 
       {/* Composer — the primary interaction surface; utilities remain secondary. */}
-      <div className="sticky bottom-0 z-20 flex-shrink-0 border-t chat-input-area"
+      <div className={`sticky bottom-0 z-20 flex-shrink-0 chat-input-area ${isWelcomeState ? '' : 'border-t'}`}
           style={{
-            backgroundColor: 'var(--bg-primary)',
+            backgroundColor: isWelcomeState ? 'transparent' : 'var(--bg-primary)',
             borderColor: 'var(--border)',
-            boxShadow: '0 -8px 28px rgba(31, 41, 35, 0.04)',
+            boxShadow: isWelcomeState ? 'none' : '0 -8px 28px rgba(31, 41, 35, 0.04)',
             paddingBottom: 'env(safe-area-inset-bottom, 12px)'
           }}
         >
@@ -3987,7 +3995,8 @@ ${[
               </button>
             </div>
           )}
-          <div className="trailie-composer-column mx-auto w-full px-4 pb-1.5 pt-1.5 sm:px-6 sm:pb-4 sm:pt-3">
+          <div className="public-shell pb-1.5 pt-1.5 sm:pb-4 sm:pt-3">
+          <div className="mx-auto w-full max-w-[var(--public-rich-width)]">
             {draftPreviewEnabled() && draftPreview?.status === 'generating' && (
               <div className="mb-2 flex min-h-14 items-center justify-between gap-3 rounded-xl border border-[var(--border)] bg-[var(--bg-primary)] px-3 py-2" aria-label="Draft preview availability">
                 <p role="status" className="min-w-0 text-xs leading-5 text-[var(--text-secondary)]">
@@ -4147,6 +4156,7 @@ ${[
               initialValue=""
               draft={composerDraft}
             />
+          </div>
           </div>
         </div>
 

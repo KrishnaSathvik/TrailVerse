@@ -17,6 +17,25 @@ const controller = require('../tripController');
 
 const OWNER = 'user-1';
 
+describe('My Trips read isolation', () => {
+  test('rejects another user’s list before querying storage', async () => {
+    const response = mockRes();
+    TripPlan.find = jest.fn();
+    await controller.getUserTrips(reqFor({}, { userId: 'another-user' }), response, jest.fn());
+    expect(response.statusCode).toBe(403);
+    expect(TripPlan.find).not.toHaveBeenCalled();
+  });
+
+  test('lists saved plans and conversation-only records for the authenticated owner', async () => {
+    const records = [{ _id: 'plan', plan: { days: [{ stops: [] }] } }, { _id: 'chat', plan: null }];
+    TripPlan.find = jest.fn().mockReturnValue({ sort: jest.fn().mockResolvedValue(records) });
+    const response = mockRes();
+    await controller.getUserTrips(reqFor({}, { userId: OWNER }), response, jest.fn());
+    expect(TripPlan.find).toHaveBeenCalledWith({ userId: OWNER, status: { $ne: 'deleted' } });
+    expect(response.body.data).toEqual(records);
+  });
+});
+
 function mockRes() {
   return {
     statusCode: 200,

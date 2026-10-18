@@ -1,11 +1,10 @@
 /** Landing hero — planning-first positioning */
 export const LANDING_HERO_BADGE = '470+ parks & sites';
 
-export const LANDING_HERO_HEADLINE = 'Plan smarter';
-export const LANDING_HERO_HEADLINE_ACCENT = 'national park trips';
+export const LANDING_HERO_HEADLINE = 'Your next park trip starts here.';
 
 export const LANDING_HERO_SUBTITLE =
-  'Choose where to go, when to visit, and what actually fits your days. TrailVerse brings the research together, and Trailie helps turn it into a plan.';
+  'Discover your next adventure. Plan it with Trailie.';
 
 export const LANDING_HERO_PRIMARY_CTA = 'Plan with Trailie';
 export const LANDING_HERO_DEMO_CTA = 'View Trailie demo';

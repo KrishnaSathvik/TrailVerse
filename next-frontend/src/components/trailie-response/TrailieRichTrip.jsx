@@ -6,6 +6,7 @@ import useTripImagery from '@/hooks/useTripImagery';
 import AdjustTrip from './AdjustTrip';
 import GuidanceList from './GuidanceList';
 import DemoTripActions from '@/components/trailie-demo/DemoTripActions';
+import { logItineraryOpened } from '@/utils/analytics';
 
 function ImageStrip({ images, title }) {
   if (!images.length) return null;
@@ -112,7 +113,7 @@ export default function TrailieRichTrip({
 
       {onOpen && !example && (
         <div className="mt-6">
-          <button type="button" onClick={() => onOpen('itinerary')}
+          <button type="button" onClick={() => { logItineraryOpened(); onOpen('itinerary'); }}
             className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--accent-green)] px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-green)] focus-visible:ring-offset-2 sm:w-auto">
             Open trip <span aria-hidden="true">→</span>
           </button>

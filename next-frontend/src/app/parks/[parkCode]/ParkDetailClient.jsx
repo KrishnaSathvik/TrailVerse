@@ -144,6 +144,7 @@ const ParkDetailInner = ({
   const [activeActivityTab, setActiveActivityTab] = useState('All');
   const [expandedActivityList, setExpandedActivityList] = useState(() => new Set());
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [heroRatio, setHeroRatio] = useState(1.5);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [savingPark, setSavingPark] = useState(false);
   const [parkGuides, setParkGuides] = useState({ guide: null, astro: null });
@@ -713,20 +714,29 @@ const ParkDetailInner = ({
       <Header />
 
       {/* Hero Image */}
-      <section className="relative h-[60vh] md:h-[70vh] overflow-hidden">
+      <div className="public-shell">
+      <section
+        className="park-detail-hero relative mx-auto overflow-hidden"
+        style={{ '--park-hero-ratio': heroRatio }}
+      >
         <Image
           src={park.images?.[selectedImageIndex]?.url || '/background1.png'}
           alt={park.fullName}
           fill
           priority
-          sizes="100vw"
-          className="object-cover"
+          sizes="(min-width: 1280px) 1216px, 100vw"
+          className="object-cover object-center"
+          onLoad={(event) => {
+            const { naturalWidth, naturalHeight } = event.currentTarget;
+            if (naturalWidth > 0 && naturalHeight > 0) {
+              setHeroRatio(naturalWidth / naturalHeight);
+            }
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/90" />
 
         {/* Navigation Overlay */}
-        <div className="absolute top-0 left-0 right-0 z-10 pt-4 sm:pt-6">
-          <div className="public-shell">
+        <div className="absolute top-0 left-0 right-0 z-10 px-4 pt-4 sm:px-6 sm:pt-6">
             <Button
               onClick={() => router.push(backHref)}
               variant="secondary"
@@ -743,12 +753,10 @@ const ParkDetailInner = ({
             >
               {backLabel}
             </Button>
-          </div>
         </div>
 
         {/* Park Info Overlay */}
-        <div className="absolute bottom-0 left-0 right-0 z-10 pb-4 sm:pb-6 lg:pb-8">
-          <div className="public-shell">
+        <div className="absolute bottom-0 left-0 right-0 z-10 px-4 pb-4 sm:px-6 sm:pb-6 lg:pb-8">
             <div className="mt-6 flex items-end justify-between gap-6">
               <div className="flex-1 min-w-0">
                 <div className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full mb-3"
@@ -826,9 +834,9 @@ const ParkDetailInner = ({
                 </div>
               </div>
             </div>
-          </div>
         </div>
       </section>
+      </div>
 
       {/* Main Content */}
       <section className="py-8 sm:py-10 lg:py-12">

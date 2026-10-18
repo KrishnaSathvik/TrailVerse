@@ -3,7 +3,7 @@ import api from './api';
 const tripService = {
   // Get user's trips (never cache — list must reflect new chats immediately)
   getUserTrips: async (userId) => {
-    const response = await api.get(`/trips/user/${userId}`, {}, { skipCache: true });
+    const response = await api.get(`/trips/user/${userId}`, { skipCache: true });
     return response.data;
   },
 

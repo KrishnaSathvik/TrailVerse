@@ -1,0 +1,15 @@
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  testDir: './tests/e2e',
+  testMatch: 'my-trips.spec.js',
+  workers: 1,
+  expect: { timeout: 30000 },
+  reporter: 'line',
+  outputDir: './test-results/my-trips',
+  use: {
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3000',
+    channel: 'chrome',
+    screenshot: 'only-on-failure',
+  },
+});
