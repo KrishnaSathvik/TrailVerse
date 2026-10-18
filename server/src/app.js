@@ -252,7 +252,6 @@ const authLimiter = rateLimit({
 });
 
 const { loadSiteSettings, enforceMaintenanceMode, requireFeature } = require('./middleware/siteSettings');
-const { trackApiCall } = require('./middleware/analytics');
 
 // Apply tiered rate limiting to all API routes
 app.use('/api/', tieredLimiter);
@@ -260,7 +259,6 @@ app.use('/api/', tieredLimiter);
 // Site settings + maintenance gate for all API routes
 app.use('/api', loadSiteSettings);
 app.use('/api', enforceMaintenanceMode);
-app.use('/api', trackApiCall);
 
 // Routes
 app.use('/api/settings', require('./routes/settings'));
@@ -286,7 +284,6 @@ app.use('/api/where-next', require('./routes/whereNext'));
 app.use('/api/email', require('./routes/emailRoutes'));
 app.use('/api/conversations', require('./routes/conversations'));
 app.use('/api/images', require('./routes/images'));
-app.use('/api/analytics', requireFeature('enableAnalytics'), require('./routes/analytics'));
 app.use('/api', require('./routes/comments'));
 app.use('/api/reviews', requireFeature('enableReviews'), require('./routes/reviews'));
 app.use('/api/gmaps', require('./routes/gmaps')); // Google Maps proxy

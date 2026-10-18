@@ -1,10 +1,15 @@
 'use client';
 
+import { useEffect } from 'react';
 import Button from '@/components/common/Button';
 import TrailieAvatar from './TrailieAvatar';
 import { buildGuestLimitIntro, buildGuestLimitReset } from '@/lib/guestLimitMessage';
+import { logGuestLimitReached } from '@/utils/analytics';
 
 export default function GuestLimitCard({ plan, onSignIn, timeUntilReset }) {
+  useEffect(() => {
+    logGuestLimitReached();
+  }, []);
   const hasTrip = Boolean(plan?.days?.length);
   const [title, description] = buildGuestLimitIntro({ hasTrip }).split('\n\n');
 

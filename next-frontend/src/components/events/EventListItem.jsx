@@ -1,5 +1,6 @@
 import React, { memo, useCallback, useMemo } from 'react';
 import { MapPin, Users, Clock, ArrowRight, Heart, HeartOff } from '@components/icons';
+import { captureEventLink } from '@/utils/analytics';
 
 const EventListItem = memo(({ event, categories, onSaveEvent, onUnsaveEvent, isSaved = false }) => {
   const category = useMemo(() => categories.find(c => c.id === event.category), [categories, event.category]);
@@ -65,6 +66,7 @@ const EventListItem = memo(({ event, categories, onSaveEvent, onUnsaveEvent, isS
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
                 <a
+                  onClick={() => captureEventLink(event.detailsUrl, event.id)}
                   href={event.detailsUrl || (event.id ?
                     `https://www.nps.gov/planyourvisit/event-details.htm?id=${event.id}` :
                     `https://www.nps.gov/${event.parkCode}/planyourvisit/events.htm`

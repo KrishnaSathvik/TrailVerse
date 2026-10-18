@@ -23,6 +23,8 @@ import logging
 import os
 import re
 import time
+
+import httpx
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -488,17 +490,37 @@ def _detect_mcp_client(ctx: Context | None) -> str:
 
 
 def _send_analytics(event: dict[str, Any]) -> None:
-    """Fire-and-forget: POST an analytics event to the backend. Never blocks tool execution."""
+    """Fire-and-forget PostHog capture. Never blocks tool execution or sends trip text."""
+    token = os.environ.get("POSTHOG_PROJECT_TOKEN")
+    if not token:
+        return
+    meta = event.get("metadata") or {}
+    client_name = str(meta.get("mcpClient") or "unknown").lower()
+    if client_name not in {"chatgpt", "claude", "unknown"}:
+        client_name = "unknown"
+    host = (os.environ.get("POSTHOG_HOST") or "https://us.i.posthog.com").rstrip("/")
+    payload = {
+        "api_key": token,
+        "event": "mcp_tool_completed",
+        "distinct_id": f"mcp-{client_name}",
+        "properties": {
+            "tool": meta.get("toolName"),
+            "client": client_name,
+            "outcome": "success" if meta.get("success") else "failed",
+            "duration_ms": meta.get("executionTimeMs"),
+        },
+    }
+
     async def _post() -> None:
         try:
-            async with TrailVerseClient() as client:
-                await client.track_mcp_event(event)
+            async with httpx.AsyncClient(timeout=2.0) as http:
+                await http.post(f"{host}/capture/", json=payload)
         except Exception:
-            logger.debug("Analytics send failed", exc_info=True)
+            logger.debug("PostHog capture failed", exc_info=True)
+
     try:
         asyncio.create_task(_post())
     except RuntimeError:
-        # No running event loop (shouldn't happen in MCP context)
         pass
 
 

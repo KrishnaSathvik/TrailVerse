@@ -193,25 +193,6 @@ exports.createTrip = async (req, res, next) => {
     }
 
     const trip = await TripPlan.create(tripData);
-    try {
-      const Analytics = require('../models/Analytics');
-      const { classifyBot } = require('../utils/botClassifier');
-      const { persistAnalytics } = require('../services/analyticsWriter');
-      if (!classifyBot(req.get('User-Agent')).isBot) void persistAnalytics(() => Analytics.create({
-        eventType: 'conversation_create',
-        userAgent: req.get('User-Agent'),
-        eventCategory: 'engagement',
-        userId: req.user._id,
-        sessionId: req.get('x-session-id') || `trip-${trip._id}`,
-        userType: 'authenticated',
-        pageUrl: '/plan-ai',
-        parkCode: trip.parkCode || null,
-        metadata: { action: 'trip_created', tripId: String(trip._id) },
-        timestamp: new Date(),
-      }));
-    } catch {
-      // Analytics must never block trip persistence.
-    }
     observeTurnPersistence({
       responseId: incomingResponseId,
       attempted: true,

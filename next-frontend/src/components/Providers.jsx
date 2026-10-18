@@ -4,7 +4,6 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { IconContext } from '@phosphor-icons/react';
-import { Analytics } from '@vercel/analytics/next';
 import { ThemeProvider } from '../context/ThemeContext';
 import { ToastProvider } from '../context/ToastContext';
 import { AuthProvider } from '../context/AuthContext';
@@ -57,8 +56,6 @@ export default function Providers({
             </Suspense>
             <AnalyticsPageTracker />
             <ScrollToTop />
-            <Analytics />
-
           </AuthProvider>
         </ToastProvider>
       </ThemeProvider>

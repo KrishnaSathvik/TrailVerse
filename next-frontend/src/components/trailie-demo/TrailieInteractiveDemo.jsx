@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { logDemoStarted } from '@/utils/analytics';
 import TrailieDemoCta from '@/components/trailie-demo/TrailieDemoCta';
 import TrailieDemoPlaybackStage from '@/components/trailie-demo/TrailieDemoPlaybackStage';
 import { sanitizeTrailieDemoAnswer } from '@/lib/trailieDemoSanitize';
@@ -238,6 +239,7 @@ export default function TrailieInteractiveDemo({
 
       resetPlaybackState();
       setActiveIndex(index);
+      logDemoStarted(item.id);
       persistTrailieDemoActiveIndex(DEMO_PLAYBACK_CACHE_VERSION, index);
 
       if (hydrateFromCache(item)) return;

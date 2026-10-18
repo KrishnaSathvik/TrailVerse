@@ -51,7 +51,6 @@ const connectDB = require('./src/config/database');
 // Scheduler services
 const { startScheduler, stopScheduler } = require('./src/services/schedulerService');
 const { startDailyFeedScheduler, stopDailyFeedScheduler } = require('./src/services/dailyFeedScheduler');
-const { startAnalyticsSnapshotScheduler, stopAnalyticsSnapshotScheduler } = require('./src/services/analyticsSnapshotScheduler');
 const { getNpsService } = require('./src/services/npsService');
 const { loadDynamicMap } = require('./src/utils/parkExtractor');
 
@@ -69,7 +68,6 @@ connectDB().then(async () => {
   // Start schedulers after database connection is established
   startScheduler();
   startDailyFeedScheduler();
-  startAnalyticsSnapshotScheduler();
 
   // Stage 9 — durable shadow-review worker. DISABLED by default; runs only when
   // TRAILIE_REVIEW_WORKER_ENABLED=true. It reviews sampled canonical responses
@@ -166,7 +164,6 @@ const gracefulShutdown = (signal) => {
     // Stop schedulers
     stopScheduler();
     stopDailyFeedScheduler();
-    stopAnalyticsSnapshotScheduler();
 
     // Stop the shadow-review worker (drains any in-flight tick).
     if (global.__trailieReviewWorker) {

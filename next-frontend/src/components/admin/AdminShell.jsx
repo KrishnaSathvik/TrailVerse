@@ -6,7 +6,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import AdminRoute from '@components/admin/AdminRoute';
 import {
   Layout,
-  BarChart,
   FileText,
   MessageSquare,
   Users,
@@ -19,7 +18,6 @@ import { useToast } from '@/context/ToastContext';
 
 const NAV_ITEMS = [
   { href: '/admin', label: 'Overview', icon: Layout, exact: true },
-  { href: '/admin/analytics', label: 'Analytics', icon: BarChart },
   { href: '/admin/content', label: 'Content', icon: FileText },
   { href: '/admin/community', label: 'Community', icon: MessageSquare },
   { href: '/admin/users', label: 'Users', icon: Users },

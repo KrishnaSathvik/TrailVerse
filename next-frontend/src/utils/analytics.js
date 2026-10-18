@@ -1,878 +1,394 @@
-import ReactGA from 'react-ga4';
-import { track as vercelTrack } from '@vercel/analytics';
-import { getApiBaseUrl } from '@/lib/apiBase';
-import { sanitizeWhereNextAnalytics } from '@/lib/whereNext';
+import {
+  capturePostHog,
+  identifyPostHog,
+  initPostHog,
+  optInPostHog,
+  optOutPostHog,
+  resetPostHog,
+} from '@/lib/posthogClient';
 
-const VERCEL_FIELD_MAX = 255;
-const getTrackingId = () => process.env.NEXT_PUBLIC_GA_TRACKING_ID;
+const INFO_PATHS = new Set([
+  '/about',
+  '/privacy',
+  '/terms',
+  '/faq',
+  '/features',
+  '/testimonials',
+  '/newsletter',
+  '/contact',
+]);
 
-// ─── Privacy & session ───────────────────────────────────────────────────────
+const ACCOUNT_PREFIXES = ['/login', '/signup', '/forgot-password', '/reset-password', '/verify-email', '/profile', '/unsubscribe'];
+
+const ALLOWED_PROPERTIES = new Set([
+  'page_category',
+  'content_key',
+  'signed_in',
+  'placement',
+  'destination',
+  'surface',
+  'result_count',
+  'has_query',
+  'filter_type',
+  'park_code',
+  'source',
+  'dimension',
+  'slug',
+  'action',
+  'park_count',
+  'host',
+  'event_id',
+  'scenario_id',
+  'message_length',
+  'turn_index',
+  'outcome',
+  'has_itinerary',
+  'duration_ms',
+  'matched',
+]);
 
 export const isAnalyticsAllowed = () => {
   if (typeof window === 'undefined') return false;
-  return localStorage.getItem('analytics_opt_out') !== 'true';
+  return window.localStorage.getItem('analytics_opt_out') !== 'true';
 };
 
-const getUserType = () => (
-  typeof window !== 'undefined' && localStorage.getItem('user') ? 'authenticated' : 'anonymous'
-);
-
-const BROWSER_ID_KEY = 'tv_browser_id';
-
-export const getAnalyticsBrowserId = () => {
-  if (typeof window === 'undefined') return null;
-  let id = localStorage.getItem(BROWSER_ID_KEY);
-  if (!id) {
-    id = (typeof crypto !== 'undefined' && crypto.randomUUID)
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-    localStorage.setItem(BROWSER_ID_KEY, id);
-  }
-  return id;
+const isSignedIn = () => {
+  if (typeof window === 'undefined') return false;
+  return Boolean(window.localStorage.getItem('user'));
 };
 
-const getAuthUserId = () => {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem('user');
-    if (!raw) return null;
-    const user = JSON.parse(raw);
-    return user?._id || user?.id || null;
-  } catch {
-    return null;
-  }
-};
+const gaId = () => process.env.NEXT_PUBLIC_GA_TRACKING_ID || '';
 
-const getAuthToken = () => {
-  if (typeof window === 'undefined') return null;
-  try {
-    return localStorage.getItem('token') || null;
-  } catch {
-    return null;
-  }
-};
-
-export const getAnalyticsSessionId = () => {
-  if (typeof window === 'undefined') return 'server';
-  let sid = sessionStorage.getItem('tv_session_id');
-  if (!sid) {
-    sid = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-    sessionStorage.setItem('tv_session_id', sid);
-  }
-  return sid;
-};
-
-const camelToSnake = (key) => key.replace(/([A-Z])/g, '_$1').toLowerCase();
-
-/** Flatten values for Vercel Web Analytics (strings, numbers, booleans, null only). */
-export const sanitizeVercelEventData = (data = {}) => {
-  const out = {};
-  for (const [key, value] of Object.entries(data)) {
-    if (value === undefined) continue;
-    const safeKey = String(key).slice(0, VERCEL_FIELD_MAX);
-    if (value === null || typeof value === 'boolean' || typeof value === 'number') {
-      out[safeKey] = value;
+function sanitizeProperties(properties = {}) {
+  const safe = {};
+  for (const [key, value] of Object.entries(properties)) {
+    if (!ALLOWED_PROPERTIES.has(key) || value == null) continue;
+    if (typeof value === 'boolean') {
+      safe[key] = value;
       continue;
     }
-    out[safeKey] = String(value).slice(0, VERCEL_FIELD_MAX);
-  }
-  return out;
-};
-
-const buildVercelPayload = (metadata = {}) => {
-  const snake = {};
-  for (const [key, value] of Object.entries(metadata)) {
-    if (value === undefined) continue;
-    snake[camelToSnake(key)] = value;
-  }
-  return sanitizeVercelEventData({ user_type: getUserType(), ...snake });
-};
-
-// ─── Transport layers ────────────────────────────────────────────────────────
-
-let backendEventBuffer = [];
-let flushTimer = null;
-
-const flushBackendEvents = () => {
-  if (backendEventBuffer.length === 0) return;
-  const events = [...backendEventBuffer];
-  backendEventBuffer = [];
-  const token = getAuthToken();
-  fetch(`${getApiBaseUrl()}/analytics/track`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: JSON.stringify({
-      sessionId: getAnalyticsSessionId(),
-      browserId: getAnalyticsBrowserId(),
-      userId: getAuthUserId(),
-      events,
-    }),
-  }).catch((error) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('[analytics] backend track failed:', error?.message || error);
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      safe[key] = value;
+      continue;
     }
-  });
-};
-
-const trackBackend = (eventType, eventCategory, metadata = {}) => {
-  if (!isAnalyticsAllowed()) return;
-  backendEventBuffer.push({
-    eventType,
-    eventCategory,
-    pageUrl: window.location.pathname,
-    pageTitle: document.title,
-    userId: getAuthUserId(),
-    browserId: getAnalyticsBrowserId(),
-    userType: getUserType(),
-    referrer: document.referrer || null,
-    metadata: {
-      path: window.location.pathname,
-      referrer: document.referrer || null,
-      source: metadata.source || null,
-      ctaId: metadata.ctaId || null,
-      parkCode: metadata.parkCode || null,
-      ...metadata,
-      userType: getUserType(),
-      browserId: getAnalyticsBrowserId(),
-    },
-    timestamp: new Date().toISOString(),
-  });
-  if (backendEventBuffer.length >= 10) {
-    clearTimeout(flushTimer);
-    flushBackendEvents();
-  } else if (!flushTimer) {
-    flushTimer = setTimeout(() => { flushTimer = null; flushBackendEvents(); }, 2000);
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (!trimmed || trimmed.includes('@') || trimmed.length > 80) continue;
+      safe[key] = trimmed;
+    }
   }
-};
+  return safe;
+}
 
-const trackGA = ({ category, action, label, value, params = {} }) => {
+function capture(eventName, properties = {}) {
   if (!isAnalyticsAllowed()) return;
-  const custom_parameters = {
-    user_type: getUserType(),
-    ...params,
-  };
-  ReactGA.event({
-    category,
-    action,
-    label,
-    ...(value != null ? { value } : {}),
-    custom_parameters,
-  });
-  if (window.gtag) {
-    window.gtag('event', action, {
-      event_category: category,
-      event_label: label,
-      ...custom_parameters,
-    });
-  }
-};
-
-/** Vercel Web Analytics custom events (Pro/Enterprise). */
-export const trackVercel = (eventName, data = {}) => {
-  if (!isAnalyticsAllowed()) return;
-  const name = String(eventName).slice(0, VERCEL_FIELD_MAX);
   try {
-    vercelTrack(name, buildVercelPayload(data));
-  } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('[analytics] vercel track failed:', error?.message || error);
-    }
+    capturePostHog(eventName, sanitizeProperties(properties));
+  } catch {
+    // ignore
   }
-};
+}
 
-/**
- * Unified product event — GA4 + MongoDB + Vercel.
- * @param {string} vercelName snake_case event name for Vercel dashboard
- * @param {string} eventType backend Analytics.eventType
- * @param {string} eventCategory backend category
- * @param {object} [metadata] shared payload (also sent to Vercel, sanitized)
- * @param {object} [ga] { category, action, label?, value?, params? }
- */
-export const emitProductEvent = ({
-  vercelName,
-  eventType,
-  eventCategory,
-  metadata = {},
-  ga = null,
-}) => {
-  if (!isAnalyticsAllowed()) return;
+export function pageCategory(pathname = '/') {
+  if (pathname === '/') return 'home';
+  if (pathname.startsWith('/explore')) return 'explore';
+  if (pathname.startsWith('/parks/')) return 'park';
+  if (pathname.startsWith('/map')) return 'map';
+  if (pathname.startsWith('/plan-ai')) return 'trailie';
+  if (pathname.startsWith('/events')) return 'events';
+  if (pathname.startsWith('/blog')) return 'blog';
+  if (pathname.startsWith('/trailie-demo')) return 'demo';
+  if (pathname.startsWith('/itineraries')) return 'itineraries';
+  if (pathname.startsWith('/discover')) return 'discover';
+  if (pathname.startsWith('/compare')) return 'compare';
+  if (pathname.startsWith('/guides') || pathname.startsWith('/parks-for-') || pathname.endsWith('-national-parks') || pathname.endsWith('-parks')) return 'guides';
+  if (pathname.startsWith('/where-next')) return 'where_next';
+  if (ACCOUNT_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) return 'account';
+  if (INFO_PATHS.has(pathname)) return 'info';
+  return 'other';
+}
 
-  if (ga?.category && ga?.action) {
-    trackGA({
-      category: ga.category,
-      action: ga.action,
-      label: ga.label,
-      value: ga.value,
-      params: { ...metadata, ...(ga.params || {}) },
-    });
-  }
+function contentKey(pathname) {
+  const parts = pathname.split('/').filter(Boolean);
+  if (parts[0] === 'parks' && parts[1] && parts[1] !== 'state') return parts[1];
+  if (parts[0] === 'blog' && parts[1] && parts[1] !== 'category') return parts[1];
+  if (parts[0] === 'blog' && parts[1] === 'category' && parts[2]) return parts[2];
+  if (parts[0] === 'itineraries' && parts[1]) return parts[1];
+  if (parts[0] === 'discover' && parts[2]) return parts[2];
+  return null;
+}
 
-  trackBackend(eventType, eventCategory, metadata);
-  trackVercel(vercelName, metadata);
-};
-
-// ─── GA bootstrap ────────────────────────────────────────────────────────────
+function sendGaPageView(pathname) {
+  if (!isAnalyticsAllowed() || typeof window === 'undefined' || typeof window.gtag !== 'function') return;
+  if (gaId() && window[`ga-disable-${gaId()}`]) return;
+  window.gtag('event', 'page_view', {
+    page_path: pathname,
+    page_location: `${window.location.origin}${pathname}`,
+    page_title: document.title,
+  });
+}
 
 export const initGA = () => {
-  const trackingId = getTrackingId();
-  if (trackingId) {
-    ReactGA.initialize(trackingId, {
-      gaOptions: { siteSpeedSampleRate: 100 },
-    });
-    if (process.env.NODE_ENV === 'development') {
-      console.log('✅ Google Analytics initialized');
-    }
-  } else if (process.env.NODE_ENV === 'development') {
-    console.warn('Google Analytics tracking ID not found. Set NEXT_PUBLIC_GA_TRACKING_ID.');
-  }
+  initAnalytics();
 };
 
-// ─── Page views ──────────────────────────────────────────────────────────────
-
-const sendPageView = (page) => {
-  if (!isAnalyticsAllowed()) return;
-  ReactGA.send({ hitType: 'pageview', page });
-  if (window.gtag) {
-    window.gtag('event', 'page_view', {
-      page_title: document.title,
-      page_location: window.location.href,
-      page_path: page,
-    });
+export function initAnalytics() {
+  if (typeof window === 'undefined') return;
+  const id = gaId();
+  if (id && window.localStorage.getItem('analytics_opt_out') === 'true') {
+    window[`ga-disable-${id}`] = true;
   }
-  trackBackend('page_view', 'content', { page });
-
-  const path = window.location.pathname;
-  if (path === '/map' || path.startsWith('/map/')) {
-    trackBackend('user_action', 'engagement', { action: 'map_view' });
-    trackVercel('map_view', {});
-  }
-  if (path === '/compare' || path.startsWith('/compare')) {
-    trackBackend('user_action', 'engagement', { action: 'compare_view' });
-    trackVercel('compare_view', {});
-  }
-};
+  initPostHog();
+}
 
 export const logPageView = () => {
-  const page = window.location.pathname + window.location.search;
-  sendPageView(page);
+  if (typeof window === 'undefined') return;
+  const pathname = window.location.pathname || '/';
+  sendGaPageView(pathname);
+  capture('page_viewed', {
+    page_category: pageCategory(pathname),
+    content_key: contentKey(pathname),
+    signed_in: isSignedIn(),
+  });
 };
 
 export const trackPageView = (path) => {
-  sendPageView(path);
-};
-
-// ─── Generic helpers ─────────────────────────────────────────────────────────
-
-/** Legacy GA category/action/label — now full pipeline. */
-export const logEvent = (category, action, label) => {
-  const vercelName = `${category}_${action}`.replace(/\s+/g, '_').toLowerCase();
-  emitProductEvent({
-    vercelName,
-    eventType: 'user_action',
-    eventCategory: 'engagement',
-    metadata: { action: vercelName, label: label != null ? String(label) : null },
-    ga: { category, action, label },
+  if (typeof window === 'undefined') return;
+  const pathname = String(path || '/').split('?')[0];
+  sendGaPageView(pathname);
+  capture('page_viewed', {
+    page_category: pageCategory(pathname),
+    content_key: contentKey(pathname),
+    signed_in: isSignedIn(),
   });
 };
 
-export const trackEvent = (category, action, label) => {
-  logEvent(category, action, label);
-};
+export function captureNavigation(placement, destination) {
+  const path = String(destination || '').split('?')[0];
+  if (!path.startsWith('/')) return;
+  capture('navigation_clicked', { placement, destination: path });
+}
 
-// ─── Discovery & search ──────────────────────────────────────────────────────
-
-export const logSearch = (searchQuery, resultCount = 0, searchType = 'general', extra = {}) => {
-  emitProductEvent({
-    vercelName: 'search_query',
-    eventType: 'search',
-    eventCategory: 'engagement',
-    metadata: {
-      searchTerm: searchQuery,
-      resultCount,
-      searchType,
-      queryLength: searchQuery.length,
-      hasResults: resultCount > 0,
-      ...extra,
-    },
-    ga: {
-      category: 'Search',
-      action: 'Query',
-      label: searchQuery,
-      value: resultCount,
-      params: {
-        search_type: searchType,
-        query_length: searchQuery.length,
-        has_results: resultCount > 0,
-        ...extra,
-      },
-    },
-  });
-};
-
-export const logSearchResultClick = ({
-  searchTerm,
-  searchId,
-  parkCode,
-  parkName,
-  surface = 'unknown',
-  position,
-}) => {
-  logParkCardClick({
-    parkCode,
-    parkName,
+export function captureSearch({ surface, resultCount = 0, hasQuery = false }) {
+  capture('search_performed', {
     surface,
-    position,
-    searchTerm,
-    searchId,
+    result_count: Number(resultCount) || 0,
+    has_query: Boolean(hasQuery),
+  });
+}
+
+export function captureFilter(filterType) {
+  capture('filter_changed', { filter_type: filterType, surface: 'explore' });
+}
+
+export function captureParkSelected(parkCode, source) {
+  if (!parkCode) return;
+  capture('park_selected', { park_code: String(parkCode).toLowerCase(), source });
+}
+
+export function captureCompare(action, parkCount) {
+  capture('compare_changed', {
+    action,
+    park_count: Number.isFinite(parkCount) ? parkCount : undefined,
+  });
+}
+
+export function captureEventLink(url, eventId) {
+  let host = null;
+  try {
+    host = new URL(url, 'https://www.nps.gov').host;
+  } catch {
+    host = null;
+  }
+  capture('event_link_clicked', { host, event_id: eventId ? String(eventId).slice(0, 80) : null });
+}
+
+export const logSearch = (searchQuery, resultCount = 0, searchType = 'general') => {
+  const surface = searchType === 'parks' ? 'explore' : searchType === 'landing' ? 'home' : searchType;
+  captureSearch({
+    surface,
+    resultCount,
+    hasQuery: Boolean(searchQuery && String(searchQuery).trim()),
   });
 };
 
-export const logParkCardClick = ({
-  parkCode,
-  parkName = null,
-  surface = 'unknown',
-  position = null,
-  searchTerm = null,
-  searchId = null,
-  intentSlug = null,
-}) => {
-  emitProductEvent({
-    vercelName: 'park_card_click',
-    eventType: 'user_action',
-    eventCategory: 'engagement',
-    metadata: {
-      action: 'park_card_click',
-      parkCode,
-      parkName,
-      surface,
-      position,
-      searchTerm,
-      searchId: searchId || null,
-      intentSlug,
-    },
-    ga: {
-      category: 'Park',
-      action: 'Card_Click',
-      label: parkCode,
-      params: { surface, position, intent_slug: intentSlug },
-    },
+export const logSearchResultClick = ({ parkCode, surface } = {}) => {
+  captureParkSelected(parkCode, surface || 'search');
+};
+
+export const logParkCardClick = ({ parkCode, surface } = {}) => {
+  captureParkSelected(parkCode, surface || 'explore');
+};
+
+export const logParkView = (parkCode, _parkName, source = 'direct') => {
+  captureParkSelected(parkCode, source || 'direct');
+};
+
+export const logDiscoverClick = ({ dimension, slug } = {}) => {
+  capture('discover_opened', { dimension, slug });
+};
+
+export const logExploreFilterChange = ({ filterType } = {}) => {
+  captureFilter(filterType || 'unknown');
+};
+
+export const logEvent = (category, action, label) => {
+  if (category === 'Compare' && action === 'add_park') {
+    captureCompare('park_added');
+    return;
+  }
+  if (category === 'Compare' && action === 'remove_park') {
+    captureCompare('park_removed');
+    return;
+  }
+  if (category === 'Compare' && action === 'copy_link') {
+    const count = typeof label === 'string' ? label.split(',').filter(Boolean).length : undefined;
+    captureCompare('link_copied', count);
+  }
+};
+
+export const trackEvent = logEvent;
+
+export const logCtaClick = ({ surface, destination, parkCode } = {}) => {
+  if (parkCode) {
+    captureParkSelected(parkCode, surface || 'park');
+    return;
+  }
+  if (destination) captureNavigation(surface || 'cta', destination);
+};
+
+export const logDistributionCta = ({ destination } = {}) => {
+  if (destination) captureNavigation('distribution', destination);
+};
+
+export const logPlanAiSessionStart = () => {
+  capture('trailie_chat_started', { signed_in: isSignedIn() });
+};
+
+export const logTrailieMessageSubmitted = ({ messageLength = 0, turnIndex = null } = {}) => {
+  capture('trailie_message_submitted', {
+    signed_in: isSignedIn(),
+    message_length: Number(messageLength) || 0,
+    turn_index: Number.isFinite(turnIndex) ? turnIndex : undefined,
   });
 };
 
-export const logDiscoverClick = ({ dimension, slug, label }) => {
-  emitProductEvent({
-    vercelName: 'discover_card_click',
-    eventType: 'user_action',
-    eventCategory: 'engagement',
-    metadata: { action: 'discover_card_click', dimension, slug, label },
-    ga: { category: 'Discover', action: 'Card_Click', label: `${dimension}/${slug}` },
+export const logAIChat = (message, responseTime = 0, success = true, extra = {}) => {
+  capture('trailie_response_completed', {
+    outcome: success ? 'success' : 'failed',
+    duration_ms: Math.max(0, Number(responseTime) || 0),
+    message_length: typeof message === 'string' ? message.length : 0,
+    has_itinerary: Boolean(extra?.hasItinerary),
+    signed_in: isSignedIn(),
   });
 };
 
-export const logExploreFilterChange = ({ filterType, value }) => {
-  emitProductEvent({
-    vercelName: 'explore_filter_change',
-    eventType: 'user_action',
-    eventCategory: 'engagement',
-    metadata: { action: 'explore_filter_change', filterType, value },
-    ga: { category: 'Explore', action: 'Filter', label: `${filterType}:${value}` },
-  });
+export const logItineraryOpened = () => {
+  capture('itinerary_opened', { signed_in: isSignedIn() });
 };
 
-// ─── Parks ───────────────────────────────────────────────────────────────────
-
-export const logParkView = (parkCode, parkName, source = 'unknown', extra = {}) => {
-  emitProductEvent({
-    vercelName: 'park_view',
-    eventType: 'park_view',
-    eventCategory: 'content',
-    metadata: { parkCode, parkName, source, ...extra },
-    ga: {
-      category: 'Park',
-      action: 'View',
-      label: parkName,
-      params: { park_code: parkCode, source, ...extra },
-    },
-  });
+export const logItineraryRevised = (surface = 'workspace') => {
+  capture('itinerary_revised', { surface, signed_in: isSignedIn() });
 };
 
-export const logParkTabView = (parkCode, tab) => {
-  emitProductEvent({
-    vercelName: 'park_tab_view',
-    eventType: 'user_action',
-    eventCategory: 'engagement',
-    metadata: { action: 'park_tab_view', parkCode, tab },
-    ga: { category: 'Park', action: 'Tab_View', label: tab, params: { park_code: parkCode } },
-  });
+export const logGuestLimitReached = () => {
+  capture('guest_limit_reached', { signed_in: false });
 };
 
-export const logParkEngagement = ({ action, parkCode, parkName = null, extra = {} }) => {
-  emitProductEvent({
-    vercelName: `park_${action}`,
-    eventType: 'user_action',
-    eventCategory: 'engagement',
-    metadata: { action, parkCode, parkName, ...extra },
-    ga: {
-      category: 'Park',
-      action,
-      label: parkName || parkCode,
-      params: { park_code: parkCode, ...extra },
-    },
-  });
+export const logSampleItineraryOpened = (slug) => {
+  capture('itinerary_sample_opened', { slug });
 };
 
-// ─── CTAs & auth gates ───────────────────────────────────────────────────────
-
-/** Outbound / install CTAs on /chatgpt and /mcp distribution landings. */
-export const logDistributionCta = ({
-  channel,
-  ctaId,
-  label,
-  destination = null,
-}) => {
-  emitProductEvent({
-    vercelName: 'distribution_cta',
-    eventType: 'user_action',
-    eventCategory: 'engagement',
-    metadata: {
-      action: 'distribution_cta',
-      channel,
-      ctaId,
-      label: label || ctaId,
-      destination,
-    },
-    ga: {
-      category: 'Distribution',
-      action: ctaId,
-      label: channel,
-      params: { channel, destination },
-    },
-  });
+export const logDemoStarted = (scenarioId) => {
+  capture('demo_started', { scenario_id: scenarioId });
 };
 
-export const logCtaClick = ({
-  ctaId,
-  label,
-  surface,
-  destination = null,
-  parkCode = null,
-}) => {
-  emitProductEvent({
-    vercelName: 'cta_click',
-    eventType: 'user_action',
-    eventCategory: 'engagement',
-    metadata: {
-      action: 'cta_click',
-      ctaId,
-      label: label || ctaId,
-      surface,
-      destination,
-      parkCode,
-    },
-    ga: {
-      category: 'CTA',
-      action: 'Click',
-      label: label || ctaId,
-      params: { cta_id: ctaId, surface, destination, park_code: parkCode },
-    },
-  });
+export const logSavedTripOpened = (hasItinerary = false) => {
+  capture('saved_trip_opened', { has_itinerary: Boolean(hasItinerary), signed_in: true });
 };
 
-export const logLoginPromptShown = (reason, surface = null) => {
-  emitProductEvent({
-    vercelName: 'login_prompt_shown',
-    eventType: 'user_action',
-    eventCategory: 'engagement',
-    metadata: {
-      action: 'login_prompt_shown',
-      reason: String(reason).slice(0, 120),
-      surface,
-    },
-    ga: { category: 'Auth', action: 'Login_Prompt', label: String(reason).slice(0, 80) },
-  });
+export const logTripArchiveChanged = (action) => {
+  capture('trip_archive_changed', { action, signed_in: true });
 };
-
-// ─── Trailie / AI ────────────────────────────────────────────────────────────
-
-export const logAIChat = (message, responseTime = 0, success = true) => {
-  emitProductEvent({
-    vercelName: success ? 'trailie_message' : 'trailie_message_error',
-    eventType: 'ai_chat',
-    eventCategory: 'engagement',
-    metadata: {
-      messageLength: message.length,
-      responseTimeMs: responseTime,
-      success,
-      userId: getAuthUserId(),
-    },
-    ga: {
-      category: 'AI',
-      action: success ? 'Chat_Success' : 'Chat_Error',
-      label: message.substring(0, 50),
-      value: responseTime,
-      params: { message_length: message.length, response_time: responseTime, success },
-    },
-  });
-};
-
-export const logPlanAiSessionStart = ({ userType = null, parkCode = null } = {}) => {
-  emitProductEvent({
-    vercelName: 'trailie_session_start',
-    eventType: 'user_action',
-    eventCategory: 'engagement',
-    metadata: {
-      action: 'trailie_session_start',
-      sessionUserType: userType || getUserType(),
-      parkCode,
-    },
-    ga: { category: 'AI', action: 'Session_Start', label: parkCode || 'general' },
-  });
-};
-
-export const logAIFeedback = ({ feedback, conversationId = null }) => {
-  emitProductEvent({
-    vercelName: 'ai_feedback',
-    eventType: 'user_action',
-    eventCategory: 'engagement',
-    metadata: { action: 'ai_feedback', feedback, conversationId },
-    ga: { category: 'AI', action: 'Feedback', label: feedback },
-  });
-};
-
-export const logTripShareCreated = ({ tripId = null, parkCode = null } = {}) => {
-  emitProductEvent({
-    vercelName: 'trip_shared',
-    eventType: 'user_action',
-    eventCategory: 'engagement',
-    metadata: { action: 'trip_shared', tripId, parkCode },
-    ga: { category: 'AI', action: 'Trip_Share', label: parkCode || tripId || 'trip' },
-  });
-};
-
-export const logAnonymousChatMigrated = () => {
-  emitProductEvent({
-    vercelName: 'anonymous_chat_migrated',
-    eventType: 'user_signup',
-    eventCategory: 'business',
-    metadata: { action: 'anonymous_chat_migrated' },
-    ga: { category: 'Auth', action: 'Chat_Migrated', label: 'anonymous_to_user' },
-  });
-};
-
-export const logVoiceSessionStart = ({ parkCode = null } = {}) => {
-  emitProductEvent({
-    vercelName: 'voice_session_start',
-    eventType: 'user_action',
-    eventCategory: 'engagement',
-    metadata: { action: 'voice_session_start', parkCode },
-    ga: { category: 'Voice', action: 'Session_Start', label: parkCode || 'global' },
-  });
-};
-
-// ─── Content ─────────────────────────────────────────────────────────────────
-
-export const logBlogView = (blogTitle, blogId, category = 'unknown') => {
-  emitProductEvent({
-    vercelName: 'blog_view',
-    eventType: 'blog_view',
-    eventCategory: 'content',
-    metadata: { blogTitle, blogId, category },
-    ga: {
-      category: 'Blog',
-      action: 'View',
-      label: blogTitle,
-      params: { blog_id: blogId, category },
-    },
-  });
-};
-
-export const logEventView = (eventTitle, eventId, parkCode = 'unknown') => {
-  emitProductEvent({
-    vercelName: 'event_view',
-    eventType: 'event_view',
-    eventCategory: 'content',
-    metadata: { eventTitle, eventId, parkCode },
-    ga: {
-      category: 'Event',
-      action: 'View',
-      label: eventTitle,
-      params: { event_id: eventId, park_code: parkCode },
-    },
-  });
-};
-
-export const logEventRegister = (eventId, eventTitle, parkCode = null) => {
-  emitProductEvent({
-    vercelName: 'event_register',
-    eventType: 'event_register',
-    eventCategory: 'engagement',
-    metadata: { eventId, eventTitle, parkCode },
-    ga: { category: 'Event', action: 'Register', label: eventTitle },
-  });
-};
-
-export const logReviewCreate = (parkCode, reviewId = null, hasImages = false) => {
-  emitProductEvent({
-    vercelName: 'review_create',
-    eventType: 'review_create',
-    eventCategory: 'engagement',
-    metadata: { parkCode, reviewId, hasImages },
-    ga: {
-      category: 'Review',
-      action: 'Create',
-      label: parkCode,
-      params: { has_images: hasImages },
-    },
-  });
-};
-
-export const logShare = (platform, content, contentType = 'unknown') => {
-  emitProductEvent({
-    vercelName: 'share',
-    eventType: 'user_action',
-    eventCategory: 'engagement',
-    metadata: { action: 'share', platform, contentType },
-    ga: {
-      category: 'Share',
-      action: platform,
-      label: content,
-      params: { content_type: contentType, platform },
-    },
-  });
-};
-
-// ─── User lifecycle (structured) ─────────────────────────────────────────────
 
 export const logUserSignup = (userId = null) => {
-  emitProductEvent({
-    vercelName: 'signup_success',
-    eventType: 'user_signup',
-    eventCategory: 'business',
-    metadata: { userId: userId || getAuthUserId() },
-    ga: { category: 'Auth', action: 'Signup', label: 'success' },
-  });
+  capture('signup_completed', { signed_in: true });
+  identifyPostHog(userId);
 };
 
 export const logUserLogin = (userId = null) => {
-  emitProductEvent({
-    vercelName: 'login_success',
-    eventType: 'user_login',
-    eventCategory: 'business',
-    metadata: { userId: userId || getAuthUserId() },
-    ga: { category: 'Auth', action: 'Login', label: 'success' },
-  });
+  capture('login_completed', { signed_in: true });
+  identifyPostHog(userId);
 };
 
 export const logUserLogout = () => {
-  emitProductEvent({
-    vercelName: 'user_logout',
-    eventType: 'user_logout',
-    eventCategory: 'business',
-    metadata: {},
-    ga: { category: 'Auth', action: 'Logout', label: 'manual' },
-  });
+  resetPostHog();
 };
 
-/** @deprecated Prefer logParkEngagement or structured emitProductEvent metadata. */
-export const logUserAction = (action, details, userIdOrMeta = null) => {
-  let userId = null;
-  let extra = {};
-  if (typeof userIdOrMeta === 'object' && userIdOrMeta !== null) {
-    extra = userIdOrMeta;
-  } else if (userIdOrMeta) {
-    userId = userIdOrMeta;
-  }
-  emitProductEvent({
-    vercelName: `user_${action}`,
-    eventType: 'user_action',
-    eventCategory: 'engagement',
-    metadata: { action, details, userId, ...extra },
-    ga: { category: 'User', action, label: details, params: extra },
-  });
+export const logAnonymousChatMigrated = () => {
+  capture('guest_trip_transferred', { signed_in: true });
 };
 
-// ─── Technical / performance ─────────────────────────────────────────────────
+export const logLoginPromptShown = () => {};
 
-export const logWeatherWidgetUsage = (parkCode, weatherLoaded = true, errorType = null) => {
-  emitProductEvent({
-    vercelName: 'weather_widget',
-    eventType: 'user_action',
-    eventCategory: 'technical',
-    metadata: { action: 'weather_widget', parkCode, weatherLoaded, errorType },
-    ga: {
-      category: 'Weather',
-      action: 'Widget_Usage',
-      label: parkCode,
-      params: { weather_loaded: weatherLoaded, error_type: errorType },
-    },
-  });
-};
-
-export const logFeatureUsage = (featureName, usageCount = 1, success = true) => {
-  emitProductEvent({
-    vercelName: 'feature_usage',
-    eventType: 'user_action',
-    eventCategory: 'engagement',
-    metadata: { action: 'feature_usage', featureName, usageCount, success },
-    ga: {
-      category: 'Feature',
-      action: 'Usage',
-      label: featureName,
-      value: usageCount,
-      params: { success },
-    },
-  });
-};
-
-export const logPagePerformance = (pageName, loadTime, userAgent) => {
-  emitProductEvent({
-    vercelName: 'page_performance',
-    eventType: 'performance',
-    eventCategory: 'technical',
-    metadata: {
-      pageName,
-      loadTime,
-      deviceType: /Mobile/.test(userAgent) ? 'mobile' : 'desktop',
-    },
-    ga: {
-      category: 'Performance',
-      action: 'Page_Load',
-      label: pageName,
-      value: loadTime,
-    },
-  });
-};
-
-export const logCachingPerformance = (cacheType, hitRate, responseTime) => {
-  emitProductEvent({
-    vercelName: 'cache_performance',
-    eventType: 'performance',
-    eventCategory: 'technical',
-    metadata: { cacheType, hitRate, responseTime },
-    ga: {
-      category: 'Performance',
-      action: 'Cache_Performance',
-      label: cacheType,
-      value: responseTime,
-    },
-  });
-};
-
-export const logError = (errorType, errorMessage, pageName, userId = null) => {
-  emitProductEvent({
-    vercelName: 'client_error',
-    eventType: 'error',
-    eventCategory: 'technical',
-    metadata: {
-      errorCode: errorType,
-      errorMessage: errorMessage.substring(0, 100),
-      pageName,
-      userId,
-    },
-    ga: {
-      category: 'Error',
-      action: 'Occurred',
-      label: errorType,
-      params: { error_message: errorMessage.substring(0, 100), page_name: pageName },
-    },
-  });
-};
-
-// ─── Facade aliases for analyticsService / hooks ─────────────────────────────
-
-export const trackCustomEvent = (eventName, metadata = {}) => {
-  emitProductEvent({
-    vercelName: eventName.replace(/\s+/g, '_').toLowerCase(),
-    eventType: 'custom_event',
-    eventCategory: 'user',
-    metadata: { eventName, ...metadata },
-    ga: { category: 'Custom', action: eventName, label: metadata.surface || null },
-  });
-};
-
-export const trackParkSave = (parkCode, parkName) => {
-  logParkEngagement({ action: 'favorite_add', parkCode, parkName });
-};
-
-export const trackImageUpload = (imageCount, category = 'general') => {
-  emitProductEvent({
-    vercelName: 'image_upload',
-    eventType: 'user_action',
-    eventCategory: 'engagement',
-    metadata: { action: 'image_upload', imageCount, category },
-    ga: { category: 'Upload', action: 'Image', label: category, value: imageCount },
-  });
-};
-
-export const optOutAnalytics = () => {
-  localStorage.setItem('analytics_opt_out', 'true');
-};
-
-export const optInAnalytics = () => {
-  localStorage.removeItem('analytics_opt_out');
-};
-
-export const logPdfExport = ({ tripId = null, parkCode = null } = {}) => {
-  emitProductEvent({
-    vercelName: 'pdf_export',
-    eventType: 'user_action',
-    eventCategory: 'engagement',
-    metadata: { action: 'pdf_export', tripId, parkCode },
-    ga: { category: 'AI', action: 'PDF_Export', label: parkCode || tripId || 'trip' },
-  });
+export const logVoiceSessionStart = () => {
+  capture('voice_started', { signed_in: isSignedIn() });
 };
 
 export const logWhereNext = (action, metadata = {}) => {
-  const safe = sanitizeWhereNextAnalytics(metadata);
-  emitProductEvent({
-    vercelName: action,
-    eventType: 'user_action',
-    eventCategory: 'engagement',
-    metadata: { action, ...safe },
-    ga: { category: 'WhereNext', action, label: safe.parkCode || null },
-  });
-};
-
-const NEWSLETTER_SIGNUP_EVENTS = new Set([
-  'newsletter_signup_view',
-  'newsletter_signup_submit',
-  'newsletter_signup_success',
-  'newsletter_signup_error',
-]);
-
-const NEWSLETTER_PII_KEYS = new Set([
-  'email',
-  'firstName',
-  'first_name',
-  'confirmToken',
-  'confirm_token',
-  'unsubscribeToken',
-  'unsubscribe_token',
-  'token',
-]);
-
-/** Strip PII before newsletter analytics. Success = double-opt-in started, not confirmed. */
-export const sanitizeNewsletterAnalytics = (metadata = {}) => {
-  const out = {};
-  for (const [key, value] of Object.entries(metadata)) {
-    if (NEWSLETTER_PII_KEYS.has(key)) continue;
-    if (value === undefined || value === null || value === '') continue;
-    out[key] = value;
+  if (action === 'where_next_search_query') {
+    captureSearch({ surface: 'where_next', resultCount: 0, hasQuery: true });
+    return;
   }
-  return out;
+  if (action === 'where_next_destination_selected' || action === 'where_next_park_click') {
+    capture('where_next_selected', {
+      park_code: metadata.parkCode || null,
+      matched: Boolean(metadata.parkCode || metadata.matched),
+      source: 'where_next',
+    });
+    return;
+  }
+  if (action === 'where_next_trailie_click') {
+    captureNavigation('where_next', '/plan-ai');
+  }
 };
 
-export const logNewsletterSignup = (action, metadata = {}) => {
-  if (!NEWSLETTER_SIGNUP_EVENTS.has(action)) return;
-  const safe = sanitizeNewsletterAnalytics(metadata);
-  emitProductEvent({
-    vercelName: action,
-    eventType: 'user_action',
-    eventCategory: 'engagement',
-    metadata: { action, ...safe },
-    ga: { category: 'Newsletter', action, label: safe.source || null },
-  });
+export const logNewsletterSignup = (action) => {
+  if (action === 'newsletter_signup_success') {
+    capture('newsletter_signup_completed', { surface: 'newsletter' });
+  }
+};
+
+export const logBlogView = () => {};
+export const logParkTabView = () => {};
+export const logParkEngagement = () => {};
+export const logUserAction = () => {};
+export const logShare = () => {};
+export const logWeatherWidgetUsage = () => {};
+export const logAIFeedback = () => {};
+export const logTripShareCreated = () => {};
+export const logEventView = () => {};
+export const logEventRegister = () => {};
+export const logReviewCreate = () => {};
+export const logError = () => {};
+export const trackCustomEvent = () => {};
+export const trackParkSave = () => {};
+export const trackImageUpload = () => {};
+export const emitProductEvent = () => {};
+export const getAnalyticsSessionId = () => 'local';
+
+export const optOutAnalytics = () => {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem('analytics_opt_out', 'true');
+  const id = gaId();
+  if (id) window[`ga-disable-${id}`] = true;
+  optOutPostHog();
+};
+
+export const optInAnalytics = () => {
+  if (typeof window === 'undefined') return;
+  window.localStorage.removeItem('analytics_opt_out');
+  const id = gaId();
+  if (id) window[`ga-disable-${id}`] = false;
+  optInPostHog();
 };

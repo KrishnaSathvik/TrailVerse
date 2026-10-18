@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { captureParkSelected, captureSearch } from '@/utils/analytics';
 
 const DEFAULT_CENTER = { lat: 39.8283, lng: -98.5795 };
 const DEFAULT_ZOOM = 4;
@@ -89,6 +90,7 @@ export default function useParkMapState(allParks, allCampgrounds = [], allPlaces
     setSelectedCampgroundId(null);
     setSelectedPlaceId(null);
     setSelectedParkCode(park.parkCode);
+    captureParkSelected(park.parkCode, 'map');
 
     if (park.latitude && park.longitude) {
       setMapCenter({

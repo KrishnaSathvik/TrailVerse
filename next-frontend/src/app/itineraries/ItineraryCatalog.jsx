@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { planSimilarHref } from '@/data/publicItineraries';
+import { captureNavigation, logSampleItineraryOpened } from '@/utils/analytics';
 
 const filters = ['All', 'Weekend', '3–5 days', '7+ days', 'Fall', 'Road trips'];
 export function matchesFilter(item, filter) {
@@ -31,8 +32,8 @@ export default function ItineraryCatalog({ samples }) {
         {sample.tags.length > 0 && <p className="mt-2 text-sm text-[var(--text-tertiary)]">{sample.tags.slice(0, 3).join(' · ')}</p>}
         <p className="mt-3 text-[15px] leading-6 text-[var(--text-secondary)]">{sample.description}</p>
         <div className="mt-auto flex flex-wrap items-center gap-x-6 gap-y-1 pt-4 text-sm">
-          <Link className="inline-flex min-h-11 items-center font-semibold text-[var(--accent-green)]" href={`/itineraries/${sample.slug}`}>View itinerary →</Link>
-          <Link className="inline-flex min-h-11 items-center text-[var(--text-secondary)] hover:text-[var(--text-primary)]" href={planSimilarHref(sample)}>Plan a similar trip</Link>
+          <Link className="inline-flex min-h-11 items-center font-semibold text-[var(--accent-green)]" href={`/itineraries/${sample.slug}`} onClick={() => logSampleItineraryOpened(sample.slug)}>View itinerary →</Link>
+          <Link className="inline-flex min-h-11 items-center text-[var(--text-secondary)] hover:text-[var(--text-primary)]" href={planSimilarHref(sample)} onClick={() => captureNavigation('itineraries', '/plan-ai')}>Plan a similar trip</Link>
         </div>
       </article>)}
     </div>
