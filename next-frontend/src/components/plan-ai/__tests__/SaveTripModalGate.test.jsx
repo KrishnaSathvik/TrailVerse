@@ -28,3 +28,13 @@ it('uses limit copy that never claims a trip when none exists', () => {
   expect(screen.getByRole('heading', { name: 'Keep planning with Trailie' })).toBeInTheDocument();
   expect(screen.queryByText(/trip is ready/i)).not.toBeInTheDocument();
 });
+
+it('labels account fields and switches modes without submitting the form', () => {
+  render(<SaveTripModal isOpen onClose={vi.fn()} messages={[]} />);
+  expect(screen.getByLabelText('First name')).toHaveAttribute('autocomplete', 'given-name');
+  expect(screen.getByLabelText('Confirm password')).toHaveAttribute('autocomplete', 'new-password');
+  fireEvent.click(screen.getByRole('button', { name: 'Sign in', exact: true }));
+  expect(screen.getByLabelText('Password')).toHaveAttribute('autocomplete', 'current-password');
+  expect(screen.queryByText('Email is required')).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Show password' })).toBeInTheDocument();
+});

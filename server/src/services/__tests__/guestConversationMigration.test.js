@@ -3,6 +3,9 @@ const mongoose=require('mongoose');
 const {startTransactionalMongo}=require('../../../tests/support/transactionalMongo');
 const {migrateGuestConversation}=require('../guestConversationMigration');
 const {mintGuestSessionId}=require('../../utils/anonymousIdGenerator');
+const { hashPayload } = require('../../utils/canonicalResponse');
+const { createSimpleRuntime } = require('../trailieSimpleRuntime');
+const { createSimpleTripStore } = require('../trailieSimpleStore');
 let harness, AnonymousSession, TripPlan;
 beforeAll(async()=>{
  harness=await startTransactionalMongo();
@@ -13,6 +16,31 @@ beforeAll(async()=>{
  await Promise.all([AnonymousSession.createCollection(),TripPlan.createCollection()]);
 });
 afterAll(async()=>{await harness?.stop();});
+
+test.each(['Chicago', 'Acadia', 'Zion/Bryce', 'Yellowstone', 'Olympic'])('preserves the exact latest %s plan and links through login and authenticated continuation', async scenario => {
+  const records = require('../../../../docs/audits/trailie-itinerary-comparison-2026-10-16-plans.json');
+  const plan = structuredClone(records.find(record => record.environment === 'local' && record.scenario === scenario && record.turn === 2).latestPersistedLocalItinerary);
+  const content = 'Your trip is ready.';
+  const anonymousId = mintGuestSessionId();
+  const userId = new mongoose.Types.ObjectId();
+  await AnonymousSession.create({ anonymousId, ipAddress: '127.0.0.1', browserFingerprint: 'test', userAgent: 'test', completedTurnCount: 5,
+    messages: [{ role: 'user', content: 'Keep this trip.' }, { role: 'assistant', content, canonicalPlan: plan,
+      responseId: 'accepted-response', responseVersion: 2, contentHash: hashPayload(content), itineraryHash: hashPayload(plan) }] });
+  const args = { AnonymousSession, TripPlan, anonymousId, userId };
+  const tripId = await migrateGuestConversation(args);
+  const saved = await TripPlan.findById(tripId).lean();
+  expect(saved.plan.days).toEqual(plan.days);
+  expect(saved.plan.narrativeSections).toEqual(plan.narrativeSections);
+  expect(saved.plan.itineraryHash).toBe(hashPayload(plan));
+  expect(String(await migrateGuestConversation(args))).toBe(String(tripId));
+  await expect(migrateGuestConversation({ ...args, userId: new mongoose.Types.ObjectId() })).rejects.toMatchObject({ status: 409 });
+  const model = jest.fn(async () => ({ completionStatus: 'completed', outputText: 'You can keep that pace.', toolCalls: [] }));
+  const run = createSimpleRuntime({ model, travelTools: { definitions: [], execute: jest.fn() }, store: createSimpleTripStore({ TripPlan }) });
+  const continued = await run({ userId: String(userId), tripId: String(tripId), message: 'Does this still leave time to rest?' });
+  expect(continued.status).toBe('complete');
+  expect(model).toHaveBeenCalledTimes(1);
+  expect((await TripPlan.findById(tripId).lean()).plan.days).toEqual(plan.days);
+});
 test('login transfers full conversation atomically and retry returns same trip',async()=>{
  const anonymousId=mintGuestSessionId(),userId=new mongoose.Types.ObjectId();
  const messages=[{role:'user',content:'Zion and Bryce, five days from Vegas'},{role:'assistant',content:'Stay in Springdale and Tropic.'}];

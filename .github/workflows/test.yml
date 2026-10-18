@@ -272,7 +272,7 @@ jobs:
         cache: 'npm'
     
     - name: Verify audit collector behavior (offline)
-      run: node --test scripts/ci/collect-security-audits.test.mjs
+      run: node --test scripts/ci/collect-security-audits.test.mjs scripts/ci/development-exception.test.mjs
 
     - name: Collect all audits and enforce existing gate
       run: node scripts/ci/collect-security-audits.mjs

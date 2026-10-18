@@ -4,7 +4,9 @@ import { tripBases, tripTitle } from '@/lib/tripPresentation';
 import { composeRichTrip } from '@/lib/trailieRichPresentation';
 import useTripImagery from '@/hooks/useTripImagery';
 import AdjustTrip from './AdjustTrip';
+import GuidanceList from './GuidanceList';
 import DemoTripActions from '@/components/trailie-demo/DemoTripActions';
+import { logItineraryOpened } from '@/utils/analytics';
 
 function ImageStrip({ images, title }) {
   if (!images.length) return null;
@@ -47,7 +49,7 @@ function DayPurposeList({ dayPurposes, updated, totalDays }) {
 }
 
 export default function TrailieRichTrip({
-  response, refinement, onOpen, onFollowup, onRequireAccount = null, planningState = null, supplement = null,
+  response, refinement, onOpen, onFollowup, onRequireAccount = null, planningState = null, supplement = null, guidanceInSupplement = false,
   current = false, disabled = false, example = false, guestExhausted = false,
   showDemoActions = true,
 }) {
@@ -58,6 +60,8 @@ export default function TrailieRichTrip({
   const headingId = useId();
   if (!model) return null;
   const { updated, dayPurposes, images, guidance, revision } = model;
+  // The narrative Things to Know section absorbs trip guidance when present.
+  const supplementNode = typeof supplement === 'function' ? supplement(guidanceInSupplement ? guidance : []) : supplement;
   const title = tripTitle(plan);
   const bases = tripBases(plan);
   const flexibleCount = plan.days.reduce(
@@ -69,9 +73,10 @@ export default function TrailieRichTrip({
   const adjust = !example && current && Boolean(onFollowup);
   const status = updated ? 'Trip updated' : 'Trip created';
   return (
-    <section aria-label={status} data-presentation-kind="rich_trip"
-      data-blocks-rendered={[...model.blocks.filter(b => b !== 'trip_artifact' || onOpen), ...(adjust ? ['adjust_trip'] : [])].join(',')}
-      className="w-full min-w-0 border-t pt-5 text-[var(--text-primary)]" style={{ borderColor: 'var(--border)' }}>
+    <section aria-label={updated ? 'Trip actions' : status} data-presentation-kind="rich_trip"
+      data-blocks-rendered={[...model.blocks.filter(block => updated ? block === 'trip_artifact' && !example && onOpen : block !== 'trip_artifact' || onOpen), ...(adjust ? ['adjust_trip'] : [])].join(',')}
+      className={`w-full min-w-0 text-[var(--text-primary)] ${updated ? '' : 'border-t pt-5'}`} style={{ borderColor: 'var(--border)' }}>
+      {!updated && <>
       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--accent-green)]" {...(current ? { role: 'status' } : {})}>{status}</p>
       <h3 id={headingId} className="mt-2 text-xl font-semibold leading-tight sm:text-2xl" style={{ fontFamily: 'var(--font-display)' }}>{title}</h3>
       <p className="mt-1 text-sm text-[var(--text-secondary)]">
@@ -88,16 +93,14 @@ export default function TrailieRichTrip({
           </p>
         )}
       </div>
-      {updated && !dayPurposes.length && <p className="mt-2 text-sm text-[var(--text-secondary)]">Trip preferences updated. Your day-by-day plan is unchanged.</p>}
+      </>}
 
-      {supplement ? <div className="mt-6 space-y-5">{supplement}</div> : null}
+      {supplementNode ? <div className="mt-6 space-y-5">{supplementNode}</div> : null}
 
-      {!!guidance.length && (
+      {!updated && !!guidance.length && !guidanceInSupplement && (
         <section className="mt-6 border-t pt-5" style={{ borderColor: 'var(--border)' }} aria-label="Things to know">
           <h4 className="text-base font-semibold">Things to know</h4>
-          <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm leading-6">
-            {guidance.map(item => <li key={item.text}>{item.text} <a href={item.source} target="_blank" rel="noreferrer" className="text-[var(--text-tertiary)] underline underline-offset-2">Source</a></li>)}
-          </ul>
+          <GuidanceList guidance={guidance} />
         </section>
       )}
 
@@ -110,7 +113,7 @@ export default function TrailieRichTrip({
 
       {onOpen && !example && (
         <div className="mt-6">
-          <button type="button" onClick={() => onOpen('itinerary')}
+          <button type="button" onClick={() => { logItineraryOpened(); onOpen('itinerary'); }}
             className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--accent-green)] px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-green)] focus-visible:ring-offset-2 sm:w-auto">
             Open trip <span aria-hidden="true">→</span>
           </button>

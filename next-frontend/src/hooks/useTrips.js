@@ -9,7 +9,7 @@ export const useTrips = () => {
   const { user, isAuthenticated } = useAuth();
   const { subscribe, unsubscribe, subscribeToTrips } = useWebSocket();
   const [trips, setTrips] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(Boolean(isAuthenticated && user));
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -80,6 +80,7 @@ export const useTrips = () => {
     }
     
     setLoading(true);
+    setError(null);
     try {
       const response = await tripService.getUserTrips(userId);
       setTrips(response.data || []);
@@ -117,9 +118,16 @@ export const useTrips = () => {
     }
   };
 
-  const archiveTrip = async (tripId) => updateTrip(tripId, { status: 'archived' });
+  const updateMetadata = async (tripId, metadata) => {
+    const response = await tripService.updateTripMetadata(tripId, metadata);
+    const updatedTrip = unwrapTripPayload(response);
+    setTrips(previous => previous.map(trip => (trip._id || trip.id) === tripId ? updatedTrip : trip));
+    return updatedTrip;
+  };
 
-  const restoreTrip = async (tripId) => updateTrip(tripId, { status: 'active' });
+  const archiveTrip = async (tripId) => updateMetadata(tripId, { status: 'archived' });
+
+  const restoreTrip = async (tripId) => updateMetadata(tripId, { status: 'active' });
 
   const deleteTrip = async (tripId) => {
     try {

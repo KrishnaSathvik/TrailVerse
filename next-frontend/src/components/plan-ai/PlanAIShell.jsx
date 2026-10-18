@@ -5,6 +5,7 @@ import Header from '@components/common/Header';
 
 /**
  * Shared Plan AI page chrome — chat-first layout with contextual sub-header.
+ * The document is the only scroller; the conversation flows with the page.
  */
 export default function PlanAIShell({
   title = 'Trailie',
@@ -18,13 +19,13 @@ export default function PlanAIShell({
 
   return (
     <div
-      className="plan-ai-shell h-dvh flex flex-col overflow-hidden"
+      className="plan-ai-shell min-h-dvh flex flex-col"
       style={{
         background: 'linear-gradient(180deg, color-mix(in srgb, #d6c7a5 7%, var(--bg-primary)) 0%, var(--bg-primary) 30%)',
       }}
     >
       <Header />
-      <main className="relative flex flex-1 min-h-0 flex-col overflow-hidden">
+      <main className="relative flex flex-1 flex-col">
         {showChromeBar && (
           <section
             className="relative z-30 shrink-0 border-b py-2 sm:py-4"
@@ -71,7 +72,7 @@ export default function PlanAIShell({
           </section>
         )}
 
-        <div className="public-full relative z-10 flex flex-1 min-h-0 flex-col overflow-hidden">
+        <div className="public-full relative z-10 flex flex-1 flex-col">
           {children ?? (
             loadingMessage ? (
               <div className="flex flex-1 flex-col items-center justify-center px-4">

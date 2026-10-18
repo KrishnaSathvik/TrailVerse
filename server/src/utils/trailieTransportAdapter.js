@@ -202,6 +202,7 @@ function createTrailieTransportAdapter({ dialect, emit, mode = 'stream' } = {}) 
   let streamEnded = false;
   let publishedItineraryHash = null;
   let draftResponseId = null, draftSequence = 0, draftWithdrawn = false;
+  let answerResponseId = null, answerSequence = 0, answerWithdrawn = false;
 
   const write = (payload) => { emit(payload); return true; };
 
@@ -229,6 +230,24 @@ function createTrailieTransportAdapter({ dialect, emit, mode = 'stream' } = {}) 
     dialect,
     mode,
     sentTerminal: () => sealed,
+
+    answerEvent({ type, responseId, content } = {}) {
+      return intermediate(() => {
+        if (type === 'started' && !answerResponseId && typeof responseId === 'string') {
+          answerResponseId = responseId;
+          return write({ type: 'answer_started', responseId, sequence: ++answerSequence });
+        }
+        if (!answerResponseId || answerWithdrawn) return false;
+        if (type === 'delta' && typeof content === 'string' && content.length) {
+          return write({ type: 'answer_delta', responseId: answerResponseId, sequence: ++answerSequence, content });
+        }
+        if (type === 'withdrawn') {
+          answerWithdrawn = true;
+          return write({ type: 'answer_withdrawn', responseId: answerResponseId, sequence: ++answerSequence });
+        }
+        return false;
+      });
+    },
 
     draftStarted({ responseId }) {
       return intermediate(() => {

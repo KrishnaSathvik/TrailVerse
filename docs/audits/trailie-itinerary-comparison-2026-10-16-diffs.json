@@ -1,0 +1,679 @@
+[
+  {
+    "followupQuestionId": 2,
+    "changes": [
+      {
+        "path": "/intro",
+        "before": "Two relaxed, car-free sightseeing days in Chicago: downtown's major art collection followed by Pilsen's Mexican art, food and neighborhood streets. Both are full days, with no arrival or departure assumed; lodging is not selected.",
+        "after": "Two relaxed, car-free sightseeing days in Chicago: downtown's major art collection followed by Pilsen's food, murals and neighborhood streets. Both are full days, with no arrival or departure assumed; lodging is not selected."
+      },
+      {
+        "path": "/days/1/label",
+        "before": "Mexican art and a slow afternoon in Pilsen",
+        "after": "Pilsen's neighborhood streets and a leisurely Mexican lunch"
+      },
+      {
+        "path": "/days/1/stops/0/id",
+        "before": "chi-mexican-art",
+        "after": "chi-lunch"
+      },
+      {
+        "path": "/days/1/stops/0/type",
+        "before": "museum",
+        "after": "restaurant"
+      },
+      {
+        "path": "/days/1/stops/0/name",
+        "before": "National Museum of Mexican Art",
+        "after": "5 Rabanitos Restaurante & Taqueria"
+      },
+      {
+        "path": "/days/1/stops/0/evidenceRef",
+        "before": "simple:6003f3b99ffd7b98b451932f9aee144587598f3c497ff23c402b49672da6035e",
+        "after": "simple:bac23494bd8525c52f7e122bdc9944eb496c3a75724e68f35a56f1ff87ab3417"
+      },
+      {
+        "path": "/days/1/stops/0/note",
+        "before": "Allow roughly 90 minutes for a focused visit to Mexican art, with time to linger over the exhibitions that catch your interest.",
+        "after": "Allow an unhurried Mexican lunch and a seated break between neighborhood exploring sessions."
+      },
+      {
+        "path": "/days/1/stops/0/timeWindow",
+        "before": "Late morning",
+        "after": "Midday"
+      },
+      {
+        "path": "/days/1/stops/0/duration",
+        "before": 90,
+        "after": 75
+      },
+      {
+        "path": "/days/1/stops/0/canonicalPlaceName",
+        "before": "National Museum of Mexican Art",
+        "after": "5 Rabanitos Restaurante & Taqueria"
+      },
+      {
+        "path": "/days/1/stops/0/displayName",
+        "before": "National Museum of Mexican Art",
+        "after": "5 Rabanitos Restaurante & Taqueria"
+      },
+      {
+        "path": "/days/1/stops/0/canonicalPlaceId",
+        "before": "google:place:ChIJsTi-rKAtDogRx9MnUyQcC7Q",
+        "after": "google:place:ChIJ0T8ttwktDogRGqYtYQWKuvU"
+      },
+      {
+        "path": "/days/1/stops/0/placeTypes/1",
+        "before": "museum",
+        "after": "food"
+      },
+      {
+        "path": "/days/1/stops/0/placeTypes/3",
+        "before": "tourist_attraction",
+        "after": "restaurant"
+      },
+      {
+        "path": "/days/1/stops/0/location/lat",
+        "before": 41.855979,
+        "after": 41.8578388
+      },
+      {
+        "path": "/days/1/stops/0/location/lon",
+        "before": -87.67280099999999,
+        "after": -87.67093
+      },
+      {
+        "path": "/days/1/stops/0/location/sourceRef",
+        "before": "simple:6003f3b99ffd7b98b451932f9aee144587598f3c497ff23c402b49672da6035e",
+        "after": "simple:bac23494bd8525c52f7e122bdc9944eb496c3a75724e68f35a56f1ff87ab3417"
+      },
+      {
+        "path": "/days/1/stops/0/location/sourceEntity",
+        "before": "google:place:ChIJsTi-rKAtDogRx9MnUyQcC7Q",
+        "after": "google:place:ChIJ0T8ttwktDogRGqYtYQWKuvU"
+      },
+      {
+        "path": "/days/1/stops/0/sourceReferences/0/evidenceId",
+        "before": "simple:6003f3b99ffd7b98b451932f9aee144587598f3c497ff23c402b49672da6035e",
+        "after": "simple:bac23494bd8525c52f7e122bdc9944eb496c3a75724e68f35a56f1ff87ab3417"
+      },
+      {
+        "path": "/days/1/stops/0/sourceReferences/0/url",
+        "before": "https://www.google.com/maps/search/?api=1&query=National%20Museum%20of%20Mexican%20Art&query_place_id=ChIJsTi-rKAtDogRx9MnUyQcC7Q",
+        "after": "https://www.google.com/maps/search/?api=1&query=5%20Rabanitos%20Restaurante%20%26%20Taqueria&query_place_id=ChIJ0T8ttwktDogRGqYtYQWKuvU"
+      },
+      {
+        "path": "/days/1/stops/0/sourceReferences/0/observedAt",
+        "before": "2026-10-16T22:05:38.670Z",
+        "after": "2026-10-16T22:06:22.648Z"
+      },
+      {
+        "path": "/days/1/stops/1",
+        "before": {
+          "id": "chi-lunch",
+          "order": 2,
+          "type": "restaurant",
+          "name": "5 Rabanitos Restaurante & Taqueria",
+          "evidenceRef": "simple:c389331cbcf6cd9840ed96ea886ca420887b1b21a57a883eba61d8a6c00161ac",
+          "note": "A Mexican lunch choice close to the museum; allow an unhurried meal rather than squeezing in another attraction.",
+          "startTime": "",
+          "timeWindow": "Midday",
+          "duration": 75,
+          "canonicalPlaceName": "5 Rabanitos Restaurante & Taqueria",
+          "displayName": "5 Rabanitos Restaurante & Taqueria",
+          "canonicalPlaceId": "google:place:ChIJ0T8ttwktDogRGqYtYQWKuvU",
+          "resolutionStatus": "resolved",
+          "countryCode": "US",
+          "placeKind": "place",
+          "placeTypes": [
+            "establishment",
+            "food",
+            "point_of_interest",
+            "restaurant"
+          ],
+          "location": {
+            "lat": 41.8578388,
+            "lon": -87.67093,
+            "source": "geocoder",
+            "authority": "commercial_structured",
+            "status": "resolved",
+            "sourceRef": "simple:c389331cbcf6cd9840ed96ea886ca420887b1b21a57a883eba61d8a6c00161ac",
+            "sourceEntity": "google:place:ChIJ0T8ttwktDogRGqYtYQWKuvU"
+          },
+          "sourceReferences": [
+            {
+              "evidenceId": "simple:c389331cbcf6cd9840ed96ea886ca420887b1b21a57a883eba61d8a6c00161ac",
+              "url": "https://www.google.com/maps/search/?api=1&query=5%20Rabanitos%20Restaurante%20%26%20Taqueria&query_place_id=ChIJ0T8ttwktDogRGqYtYQWKuvU",
+              "observedAt": "2026-10-16T22:05:38.549Z"
+            }
+          ],
+          "operationalCaveats": []
+        },
+        "after": {
+          "absent": true
+        }
+      },
+      {
+        "path": "/days/1/dayStructure/summary",
+        "before": "A neighborhood-focused day pairing Mexican art and lunch with flexible exploration of Pilsen.",
+        "after": "A museum-free Pilsen day with flexible neighborhood wandering, Mexican food and time to pause indoors."
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/0/label",
+        "before": "Breakfast before heading out",
+        "after": "An easy breakfast"
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/0/note",
+        "before": "Keep breakfast light enough to enjoy a substantial neighborhood lunch.",
+        "after": "Start near your lodging without rushing out early."
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/1/label",
+        "before": "Travel to Pilsen by public transit",
+        "after": "Take public transit to Pilsen"
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/1/note",
+        "before": "Plan a CTA trip from your lodging and allow a generous buffer; the best train or bus connection depends on where you stay.",
+        "after": "Choose a CTA connection from your lodging and allow a generous buffer; the best route depends on your base."
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/2/kind",
+        "before": "outing",
+        "after": "experience"
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/2/periods/1",
+        "before": "midday",
+        "after": {
+          "absent": true
+        }
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/2/label",
+        "before": "Visit the National Museum of Mexican Art",
+        "after": "Get to know Pilsen on foot"
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/2/note",
+        "before": "Start with a manageable museum visit that gives context to the neighborhood day.",
+        "after": "Explore around 18th Street for murals and storefronts, following your interests rather than a fixed route."
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/2/stopIds/0",
+        "before": "chi-mexican-art",
+        "after": {
+          "absent": true
+        }
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/2/duration",
+        "before": {
+          "absent": true
+        },
+        "after": 90
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/3/label",
+        "before": "Settle in for a Mexican lunch",
+        "after": "Linger over a Mexican lunch"
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/3/note",
+        "before": "Keep the meal close to the museum so lunch feels like a break, not another commute.",
+        "after": "Make a sit-down meal the comfortable midpoint of the neighborhood day."
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/4/label",
+        "before": "Explore Pilsen at your own pace",
+        "after": "Browse and pause for coffee"
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/4/note",
+        "before": "Browse along 18th Street for murals, storefronts and a café or bakery stop, keeping the walk as short or long as the weather suits.",
+        "after": "Continue exploring nearby streets at your own pace, with a café or bakery break and no obligation to cover a set distance."
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/5/label",
+        "before": "Return and recharge",
+        "after": "Return when you feel ready"
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/5/note",
+        "before": "Take transit back when you feel ready and leave room for a rest before dinner.",
+        "after": "Take transit back to your base and leave room to rest before dinner."
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/6/label",
+        "before": "A relaxed final dinner",
+        "after": "A relaxed dinner near your base"
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/6/note",
+        "before": "Choose a restaurant near your base; with a generous lunch behind you, this can be a lighter meal rather than another food expedition.",
+        "after": "Keep the evening local rather than adding another cross-town outing."
+      },
+      {
+        "path": "/days/1/travelEdges/0",
+        "before": {
+          "sourceStopId": "chi-mexican-art",
+          "targetStopId": "chi-lunch",
+          "relationship": "transfer",
+          "modeIntent": null,
+          "modeAuthority": "traveler",
+          "operationalAccess": {
+            "status": "unknown",
+            "requiredMode": null,
+            "sources": []
+          },
+          "travelMode": "transit",
+          "status": "verified",
+          "durationSeconds": 303,
+          "distanceMeters": 362,
+          "source": {
+            "evidenceId": "simple:0b0d39042585d823381c308cc201079cb9f58810430f02080fe3aa62b439fedb",
+            "provider": "google_maps",
+            "url": null
+          }
+        },
+        "after": {
+          "absent": true
+        }
+      },
+      {
+        "path": "/days/1/day",
+        "before": {
+          "absent": true
+        },
+        "after": 2
+      },
+      {
+        "path": "/parkName",
+        "before": {
+          "absent": true
+        },
+        "after": null
+      }
+    ]
+  },
+  {
+    "followupQuestionId": 4,
+    "changes": [
+      {
+        "path": "/days/1/label",
+        "before": "Pond reflections and woodland color",
+        "after": "Pond reflections and a free afternoon"
+      },
+      {
+        "path": "/days/1/stops/0/evidenceRef",
+        "before": "simple:a603adaf51b893f71109011a89f8757cad9a1acb4b8d537e3bbaf089172e5158",
+        "after": "simple:bd181fd534c2c9e33c5f216cf8496ef8cffaa5b77619aa0a1e924caa9f219ac3"
+      },
+      {
+        "path": "/days/1/stops/0/note",
+        "before": "Concentrate on the southern shoreline views and a short out-and-back. Skip a full pond circuit: flat-looking shoreline terrain is not necessarily easy underfoot. Calm conditions offer the best chance of reflections.",
+        "after": "Concentrate on the southern shoreline views and a short out-and-back rather than the full pond circuit. Set your turnaround by comfort, with plenty of photography pauses; calm conditions offer the best chance of reflections."
+      },
+      {
+        "path": "/days/1/stops/0/location/sourceRef",
+        "before": "simple:a603adaf51b893f71109011a89f8757cad9a1acb4b8d537e3bbaf089172e5158",
+        "after": "simple:bd181fd534c2c9e33c5f216cf8496ef8cffaa5b77619aa0a1e924caa9f219ac3"
+      },
+      {
+        "path": "/days/1/stops/0/sourceReferences/0/evidenceId",
+        "before": "simple:a603adaf51b893f71109011a89f8757cad9a1acb4b8d537e3bbaf089172e5158",
+        "after": "simple:bd181fd534c2c9e33c5f216cf8496ef8cffaa5b77619aa0a1e924caa9f219ac3"
+      },
+      {
+        "path": "/days/1/stops/0/sourceReferences/0/observedAt",
+        "before": "2026-10-16T22:06:45.610Z",
+        "after": "2026-10-16T22:07:55.123Z"
+      },
+      {
+        "path": "/days/1/stops/1",
+        "before": {
+          "id": "jesup-path",
+          "order": 2,
+          "type": "walk",
+          "name": "Jesup Path",
+          "evidenceRef": "simple:f167a874a1f811f9eaceac58e17de2f2bad84e7608b9fcc6a0a6aaa0ac2cd1d7",
+          "note": "Choose a short woodland out-and-back for foliage details and contrasting textures. Keep the distance flexible and use care on wet walking surfaces.",
+          "duration": 60,
+          "startTime": "",
+          "timeWindow": "Afternoon",
+          "canonicalPlaceName": "Jesup Path",
+          "displayName": "Jesup Path",
+          "canonicalPlaceId": "google:place:ChIJhaUlAxS_rkwR8LybBAsJ81E",
+          "resolutionStatus": "resolved",
+          "countryCode": "US",
+          "placeKind": "place",
+          "placeTypes": [
+            "route"
+          ],
+          "location": {
+            "lat": 44.3652522,
+            "lon": -68.2105598,
+            "source": "geocoder",
+            "authority": "commercial_structured",
+            "status": "resolved",
+            "sourceRef": "simple:f167a874a1f811f9eaceac58e17de2f2bad84e7608b9fcc6a0a6aaa0ac2cd1d7",
+            "sourceEntity": "google:place:ChIJhaUlAxS_rkwR8LybBAsJ81E"
+          },
+          "sourceReferences": [
+            {
+              "evidenceId": "simple:f167a874a1f811f9eaceac58e17de2f2bad84e7608b9fcc6a0a6aaa0ac2cd1d7",
+              "url": "https://www.google.com/maps/search/?api=1&query=Jesup%20Path&query_place_id=ChIJhaUlAxS_rkwR8LybBAsJ81E",
+              "observedAt": "2026-10-16T22:06:45.489Z"
+            }
+          ],
+          "operationalCaveats": [],
+          "drivingTimeFromPreviousMin": 13.966666666666667
+        },
+        "after": {
+          "absent": true
+        }
+      },
+      {
+        "path": "/days/1/dayStructure/summary",
+        "before": "Lake photography anchors the day, with a short contrasting woodland walk and no distant west-side detour.",
+        "after": "An unhurried morning photographing Jordan Pond, followed by lunch and a completely free afternoon back near Bar Harbor."
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/0/note",
+        "before": "Give the main photographic outing an unhurried morning, including the approach from your base.",
+        "after": "Make this the day's only planned outing, allowing an easy approach from your base."
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/1/label",
+        "before": "Lunch and a seated break",
+        "after": "Lunch at your own pace"
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/1/note",
+        "before": "Bring a picnic; leave breathing room before the second outing.",
+        "after": "Enjoy a picnic or return to Bar Harbor for lunch, with no second outing to rush toward."
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/2/kind",
+        "before": "outing",
+        "after": "downtime"
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/2/label",
+        "before": "Look for woodland color",
+        "after": "Afternoon entirely free"
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/2/note",
+        "before": "Make one additional approach for a brief change of scenery before returning to Bar Harbor.",
+        "after": "Return to your base and spend the afternoon however you like, with no scheduled activities or additional driving."
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/2/stopIds/0",
+        "before": "jesup-path",
+        "after": {
+          "absent": true
+        }
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/3/kind",
+        "before": "downtime",
+        "after": "meal"
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/3/periods/0",
+        "before": "afternoon",
+        "after": "evening"
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/3/label",
+        "before": "Rest at your base",
+        "after": "An easy local dinner"
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/3/note",
+        "before": "Keep the rest of the afternoon free rather than filling it with extra driving.",
+        "after": "Keep dinner near your lodging whenever you feel ready."
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/4",
+        "before": {
+          "kind": "meal",
+          "periods": [
+            "evening"
+          ],
+          "label": "Dinner in Bar Harbor",
+          "note": "Enjoy an easy local evening after the two short outings.",
+          "stopIds": []
+        },
+        "after": {
+          "absent": true
+        }
+      },
+      {
+        "path": "/days/1/travelEdges/0",
+        "before": {
+          "sourceStopId": "jordan-pond",
+          "targetStopId": "jesup-path",
+          "relationship": "transfer",
+          "modeIntent": "drive",
+          "modeAuthority": "practical_default",
+          "operationalAccess": {
+            "status": "unknown",
+            "requiredMode": null,
+            "sources": []
+          },
+          "travelMode": "driving",
+          "status": "verified",
+          "durationSeconds": 838,
+          "distanceMeters": 10321,
+          "source": {
+            "evidenceId": "simple:b775d03d964d649c46fd364e86140c37b822a0b6871a67264283fb02d920192a",
+            "provider": "google_maps",
+            "url": null
+          }
+        },
+        "after": {
+          "absent": true
+        }
+      },
+      {
+        "path": "/days/1/day",
+        "before": {
+          "absent": true
+        },
+        "after": 2
+      }
+    ]
+  },
+  {
+    "followupQuestionId": 6,
+    "changes": []
+  },
+  {
+    "followupQuestionId": 8,
+    "changes": [
+      {
+        "path": "/intro",
+        "before": "Three full September sightseeing days based in West Yellowstone, prioritizing wildlife, geysers and scenic viewpoints with short walks and no difficult hikes. Assumes a vehicle for sightseeing, not arrival or departure days. Lamar Valley is deliberately the longest travel day; the canyon day afterward allows a slower afternoon. Walking distances below are approximate, not mandatory targets; turn back earlier when needed.",
+        "after": "Three full September sightseeing days based in West Yellowstone, prioritizing wildlife, geysers and scenic viewpoints with short walks and no difficult hikes. Assumes a vehicle for sightseeing, not arrival or departure days. Day 2 stays closer to the west entrance for a flexible wildlife outing and a restful afternoon instead of the long Lamar Valley round trip. Walking distances are approximate, not mandatory targets; turn back earlier when needed."
+      },
+      {
+        "path": "/days/1/label",
+        "before": "Lamar Valley wildlife safari",
+        "after": "Gentle wildlife morning and time to rest"
+      },
+      {
+        "path": "/days/1/stops/0",
+        "before": {
+          "id": "lamar-valley",
+          "order": 1,
+          "type": "wildlife",
+          "name": "Lamar Valley",
+          "evidenceRef": "simple:aa5f1d7aae365e5cdea31dcd6123cd73b09c0f9b3a0d77ae116d79f709b4e9e9",
+          "note": "Watch from designated roadside pullouts using binoculars or a spotting scope. Spend time scanning rather than hiking; bison are a central attraction, while bear and wolf sightings are uncertain. Move between pullouts only when parking is safe.",
+          "duration": 180,
+          "startTime": "",
+          "timeWindow": "Morning into midday",
+          "canonicalPlaceName": "Lamar Valley",
+          "displayName": "Lamar Valley",
+          "canonicalPlaceId": "nps:place:3CC3B90D-5069-48D5-8062-8E3F475F25EB",
+          "resolutionStatus": "resolved",
+          "countryCode": "US",
+          "placeKind": "place",
+          "placeTypes": [
+            "point_of_interest"
+          ],
+          "location": {
+            "lat": 44.907566,
+            "lon": -110.251554,
+            "source": "resolved_metadata",
+            "authority": "official_owner",
+            "status": "resolved",
+            "sourceRef": "simple:aa5f1d7aae365e5cdea31dcd6123cd73b09c0f9b3a0d77ae116d79f709b4e9e9",
+            "sourceEntity": "nps:place:3CC3B90D-5069-48D5-8062-8E3F475F25EB"
+          },
+          "sourceReferences": [
+            {
+              "evidenceId": "simple:aa5f1d7aae365e5cdea31dcd6123cd73b09c0f9b3a0d77ae116d79f709b4e9e9",
+              "url": "https://www.nps.gov/places/000/lamar-valley-predators-and-prey.htm",
+              "observedAt": "2026-10-16T22:12:43.768Z"
+            }
+          ],
+          "operationalCaveats": []
+        },
+        "after": {
+          "absent": true
+        }
+      },
+      {
+        "path": "/days/1/dayStructure/summary",
+        "before": "A wildlife-first day with a long approach, extended roadside watching and no added sightseeing checklist.",
+        "after": "A flexible wildlife outing in the Madison River corridor closer to West Yellowstone, with seated breaks and an afternoon at your base instead of the long Lamar Valley drive."
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/0/kind",
+        "before": "transfer",
+        "after": "experience"
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/0/label",
+        "before": "Early drive from West Yellowstone to Lamar Valley",
+        "after": "Unhurried roadside wildlife watching"
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/0/note",
+        "before": "Leave early for the long cross-park approach; allow several hours and extra time for wildlife traffic. Avoid a rigid dawn-arrival target and drive cautiously in low light.",
+        "after": "Explore the Madison River corridor between the west entrance and Madison Junction, watching for elk and bison only from safe designated pullouts; take seated breaks and turn back whenever comfortable rather than chasing sightings or continuing to Lamar. No hike or dawn arrival is required."
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/0/duration",
+        "before": {
+          "absent": true
+        },
+        "after": 150
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/1/kind",
+        "before": "outing",
+        "after": "meal"
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/1/periods/0",
+        "before": "morning",
+        "after": "midday"
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/1/periods/1",
+        "before": "midday",
+        "after": {
+          "absent": true
+        }
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/1/label",
+        "before": "Scan Lamar Valley for wildlife",
+        "after": "Long lunch and a seated break"
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/1/note",
+        "before": "Keep the day centered on patient wildlife watching with minimal walking.",
+        "after": "Return to West Yellowstone for an unhurried lunch, with room for traffic delays rather than another sightseeing commitment."
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/1/stopIds/0",
+        "before": "lamar-valley",
+        "after": {
+          "absent": true
+        }
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/2/kind",
+        "before": "meal",
+        "after": "downtime"
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/2/periods/0",
+        "before": "midday",
+        "after": "afternoon"
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/2/label",
+        "before": "Picnic and a proper break",
+        "after": "Rest at your base"
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/2/note",
+        "before": "Bring lunch so you are not dependent on distant or seasonal food services; eat away from wildlife and secure all food.",
+        "after": "Keep the afternoon genuinely free for naps, reading or relaxed time together; no additional driving or walking is planned."
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/3/kind",
+        "before": "transfer",
+        "after": "meal"
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/3/periods/0",
+        "before": "afternoon",
+        "after": "evening"
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/3/label",
+        "before": "Return from Lamar Valley to West Yellowstone",
+        "after": "Easy dinner in West Yellowstone"
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/3/note",
+        "before": "Allow a generous afternoon for the return rather than adding Mammoth or other distant attractions; aim to finish the long drive before dark.",
+        "after": "Stay near your lodging and recharge for the canyon viewpoints tomorrow."
+      },
+      {
+        "path": "/days/1/dayStructure/blocks/4",
+        "before": {
+          "kind": "downtime",
+          "periods": [
+            "evening"
+          ],
+          "label": "Quiet evening at your base",
+          "note": "Have dinner and rest after the trip's most driving-intensive day.",
+          "stopIds": []
+        },
+        "after": {
+          "absent": true
+        }
+      },
+      {
+        "path": "/days/1/day",
+        "before": {
+          "absent": true
+        },
+        "after": 2
+      }
+    ]
+  },
+  {
+    "followupQuestionId": 10,
+    "changes": []
+  }
+]

@@ -1,5 +1,7 @@
 # CI control verification and minimal remediation
 
+Subsequent execution: [master protection applied, CI branch published, hosted evidence retained](ci-controls-executed-2026-10-16.md). The findings below are the earlier inspection baseline, preserved for traceability.
+
 **HOLD. Exception not implemented or approved.** This pass inspected workflow source and read GitHub settings, then prepared local CI hardening. No dependency investigation, registry audit, dependency update, hosted test, push, deployment or GitHub settings mutation occurred. Previous reported counts remain historical: 45 development findings and zero application production findings.
 
 ## Verified external settings

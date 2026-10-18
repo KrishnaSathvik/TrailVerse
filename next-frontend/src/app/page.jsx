@@ -10,14 +10,13 @@ import LandingTestimonialsClient from '@/components/testimonials/LandingTestimon
 import IconGlyph from '@/components/common/IconGlyph';
 import { getApiBaseUrl } from '@/lib/apiBase';
 import { getBlogPostsServer } from '@/lib/blogApi';
-import LandingHeroCta from './LandingHeroCta';
+import LandingHeroCta, { LandingExploreShortcuts } from './LandingHeroCta';
 import LandingFeaturedParks from './LandingFeaturedParks';
 import { getLandingDailyFeedServer, getLandingTestimonialsServer } from '@/lib/landingApi';
 import { LANDING_SECTION, LANDING_SECTION_HEADER_MB, LANDING_SECTION_X } from '@/lib/landingLayout';
 import {
   LANDING_HERO_BADGE,
   LANDING_HERO_HEADLINE,
-  LANDING_HERO_HEADLINE_ACCENT,
   LANDING_HERO_META_DESCRIPTION,
   LANDING_HERO_SUBTITLE,
   LANDING_PAGE_TITLE,
@@ -82,39 +81,45 @@ export default async function LandingPage() {
       <Header />
 
       <main>
-        <section className="relative z-10 w-full overflow-hidden min-h-[24rem] sm:min-h-[32rem] lg:min-h-[36rem]">
-          <Image
-            src="/background23.png"
-            alt=""
-            fill
-            priority
-            className="object-cover brightness-[0.92] saturate-[1.08]"
-            style={{ objectPosition: 'center 40%' }}
-            sizes="100vw"
-          />
-          <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black/85 via-black/45 to-black/25" />
-          <div className="absolute inset-0 z-[1] bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,transparent_0%,rgba(0,0,0,0.35)_100%)]" />
-          <div className="public-shell relative z-10 flex min-h-[inherit] flex-col justify-center py-8 sm:py-14 lg:py-16">
-            <div className="public-rich mx-auto w-full text-center">
-              <p className="animate-fade-in mb-4 inline-flex items-center gap-2 text-sm font-medium text-white/90">
-                <IconGlyph name="Mountain" className="h-4 w-4 shrink-0" style={{ color: 'var(--accent-green)' }} />
-                {LANDING_HERO_BADGE}
-              </p>
+        <div className="public-shell">
+          <section aria-labelledby="landing-hero-title" className="landing-hero relative z-10 w-full overflow-hidden">
+            <Image
+              src="/background23.png"
+              alt=""
+              fill
+              priority
+              className="object-cover object-center brightness-[0.92] saturate-[1.08]"
+              sizes="(min-width: 1280px) 1216px, 100vw"
+            />
+            <div className="absolute inset-0 z-[1] bg-gradient-to-b from-[#071e17]/60 via-[#071e17]/70 to-[#071e17]/90" />
+            <div className="relative z-10 flex h-full min-h-[22rem] flex-col justify-center px-4 py-10 sm:min-h-[24rem] sm:px-8 sm:py-12 lg:min-h-0 lg:py-8">
+              <div className="mx-auto w-full max-w-3xl text-center">
+                <p className="mb-5 inline-flex items-center gap-2 text-xs font-medium text-white/85 sm:text-sm">
+                  <IconGlyph name="Mountain" className="h-4 w-4 shrink-0 text-emerald-300" />
+                  {LANDING_HERO_BADGE}
+                </p>
 
-              <h1
-                className="animate-fade-in mb-5 text-4xl font-semibold tracking-tight text-white sm:text-5xl md:text-6xl leading-[1.1]"
-                style={{ fontFamily: 'var(--font-display)' }}
-              >
-                {LANDING_HERO_HEADLINE}
-                <span className="block text-emerald-300">{LANDING_HERO_HEADLINE_ACCENT}</span>
-              </h1>
+                <h1
+                  id="landing-hero-title"
+                  className="mx-auto mb-4 max-w-[19ch] text-[2rem] font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl leading-[1.08] text-balance"
+                  style={{ fontFamily: 'var(--font-display)' }}
+                >
+                  {LANDING_HERO_HEADLINE}
+                </h1>
 
-              <p className="animate-fade-in mx-auto mb-6 max-w-2xl text-sm leading-relaxed text-white/80 text-balance sm:mb-8 sm:text-base">
-                {LANDING_HERO_SUBTITLE}
-              </p>
+                <p className="mx-auto mb-6 max-w-[30ch] text-balance text-base leading-relaxed text-white/85 sm:mb-8 sm:max-w-xl sm:text-lg">
+                  {LANDING_HERO_SUBTITLE}
+                </p>
 
-              <LandingHeroCta />
+                <LandingHeroCta />
+              </div>
             </div>
+          </section>
+        </div>
+
+        <section aria-label="More ways to explore" className="py-4 sm:py-5">
+          <div className="public-shell">
+            <LandingExploreShortcuts />
           </div>
         </section>
 

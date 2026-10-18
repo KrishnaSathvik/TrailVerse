@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import {
   X, MapPin, Calendar, Users, ChevronDown,
-  ArrowRight, ArrowLeft, CalendarDays, Tent, Utensils, Send
+  ArrowRight, ArrowLeft, CalendarDays, Tent, Utensils
 } from '@components/icons';
 import Button from '@components/common/Button';
 import { touchFormField } from '@/lib/formDataProvenance';
@@ -449,14 +449,13 @@ const QuickFillModal = ({
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Apply & Chat - available on every step */}
             <Button
               onClick={handleApply}
               variant="primary"
               size="md"
-              icon={Send}
+              icon={ArrowRight}
             >
-              Apply &amp; Chat
+              Add to message
             </Button>
 
             {step < totalSteps && (

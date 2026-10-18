@@ -5,6 +5,7 @@ import TrailieAvatar from '@/components/plan-ai/TrailieAvatar';
 import TrailieMarkdown from './TrailieMarkdown';
 import TrailieItinerary from './TrailieItinerary';
 import TrailieRichTrip from './TrailieRichTrip';
+import GuidanceList from './GuidanceList';
 import TrailieComparison from './TrailieComparison';
 import TrailieRankedList from './TrailieRankedList';
 import { normalizeTrailiePresentation } from '@/lib/normalizeTrailiePresentation';
@@ -31,9 +32,17 @@ function Header({ example = false }) {
   );
 }
 
-function NarrativeSections({ sections, placement, parkImages }) {
+const THINGS_TO_KNOW = /^\s*things to know\s*$/i;
+
+function hasThingsToKnow(sections, placement) {
+  return (sections || []).some((section) => section?.placement === placement && section?.markdown && THINGS_TO_KNOW.test(section.heading || ''));
+}
+
+/** Trip guidance joins the narrative Things to Know section — one panel, never two. */
+function NarrativeSections({ sections, placement, parkImages, guidance = [] }) {
   const items = (sections || []).filter((section) => section?.placement === placement && section?.markdown);
   if (!items.length) return null;
+  const guidanceAt = guidance.length ? items.findIndex((section) => THINGS_TO_KNOW.test(section.heading || '')) : -1;
   return items.map((section, index) => (
     <section key={`${placement}-${index}`} className="trailie-narrative max-w-[var(--public-rich-width)]">
       {section.heading ? (
@@ -45,6 +54,7 @@ function NarrativeSections({ sections, placement, parkImages }) {
         </h3>
       ) : null}
       <TrailieMarkdown text={section.markdown} parkImages={parkImages} />
+      {index === guidanceAt ? <GuidanceList guidance={guidance} /> : null}
     </section>
   ));
 }
@@ -194,7 +204,8 @@ export default function TrailieResponse({
         {artifact?.kind === 'itinerary' ? (
           artifactAccess && onOpenArtifact
             ? <TrailieRichTrip response={response} refinement={presentation.refinement} onOpen={onOpenArtifact} onFollowup={onFollowup}
-                supplement={<NarrativeSections sections={presentation.narrativeSections} placement="after_plan" parkImages={response.parkImages} />}
+                supplement={(guidance) => <NarrativeSections sections={presentation.narrativeSections} placement="after_plan" parkImages={response.parkImages} guidance={guidance} />}
+                guidanceInSupplement={hasThingsToKnow(presentation.narrativeSections, 'after_plan')}
                 planningState={planningState} current={personalizationCurrent} disabled={personalizationDisabled || hideActions}
                 example={example} showDemoActions={showDemoActions} guestExhausted={guestExhausted} onRequireAccount={onRequireAccount} />
             : <TrailieItinerary plan={artifact.plan} pendingLabel={response.lifecycle?.pendingLabel} />

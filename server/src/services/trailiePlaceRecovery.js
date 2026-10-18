@@ -32,14 +32,46 @@ function buildPlaceRecovery({ unresolved = [], diagnostics = [], evidence = [], 
 
 // Only called after canonical validation: a required outing is either a grounded
 // stop or an explicitly non-spatial experience, never a silently substituted pin.
-function requiredPlaceRecoveryIssues(recovery, plan) {
+function requiredPlaceRecoveryIssues(recovery, plan, evidence = [], now = new Date()) {
   if (!plan) return [];
   const stops = (plan.days || []).flatMap(day => day.stops || []);
   const experiences = (plan.days || []).flatMap(day => day.dayStructure?.blocks || []).filter(block => block.kind === 'experience');
+  // Resolve aliases against current evidence, including identities acquired during
+  // finalization. Historical failed lookups must not erase a confirmed identity.
+  const fresh = evidence.filter(row => usableEvidence(row, now, { authoritative: true })
+    && row.topic !== 'stop_coordinates' && validLocation(row.claim?.normalizedValue?.location)
+    && !row.claim?.normalizedValue?.alternativeFor);
+  const representedIdentity = place => {
+    const matches = fresh.filter(row => {
+      const value = row.claim.normalizedValue;
+      const aliases = [value.name, value.canonicalPlaceName,
+        ...(row.source?.provider === 'named_place' ? [value.requestedName] : []),
+        ...(row.source?.provider === 'nps' ? value.identityAliases || [] : [])];
+      return aliases.some(name => normalized(name) === normalized(place.name));
+    });
+    const identities = new Set(matches.map(row => row.claim.identity).filter(Boolean));
+    if (identities.size !== 1) return false;
+    const identity = [...identities][0];
+    const baseNames = matches.filter(row => {
+      const value = row.claim.normalizedValue;
+      return ['area', 'lodging', 'hotel', 'lodge', 'accommodation'].includes(value.placeKind || value.category)
+        || (value.placeTypes || []).includes('lodging');
+    }).flatMap(row => [row.claim.normalizedValue.name, row.claim.normalizedValue.canonicalPlaceName,
+      row.source?.provider === 'named_place' ? row.claim.normalizedValue.requestedName : null]).filter(Boolean);
+    // The guard folds a hotel stop into overnightLocation. Preserve that honest
+    // representation without permitting an arbitrary outing to hide in a base.
+    if ((plan.days || []).some(day => baseNames.some(name => normalized(day.overnightLocation) === normalized(name)))) return true;
+    return stops.some(stop => stop.canonicalPlaceId === identity
+      // Official activities explicitly identify their parent destination. A title
+      // or proximity match cannot establish that a destination is represented.
+      || fresh.some(row => row.evidenceId === stop.evidenceRef
+        && row.claim.normalizedValue.destinationId === identity));
+  };
   return recovery?.failedPlaces.some(place => place.provenance === 'traveler_required_place'
     && !stops.some(stop => normalized(stop.name) === normalized(place.name)
       || normalized(stop.experience?.name) === normalized(place.name))
-    && !experiences.some(block => mentions(block.label, place.name)))
+    && !experiences.some(block => mentions(block.label, place.name))
+    && !representedIdentity(place))
     ? ['traveler_required_place_unresolved'] : [];
 }
 

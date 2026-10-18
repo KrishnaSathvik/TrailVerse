@@ -60,10 +60,13 @@ it('routes an exhausted guest to sign-in instead of silently submitting', () => 
   expect(gate).toHaveBeenCalledOnce();
   expect(submit).not.toHaveBeenCalled();
 });
-it('renders only changed days after accepted refinement', () => {
+it('keeps refinement prose and workspace access without repeating the updated trip', () => {
   show({ presentation: { ...manifest, refinement: { isRefinement: true, changes: ['trip_updated'], changedDayNumbers: [3] } } });
-  expect(screen.getByText('Trip updated')).toBeInTheDocument();
-  expect(screen.getByText('Focus on Lake 3 and recovery.')).toBeInTheDocument();
+  expect(screen.queryByText('Trip updated')).not.toBeInTheDocument();
+  expect(screen.queryByText('Focus on Lake 3 and recovery.')).not.toBeInTheDocument();
+  expect(screen.queryByRole('heading', { name: 'Glacier' })).not.toBeInTheDocument();
+  expect(screen.getByText('Here is your trip.')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Open trip' })).toBeInTheDocument();
   expect(screen.queryByText('Focus on Lake 1 and recovery.')).not.toBeInTheDocument();
   expect(screen.queryByText('Lake 3')).not.toBeInTheDocument();
 });
@@ -86,6 +89,14 @@ it('does not label prose-only refinements as success', async () => {
   render(<AdjustTrip onSubmit={vi.fn().mockResolvedValue({ persisted: true })} current />);
   fireEvent.click(screen.getByRole('button', { name: 'Reduce hiking' }));
   await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Couldn’t update the trip. Your saved trip is unchanged.'));
+  expect(screen.getByRole('button', { name: 'Reduce hiking' })).toBeEnabled();
+});
+it('prepares an editable refinement without claiming the trip was updated', async () => {
+  const prepare = vi.fn().mockResolvedValue({ drafted: true });
+  render(<AdjustTrip onSubmit={prepare} current />);
+  fireEvent.click(screen.getByRole('button', { name: 'Reduce hiking' }));
+  await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Added to your message.'));
+  expect(screen.queryByText('Trip updated')).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Reduce hiking' })).toBeEnabled();
 });
 it('locks suggestions on older revisions', () => {
@@ -144,4 +155,20 @@ it('shows official park-wide guidance first and never a rule that does not apply
   expect(items[0]).toEqual({ text: tripGuidance[0].text, source: tripGuidance[0].source });
   expect(items.map(i => i.text)).not.toContain('Not active');
   expect(items.map(i => i.text)).not.toContain('Unsourced');
+});
+it('renders one Things to Know section that keeps narrative and grounded links', () => {
+  const shuttle = 'https://www.nps.gov/zion/planyourvisit/zion-canyon-shuttle-system.htm';
+  const tripGuidance = [{ text: 'During the shuttle season, private vehicles aren’t allowed on Zion Canyon Scenic Drive.', applicability: 'date_dependent', source: shuttle }];
+  const narrativeSections = [{ placement: 'after_plan', heading: 'Things to know', markdown: `Confirm the timetable: [NPS shuttle information](${shuttle}).` }];
+  show({ canonicalPlan: { ...plan, tripGuidance, narrativeSections } });
+  expect(screen.getAllByText(/^Things to know$/i)).toHaveLength(1);
+  expect(screen.getByRole('link', { name: 'NPS shuttle information' })).toHaveAttribute('href', shuttle);
+  expect(screen.getByText(/private vehicles aren’t allowed/)).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Source' })).toHaveAttribute('href', shuttle);
+});
+it('keeps the standalone Things to Know section when the narrative has none', () => {
+  const tripGuidance = [{ text: 'Shuttle only in season.', applicability: 'applies', source: 'https://www.nps.gov/zion/planyourvisit/zion-canyon-shuttle-system.htm' }];
+  show({ canonicalPlan: { ...plan, tripGuidance } });
+  expect(screen.getAllByText(/^Things to know$/i)).toHaveLength(1);
+  expect(screen.getByText('Shuttle only in season.')).toBeInTheDocument();
 });

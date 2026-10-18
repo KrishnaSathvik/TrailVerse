@@ -3,7 +3,7 @@
 **Purpose:** Keep marketing, demos, and agent handbooks aligned with what the codebase actually does.
 **Related:** [trailie-web-search-product-policy.md](./trailie-web-search-product-policy.md) (web search gates in detail)
 
-Last reviewed: 2026-10-15 (local release baseline; not deployed)
+Last reviewed: 2026-10-17 (local candidate; not deployed)
 
 Evidence: [release baseline](releases/trailie-release-preparation-2026-10-15.md). Captured examples establish observed behavior, not universal guarantees.
 
@@ -107,6 +107,10 @@ Guests are unsuitable for long continuity smoke sequences (5-turn ceiling).
 ---
 
 ## Booking limitations
+
+The local contextual-link extension supports optional exact resource research for hotels, campgrounds, permits, shuttles, rental cars, restaurants, attractions and tours. It reuses the existing bounded research phase; normal itineraries do not automatically trigger booking searches. Prefer provider-returned URLs, then successfully extracted pages matching the resource name and destination. RIDB fallback also checks the discovered Recreation.gov URL against the known resource ID and category; it never manufactures URLs from IDs.
+
+Links remain in canonical narrative guidance and the existing Things to Know rendering, or in conversational booking-help replies. A listing page is distinct from a reservation page; neither establishes date-specific inventory. Extraction failures and identity mismatches remain unresolved. Offline evidence: [contextual travel links](audits/trailie-contextual-travel-links-2026-10-17.md). A subsequent [provider-only live check](audits/trailie-link-live-acceptance-2026-10-17.md) verified campground and one exact hotel link, but broad hotel discovery returned no usable results. No live model acceptance run was made for this extension.
 
 Trailie **cannot** book, reserve, hold, purchase, or guarantee travel services, and **cannot** check live booking inventory unless a connected tool actually returns that data (none do for hotels/restaurants today).
 

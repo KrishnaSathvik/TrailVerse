@@ -2,6 +2,7 @@
 
 import { useId, useState } from 'react';
 import Link from 'next/link';
+import TrailieAvatar from '@/components/plan-ai/TrailieAvatar';
 
 export const VERSION_CHOICES = Object.freeze([
   { key: 'season', label: 'When', options: [['Summer', 'summer'], ['Fall', 'fall'], ['Spring', 'spring'], ['Winter', 'winter']] },
@@ -33,9 +34,15 @@ export default function PlanYourVersion({ title, days, outline = '', onExplore =
   const prompt = versionPrompt({ title, days, outline }, selection);
   return (
     <section aria-label="Make this trip yours" data-version-state={prompt ? 'customized' : 'empty'}
-      className={`w-full max-w-[52rem] rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-7 ${className}`}>
-      <h3 className="text-xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>Make this trip yours</h3>
-      <p className="mt-1 text-sm text-[var(--text-secondary)]">Change anything about this trip.</p>
+      className={`w-full max-w-[52rem] rounded-2xl border border-[var(--border)] bg-[var(--bg-secondary)] p-5 sm:p-7 ${className}`}>
+      <div className="flex items-start gap-4">
+        <TrailieAvatar className="!h-11 !w-11 sm:!h-12 sm:!w-12 shrink-0" />
+        <div>
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--accent-green)]">Trailie</p>
+          <h3 className="text-xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>Make this trip yours</h3>
+        </div>
+      </div>
+      <p className="mt-5 text-base leading-relaxed text-[var(--text-secondary)]">Pick your season, who’s going, and your travel style to start planning with Trailie.</p>
       <div className="mt-5 space-y-4">
         {VERSION_CHOICES.map(choice => (
           <fieldset key={choice.key} className="grid min-w-0 gap-2 sm:grid-cols-[7.5rem_minmax(0,1fr)] sm:items-center">
@@ -68,7 +75,7 @@ export default function PlanYourVersion({ title, days, outline = '', onExplore =
           </figure>
           : <p className="text-sm text-[var(--text-tertiary)]">Choose at least one preference to start your version.</p>}
       </div>
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="mt-6 flex flex-col gap-3">
         {prompt
           ? <Link href={`/plan-ai?entry=new-trip&ask=${encodeURIComponent(prompt)}`}
             className="inline-flex min-h-12 items-center justify-center rounded-full bg-[var(--accent-green)] px-6 text-[15px] font-semibold text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-green)] focus-visible:ring-offset-2">

@@ -239,7 +239,6 @@ export default function usePlanAI(tripId) {
       return;
     }
 
-    // Deep link from Trailie demo — open chat and auto-send the sample question
     const ask = searchParams.get('ask')?.trim();
     if (ask) {
       clearTempChatState();

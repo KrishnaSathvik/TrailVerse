@@ -11,12 +11,12 @@ const SEGMENTED_THEMES = [
 
 /** SSR + first client paint — stable markup, no theme state (avoids hydration mismatch). */
 export function SegmentedThemeSkeleton({ size = 'sm' } = {}) {
-  const btnClass = size === 'sm' ? 'h-6 w-6' : 'h-8 w-8';
+  const btnClass = size === 'sm' ? 'h-7 w-7' : 'h-9 w-9';
   const iconClass = size === 'sm' ? 'h-3 w-3' : 'h-4 w-4';
 
   return (
     <div
-      className="inline-flex items-center gap-0.5 rounded-full border p-0.5"
+      className="inline-flex items-center gap-0.5 overflow-hidden rounded-full border p-1"
       style={{
         borderColor: 'var(--border)',
         backgroundColor: 'var(--surface)',
@@ -57,12 +57,12 @@ const ThemeSwitcher = ({ showLabel = false, compact = false, variant, size = 'de
 
   if (variant === 'segmented') {
     const isCompact = size === 'sm';
-    const btnClass = isCompact ? 'h-6 w-6' : 'h-8 w-8';
+    const btnClass = isCompact ? 'h-7 w-7' : 'h-9 w-9';
     const iconClass = isCompact ? 'h-3 w-3' : 'h-4 w-4';
 
     return (
       <div
-        className="inline-flex items-center gap-0.5 rounded-full border p-0.5"
+        className="inline-flex items-center gap-0.5 overflow-hidden rounded-full border p-1"
         style={{
           borderColor: 'var(--border)',
           backgroundColor: 'var(--surface)',
@@ -83,12 +83,10 @@ const ThemeSwitcher = ({ showLabel = false, compact = false, variant, size = 'de
               aria-checked={isActive}
               aria-label={themeOption.label}
               onClick={() => setTheme(themeOption.id)}
-              className={`flex ${btnClass} items-center justify-center rounded-full transition ${
-                isActive ? 'ring-1' : 'hover:opacity-80'
+              className={`theme-segment relative flex ${btnClass} items-center justify-center bg-transparent transition ${
+                isActive ? 'theme-segment--active' : 'hover:opacity-80'
               }`}
               style={{
-                backgroundColor: isActive ? 'var(--bg-primary)' : 'transparent',
-                borderColor: isActive ? 'var(--border)' : 'transparent',
                 color: isActive ? 'var(--text-primary)' : 'var(--text-tertiary)',
               }}
               suppressHydrationWarning

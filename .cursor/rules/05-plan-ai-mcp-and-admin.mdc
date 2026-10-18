@@ -29,6 +29,13 @@ Filenames still say `simple` / `modelFirst` for historical reasons — those mod
 
 ### Anonymous flow
 
+- Guest and authenticated requests share model-first routing, travel tools, guards, patches and answer quality. Login gates saved-trip access and account limits, not planning capabilities.
+- Count the five-message guest allowance in user turns, never model/tool calls or assistant messages. Preserve the existing admission and retry semantics.
+- Login must claim the existing canonical conversation and plan transactionally and idempotently, without regeneration. Retain recoverable guest context on failed handoffs and enforce owner/session isolation.
+- Keep itinerary prose clean. Use a short, optional end-of-plan **Things to Know** section only for material permits, reservations, shuttles, closures or access restrictions relevant to the trip.
+- Prefer exact official links returned by existing NPS, RIDB or research evidence. A listing is not verified availability. Direct resource questions should receive the useful link directly.
+- Preserve guidance links across saves and scoped revisions. Test omission as well as inclusion across destinations. Do not add mandatory model rounds, a classifier or a separate link-generation stage.
+
 1. User chats without account → `POST /api/ai/chat-anonymous` (model-first by default)
 2. Session id stored client-side (`AnonymousSession` on server)
 3. On signup/login within 48h → `POST /api/auth/migrate-chat` → trip persisted as `TripPlan`

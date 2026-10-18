@@ -16,12 +16,8 @@ function normalizedName(value) {
 
 function chooseRecArea(records, displayName) {
   const target = normalizedName(displayName);
-  return records.find((record) => normalizedName(record.RecAreaName) === target)
-    || records.find((record) => {
-      const name = normalizedName(record.RecAreaName);
-      return name && target && (name.includes(target) || target.includes(name));
-    })
-    || null;
+  const matches = records.filter(record => target && normalizedName(record.RecAreaName) === target);
+  return matches.length === 1 ? matches[0] : null;
 }
 
 function defaultRidbClient() {
@@ -51,9 +47,14 @@ function defaultRidbClient() {
 }
 
 function sourceUrl(facility) {
-  return facility.FacilityReservationURL
-    || facility.FacilityURL
-    || (facility.FacilityID ? `https://www.recreation.gov/camping/campgrounds/${facility.FacilityID}` : null);
+  return safeResourceUrl(facility.FacilityReservationURL) || safeResourceUrl(facility.FacilityURL);
+}
+
+function safeResourceUrl(value) {
+  try {
+    const url = new URL(value);
+    return ['https:', 'http:'].includes(url.protocol) && !url.username && !url.password ? url.href : null;
+  } catch { return null; }
 }
 
 function baseCandidate({ parkCode, topic, evidenceType, claim, sourceId, url, observedAt }) {
@@ -81,7 +82,7 @@ function normalizeRidb(raw, request, observedAt) {
   const parkCode = request.parameters.parkCode;
   const parkId = `nps:park:${parkCode}`;
   const recArea = raw?.recArea;
-  if (!recArea?.RecAreaID) return [];
+  if (!recArea?.RecAreaID || !chooseRecArea([recArea], request.parameters.displayName)) return [];
   const recAreaId = `ridb:rec_area:${recArea.RecAreaID}`;
   const candidates = [baseCandidate({
     parkCode,
@@ -94,7 +95,7 @@ function normalizeRidb(raw, request, observedAt) {
       unit: null, status: null, subjectId: parkId, objectId: recAreaId, qualifiers: [],
     },
     sourceId: recArea.RecAreaID,
-    url: `https://www.recreation.gov/camping/gateways/${recArea.RecAreaID}`,
+    url: safeResourceUrl(recArea.RecAreaURL),
     observedAt,
   })];
 
@@ -107,7 +108,9 @@ function normalizeRidb(raw, request, observedAt) {
       recAreaId,
       name: facility.FacilityName || null,
       facilityType: facility.FacilityTypeDescription || null,
-      reservationUrl: sourceUrl(facility),
+      reservationUrl: safeResourceUrl(facility.FacilityReservationURL),
+      listingUrl: sourceUrl(facility),
+      currentAvailability: null,
     };
     candidates.push(baseCandidate({
       parkCode,
@@ -131,7 +134,7 @@ function normalizeRidb(raw, request, observedAt) {
           text: facility.FacilityDescription || facility.FacilityName || null,
           normalizedValue: common,
           unit: null, status: 'listing_only', subjectId: facilityId, objectId: recAreaId,
-          qualifiers: ['listing_existence_only'],
+          qualifiers: ['listing_existence_only', 'availability_unknown'],
         },
         sourceId: facility.FacilityID, url: sourceUrl(facility), observedAt,
       }));

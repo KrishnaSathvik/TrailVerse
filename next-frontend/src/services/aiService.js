@@ -4,6 +4,7 @@ import { getApiBaseUrl } from '@/lib/apiBase';
 import { createTransportEventNormalizer, CLIENT_EVENT } from '@/utils/transportEventNormalizer';
 import { trailieV2NegotiationHeaders } from '@/lib/trailieTransport';
 import { draftPreviewHeaders } from '@/lib/trailieDraftPreview';
+import { answerStreamHeaders } from '@/lib/trailieAnswerStream';
 
 /** Prefer explicit systemPrompt; else peel legacy messages[0].role=system */
 function getAiApiBaseUrl() {
@@ -100,6 +101,13 @@ export async function consumeAiSseStream(response, callbacks = {}) {
     } catch {
       return;
     }
+    if (['answer_started', 'answer_delta', 'answer_withdrawn'].includes(parsed.type)) {
+      if (!marks.sawDone) {
+        if (parsed.type === 'answer_started' && parsed.sequence === 1 && typeof parsed.responseId === 'string') marks.answerResponseId ||= parsed.responseId;
+        callbacks.onAnswerEvent?.(parsed);
+      }
+      return;
+    }
     if (['draft_started', 'draft_day', 'draft_withdrawn'].includes(parsed.type)) {
       if (!marks.sawDone) {
         if (parsed.type === 'draft_started' && parsed.sequence === 1 && typeof parsed.responseId === 'string')
@@ -109,6 +117,10 @@ export async function consumeAiSseStream(response, callbacks = {}) {
       return;
     }
     for (const ev of normalizer.normalize(parsed)) {
+      if (ev.kind === CLIENT_EVENT.FINALIZED && marks.answerResponseId
+        && (ev.payload.responseId !== marks.answerResponseId || ev.payload.persisted !== true)) {
+        throw Object.assign(new Error('Trailie could not confirm the streamed answer.'), { noAutomaticRetry: true });
+      }
       if (ev.kind === CLIENT_EVENT.FINALIZED && callbacks.onDraftEvent && marks.draftResponseId &&
           ev.payload.responseId !== marks.draftResponseId) {
         throw Object.assign(new Error('Trailie received a final response for a different draft.'), { noAutomaticRetry: true });
@@ -144,6 +156,7 @@ export async function consumeAiSseStream(response, callbacks = {}) {
     if (modelFirst) error.noAutomaticRetry = true;
     throw error;
   } finally {
+    callbacks.onAnswerEvent?.({ type: 'answer_closed' });
     if (!marks.sawDone) callbacks.onDraftEvent?.({ type: 'draft_closed' });
     callbacks.onClose?.({ sawStreamEnd: marks.sawStreamEnd, sawDone: marks.sawDone });
   }
@@ -262,6 +275,7 @@ class AIService {
    * Calls onChunk for each text fragment, onDone when complete, onError on failure.
    */
   async chatStream({
+    onAnswerEvent,
     messages,
     systemPrompt,
     provider,
@@ -299,6 +313,7 @@ class AIService {
         // client flag is on; the server still independently checks its own switch.
         ...trailieV2NegotiationHeaders(),
         ...draftPreviewHeaders(),
+        ...(onAnswerEvent ? answerStreamHeaders() : {}),
       },
       body: JSON.stringify({
         messages: resolved.messages,
@@ -334,13 +349,14 @@ class AIService {
       return;
     }
 
-    await consumeAiSseStream(response, { onChunk, onContentReset, onStreamEnd, onDone, onError, onThinking, onClose, onEarlyEvent, onDisplayContext, onDraftEvent });
+    await consumeAiSseStream(response, { onChunk, onContentReset, onStreamEnd, onDone, onError, onThinking, onClose, onEarlyEvent, onDisplayContext, onDraftEvent, onAnswerEvent });
   }
 
   /**
    * Anonymous streaming chat — SSE, no auth. Falls back to JSON for conversion/limit responses.
    */
   async chatAnonymousStream({
+    onAnswerEvent,
     messages,
     systemPrompt,
     provider,
@@ -374,6 +390,7 @@ class AIService {
         // WP10F-3 — v2 negotiation, dual-gated (client flag + server switch).
         ...trailieV2NegotiationHeaders(),
         ...draftPreviewHeaders(),
+        ...(onAnswerEvent ? answerStreamHeaders() : {}),
       },
       body: JSON.stringify({
         messages: resolved.messages,
@@ -411,7 +428,7 @@ class AIService {
       return;
     }
 
-    await consumeAiSseStream(response, { onChunk, onContentReset, onStreamEnd, onDone, onError, onThinking, onClose, onDisplayContext, onDraftEvent });
+    await consumeAiSseStream(response, { onChunk, onContentReset, onStreamEnd, onDone, onError, onThinking, onClose, onDisplayContext, onDraftEvent, onAnswerEvent });
   }
 
   /**

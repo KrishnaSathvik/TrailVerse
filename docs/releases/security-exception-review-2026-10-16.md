@@ -1,5 +1,9 @@
 # Temporary development-dependency exception — review record
 
+**Current decision path:** [inactive local enforcement and repository-owner risk decision](development-exception-owner-decision-2026-10-16.md). Per the latest user instruction, the owner may accept this risk without a separate organizational security approver. The historical approval model below is superseded; existing GitHub code-review requirements remain. Enforcement is now implemented and tested locally but not activated or pushed.
+
+Executed control evidence: [applied GitHub protection and hosted CI verification](ci-controls-executed-2026-10-16.md). This updates the evidence available for review without granting the exception or deployment approval.
+
 Follow-up: [CI control verification and local remediation](ci-control-verification-2026-10-16.md) records live GitHub protection gaps and proposed workflow changes. The baseline findings below are preserved; they are not claims about an approved or deployed remediation.
 
 **Status: REVIEW ONLY / NOT APPROVED. Deployment remains HOLD.** The user commissioned Option B review on October 16, 2026. This authorizes preparing and assessing the exception, not activating it, changing CI policy, publishing code, provisioning a candidate host, or deploying. No new audit or dependency experiment was run for this review.

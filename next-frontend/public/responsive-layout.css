@@ -38,7 +38,13 @@
 @media (min-width: 1024px) {
   :root { --public-gutter: 32px; --public-section-space: 48px; }
   .public-card-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .public-selector--desktop-grid { display: grid; }
+  .public-selector--desktop-grid {
+    display: grid;
+    overflow: visible;
+  }
+  .public-selector--desktop-grid > * {
+    min-width: 0;
+  }
 }
 @media (min-width: 1280px) {
   .public-card-grid--four { grid-template-columns: repeat(4, minmax(0, 1fr)); }

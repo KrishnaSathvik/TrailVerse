@@ -7,6 +7,7 @@ const { createResponsesRequest } = require('./responsesAdapter');
 const { buildOpenAIRequest, normalizeResponse, normalizeOpenAIError } = require('./providers/openaiResponsesAdapter');
 const { priceProviderCall } = require('./trailieTurnLedger');
 const { performance } = require('perf_hooks');
+const { createAnswerCollector } = require('../utils/trailieAnswerStream');
 
 // Only bounded identifiers leave the SDK boundary; never retain raw errors,
 // response bodies, arbitrary headers, prompts, or credentials in call telemetry.
@@ -15,7 +16,8 @@ const identifier = value => typeof value === 'string' && /^[a-zA-Z0-9_.:-]{1,200
 function createSimpleModel({ client, route = FINAL_MODEL_ROUTE } = {}) {
   if (!client?.responses?.create) throw new TypeError('An explicitly supplied Responses client is required');
   if (route.model !== FINAL_MODEL_ROUTE.model || route.reasoningEffort !== 'low' || route.provider !== 'openai') throw new TypeError('Unsupported simple runtime route');
-  return async ({ input, instructions, tools, signal, toolChoice = 'auto', onPreviewDay = null }) => {
+  return async ({ input, instructions, tools, signal, toolChoice = 'auto', onPreviewDay = null, onTextDelta = null }) => {
+    if (onTextDelta && (tools.length || toolChoice !== 'none' || onPreviewDay)) throw new TypeError('Answer streaming requires a tool-free handoff');
     const request = createResponsesRequest({ provider: route.provider, model: route.model,
       instructions, input: [{ role: 'user', content: 'Native conversation supplied below.' }],
       tools, reasoning: { effort: route.reasoningEffort }, maxOutputTokens: 10000 });
@@ -30,9 +32,14 @@ function createSimpleModel({ client, route = FINAL_MODEL_ROUTE } = {}) {
       timeToFirstUsableResponseMs: null };
     let headersObserved = false;
     try {
-      const streaming = typeof onPreviewDay === 'function';
+      const streaming = typeof onPreviewDay === 'function' || typeof onTextDelta === 'function';
       const apiPending = client.responses.create(streaming ? { ...body, stream: true } : body, { signal, maxRetries: 0 });
       const pending = streaming ? (async () => {
+        if (onTextDelta) {
+          const collector = createAnswerCollector({ onText: onTextDelta, signal });
+          for await (const event of await apiPending) collector.push(event);
+          return collector.finish();
+        }
         const { createCollector } = require('../utils/trailiePreviewStream');
         const collector = createCollector({ onDay: (day, index) => {
           if (!signal?.aborted) onPreviewDay(day, index);

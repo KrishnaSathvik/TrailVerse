@@ -81,8 +81,8 @@ const FeaturesPage = () => {
         },
         {
           icon: ArchiveRestore,
-          title: 'Chat History & Archives',
-          description: 'Signed-in trips auto-save to chat history so you can resume, refine, or archive finished plans.',
+          title: 'My Trips & Conversations',
+          description: 'Find saved itineraries and previous conversations in My Trips. Open a trip, continue planning, or archive it for later.',
           benefits: ['Auto-save when signed in', 'Archive & restore', 'Saved conversation history', 'Organized by trip'],
         },
         {

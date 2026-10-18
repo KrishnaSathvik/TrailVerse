@@ -8,6 +8,7 @@ import { LogOut, ChevronDown } from '@components/icons';
 import ThemeSwitcher, { SegmentedThemeSkeleton } from './ThemeSwitcher';
 import { BROWSE_HUB_NAV_LABEL, BROWSE_HUB_PATH } from '@/lib/browseHub';
 import { resolveHeaderMobileNav } from '@/lib/planAiHeaderNav';
+import { captureNavigation } from '@/utils/analytics';
 
 const AUTH_HOME_NAV_ITEM = { path: '/home', label: 'Home' };
 const BLOG_NAV_ITEM = { path: '/blog', label: 'Blog' };
@@ -27,13 +28,13 @@ const SECONDARY_NAV_ITEMS = [
 ];
 
 const AUTH_MORE_NAV_ITEMS = [
-  { path: '/chat-history', label: 'Chat History' },
+  { path: '/chat-history', label: 'My Trips' },
   { path: '/profile', label: 'Profile' },
 ];
 
 /** Stable class string — active visuals via .header-mobile-nav-item CSS + aria-current. */
 const MOBILE_NAV_ITEM_CLASS =
-  'header-mobile-nav-item inline-flex h-11 min-h-11 shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full border border-solid px-2 py-0 text-sm leading-none transition sm:px-3 sm:text-[0.9375rem] hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10';
+  'header-mobile-nav-item relative inline-flex h-11 min-h-11 shrink-0 items-center gap-0.5 whitespace-nowrap bg-transparent px-2 py-0 text-sm leading-none transition sm:px-3 sm:text-[0.9375rem]';
 
 const Header = () => {
   const { isAuthenticated, authReady, initialAuthHint, user, logout } = useAuth();
@@ -82,13 +83,12 @@ const Header = () => {
   const navLinkClassName = (active, { mobileInline = false } = {}) =>
     mobileInline
       ? MOBILE_NAV_ITEM_CLASS
-      : `block w-full rounded-xl px-4 py-3.5 text-left text-base font-medium transition lg:inline-block lg:w-auto lg:rounded-full lg:px-4 lg:py-2.5 lg:text-[0.9375rem] ${
-          active ? 'ring-1' : 'hover:bg-black/5 dark:hover:bg-white/5 lg:hover:bg-black/5 lg:dark:hover:bg-white/5'
+      : `header-desktop-nav-link inline-flex items-center bg-transparent px-3 py-2 text-[0.9375rem] font-medium transition ${
+          active ? 'header-desktop-nav-link--active' : ''
         }`;
 
   const navLinkStyle = (active) => ({
-    backgroundColor: active ? 'var(--surface)' : 'transparent',
-    borderColor: active ? 'var(--border)' : 'transparent',
+    backgroundColor: 'transparent',
     color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
   });
 
@@ -111,7 +111,10 @@ const Header = () => {
       <Link
         key={item.path}
         href={item.path}
-        onClick={onClick}
+        onClick={(event) => {
+          captureNavigation(mobileInline ? 'header_mobile' : 'header', item.path);
+          onClick?.(event);
+        }}
         className={navLinkClassName(active, { mobileInline })}
         {...(mobileInline
           ? { 'aria-current': active ? 'page' : undefined }
@@ -133,7 +136,10 @@ const Header = () => {
       <Link
         key={item.path}
         href={item.path}
-        onClick={onClick}
+        onClick={(event) => {
+          captureNavigation('header_more', item.path);
+          onClick?.(event);
+        }}
         className={`block rounded-xl px-3 py-3 text-base font-medium transition lg:py-2.5 lg:text-sm ${
           active ? 'ring-1' : 'hover:bg-black/5 dark:hover:bg-white/5'
         }`}
@@ -187,15 +193,19 @@ const Header = () => {
     <button
       type="button"
       onClick={() => setMoreMenuOpen((open) => !open)}
-      className={`${MOBILE_NAV_ITEM_CLASS} ${mobile && active ? 'header-mobile-nav-item--active' : ''} lg:h-auto lg:min-h-0 lg:px-4 lg:py-2.5 lg:text-[0.9375rem] ${
-        !mobile && active ? 'lg:font-semibold lg:ring-1' : ''
-      }`}
+      className={
+        mobile
+          ? `${MOBILE_NAV_ITEM_CLASS} ${active ? 'header-mobile-nav-item--active' : ''}`
+          : `header-desktop-nav-link inline-flex items-center gap-0.5 bg-transparent px-3 py-2 text-[0.9375rem] font-medium transition ${
+              active ? 'header-desktop-nav-link--active' : ''
+            }`
+      }
       {...(mobile
         ? {}
         : { style: navLinkStyle(active) })}
       aria-expanded={moreMenuOpen}
       aria-haspopup="menu"
-      aria-controls="more-navigation-menu-mobile"
+      aria-controls={mobile ? 'more-navigation-menu-mobile' : 'more-navigation-menu-desktop'}
     >
       More
       <ChevronDown className={`h-4 w-4 transition-transform lg:h-3 lg:w-3 ${moreMenuOpen ? 'rotate-180' : ''}`} />
@@ -209,7 +219,7 @@ const Header = () => {
         className={`min-w-[12rem] rounded-2xl border p-2 shadow-xl ${
           align === 'right'
             ? 'absolute right-0 top-full z-[70] mt-2 lg:hidden'
-            : 'absolute left-1/2 top-full z-20 mt-2 hidden -translate-x-1/2 lg:block'
+            : 'absolute left-1/2 top-full z-[70] mt-2 hidden -translate-x-1/2 lg:block'
         }`}
         style={{
           backgroundColor: 'var(--bg-primary)',
@@ -309,7 +319,7 @@ const Header = () => {
                 </div>
               </div>
 
-              <div className="relative shrink-0">
+              <div className={`relative shrink-0 ${moreMenuOpen ? 'z-[70]' : ''}`}>
                 {renderMoreButton({ active: isMoreActive(currentMoreNavItems), mobile: true })}
                 {renderMoreDropdown('right', currentMoreNavItems)}
               </div>
@@ -318,7 +328,7 @@ const Header = () => {
             <div className="hidden items-center justify-center gap-2 lg:flex">
               {primaryNavItems.map((item) => renderNavLink(item))}
 
-              <div className="relative">
+              <div className={`relative ${moreMenuOpen ? 'z-[70]' : ''}`}>
                 {renderMoreButton({ active: isMoreActive(moreNavItems) })}
                 {renderMoreDropdown('center', moreNavItems)}
               </div>

@@ -15,6 +15,7 @@ const { createTrailieTransportAdapter } = require('../utils/trailieTransportAdap
 const { resolveTrailieTransportDialect } = require('../utils/trailieTransportDialect');
 const { attachClientDisconnectAbort, setSseHeaders, writeSseEvent } = require('../utils/sseStream');
 const { previewEnabled } = require('../utils/trailieDraftPreview');
+const { answerStreamEnabled } = require('../utils/trailieAnswerStream');
 const { recordModelFirstTurn } = require('../services/trailieTurnLedger');
 
 const PATHS = ['/chat', '/chat-stream', '/chat-anonymous', '/chat-anonymous-stream', '/plan-itinerary'];
@@ -93,7 +94,10 @@ function createModelFirstRouter({ dependencies = createDependencies,
         ? 'Trailie took too long to respond. Your saved trip was not changed.'
         : 'Trailie could not finish this response. Your saved trip was not changed.');
       const error = { message, code, responseId, retryable: false };
-      if (transport) transport.error(error);
+      if (transport) {
+        transport.answerEvent({ type: 'withdrawn' });
+        transport.error(error);
+      }
       else res.status(status).json({ success: false, error: error.message, code, responseId });
     };
     try {
@@ -151,8 +155,10 @@ function createModelFirstRouter({ dependencies = createDependencies,
         store: { ...store, load: async () => snapshot }, observe });
       const runtimeStartedAt = Date.now();
       const preview = streaming && previewEnabled(req) && !snapshot.plan?.days?.length;
+      const answerStream = streaming && !preview && answerStreamEnabled(req);
       if (preview) transport.draftStarted({ responseId });
       const result = await run({ userId, tripId: requestedTrip, message, signal, responseId,
+        onAnswerEvent: answerStream ? event => transport.answerEvent({ ...event, responseId }) : null,
         onPreview: preview ? event => event.withdrawn ? transport.draftWithdrawn()
           : transport.draftDay(event) : null,
         scope: metadata.editScope || null, onProgress: event => transport?.progress(event) || false,

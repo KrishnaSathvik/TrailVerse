@@ -1,7 +1,8 @@
 import { privatePageRobots } from '@/lib/seo';
 
 export const metadata = {
-  title: 'Chat History | TrailVerse',
+  title: 'My Trips | TrailVerse',
+  description: 'Your trips and conversations with Trailie, all in one place.',
   robots: privatePageRobots,
 };
 

@@ -13,6 +13,17 @@ const AuthContext = createContext();
 const ANONYMOUS_CHAT_MIGRATION_MAX_AGE_MS = 48 * 60 * 60 * 1000;
 const SESSION_EXPIRED_MESSAGE = 'Your session expired. Please sign in again.';
 
+const readStoredGuestContext = (key) => {
+  const value = localStorage.getItem(key);
+  if (!value) return null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    localStorage.removeItem(key);
+    return null;
+  }
+};
+
 const extractAuthUser = (payload) => {
   if (!payload || typeof payload !== 'object') return null;
   if (payload.data && typeof payload.data === 'object' && !Array.isArray(payload.data)) {
@@ -56,6 +67,7 @@ export const AuthProvider = ({ children, initialAuthHint = false }) => {
     };
 
     const tryMigration = async (anonymousId, storageKey, successMessage, surface = null, conversationId = null) => {
+      localStorage.setItem('returnToChat', JSON.stringify({ anonymousId, conversationId, surface, timestamp: Date.now() }));
       setAuthTransition({
         active: true,
         message: 'Saving your chat to your account...'
@@ -72,10 +84,11 @@ export const AuthProvider = ({ children, initialAuthHint = false }) => {
 
       if (!migrationResponse.ok) {
         clearAuthTransition();
-        return false;
+        throw new Error('You are signed in, but your trip could not be transferred. Your guest conversation is retained; retry opening it.');
       }
 
       const migrationData = await migrationResponse.json();
+      localStorage.removeItem('returnToChat');
       if (storageKey !== 'anonymousSession' || !conversationId) localStorage.removeItem(storageKey);
       // Other guest conversations and their shared quota remain recoverable.
       if (!conversationId) localStorage.removeItem('anonymousSession');
@@ -86,10 +99,10 @@ export const AuthProvider = ({ children, initialAuthHint = false }) => {
       return true;
     };
 
-    const returnToChat = localStorage.getItem('returnToChat');
+    const returnToChat = readStoredGuestContext('returnToChat');
     if (returnToChat) {
       try {
-        const chatContext = JSON.parse(returnToChat);
+        const chatContext = returnToChat;
         if (isValidGuestSessionId(chatContext?.anonymousId)) {
           return await tryMigration(
             chatContext.anonymousId,
@@ -102,19 +115,19 @@ export const AuthProvider = ({ children, initialAuthHint = false }) => {
         localStorage.removeItem('returnToChat');
       } catch (error) {
         console.error('Error reading returnToChat context:', error);
-        localStorage.removeItem('returnToChat');
         clearAuthTransition();
+        throw error;
       }
     }
 
     try {
-      const anonymousSession = localStorage.getItem('anonymousSession');
+      const anonymousSession = readStoredGuestContext('anonymousSession');
       if (!anonymousSession) {
         clearAuthTransition();
         return false;
       }
 
-      const sessionData = JSON.parse(anonymousSession);
+      const sessionData = anonymousSession;
       const sessionAge = Date.now() - sessionData.timestamp;
       const maxAge = ANONYMOUS_CHAT_MIGRATION_MAX_AGE_MS;
 
@@ -131,7 +144,8 @@ export const AuthProvider = ({ children, initialAuthHint = false }) => {
       localStorage.removeItem('anonymousSession');
     } catch (error) {
       console.error('Error checking/migrating anonymous session:', error);
-      localStorage.removeItem('anonymousSession');
+      clearAuthTransition();
+      throw error;
     }
 
     clearAuthTransition();

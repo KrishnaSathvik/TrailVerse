@@ -12,3 +12,10 @@ test.each(['unknown','all day','9 am - 5 pm','4-3 hours','0 minutes','about 3 ho
  expect(activityDurationRange(source)).toBeNull();expect(supportedDurationMaximum({duration:source})).toBeNull();
 });
 test('explicit evidence bound wins conservatively over a broader range',()=>expect(supportedDurationMaximum({duration:'1-4 Hours',maxVisitDurationMinutes:120})).toBe(120));
+
+test.each(['1-2 Hours', '30–120 Minutes', '2 hrs'])('synthesis sees the same minute bound as validation: %s', duration => {
+ const { modelEvidenceValue } = require('../modelEvidenceView');
+ const value = { name: 'Walk', duration, sourceDetails: 'Private full passage' };
+ expect(modelEvidenceValue(value)).toEqual({ name: 'Walk', duration, supportedDurationMaximumMinutes: 120 });
+ expect(value.sourceDetails).toBeDefined();
+});

@@ -61,6 +61,32 @@ const TestComponent = () => {
 };
 
 describe('AuthContext', () => {
+  it.each(['http', 'network'])('retains handoff context on %s failure and retries the same conversation', async failure => {
+    const anonymousId = 'guest_v2_12345678-1234-4123-8123-123456789abc';
+    const context = { anonymousId, conversationId: 'same-trip', surface: 'itinerary' };
+    localStorage.setItem('returnToChat', JSON.stringify(context));
+    authService.login.mockResolvedValue({ data: { id: '123' }, token: 'offline-token' });
+    const fetch = vi.fn();
+    if (failure === 'http') fetch.mockResolvedValueOnce({ ok: false });
+    else fetch.mockRejectedValueOnce(new Error('offline'));
+    fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ data: { tripId: 'same-trip' } }) });
+    vi.stubGlobal('fetch', fetch);
+    const destination = vi.spyOn(tripPaths, 'tripSurfacePath').mockReturnValue('#itinerary');
+    let performLogin;
+    function RetryHarness() {
+      performLogin = useAuth().login;
+      return null;
+    }
+    render(<AuthProvider><RetryHarness /></AuthProvider>);
+    await act(async () => { await expect(performLogin('test@example.com', 'password')).rejects.toThrow(); });
+    expect(JSON.parse(localStorage.getItem('returnToChat'))).toMatchObject(context);
+    expect(destination).not.toHaveBeenCalled();
+    await act(async () => { await performLogin('test@example.com', 'password'); });
+    expect(fetch.mock.calls.map(call => JSON.parse(call[1].body))).toEqual([
+      { anonymousId, conversationId: 'same-trip' }, { anonymousId, conversationId: 'same-trip' },
+    ]);
+    expect(destination).toHaveBeenCalledWith('same-trip', 'itinerary');
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();

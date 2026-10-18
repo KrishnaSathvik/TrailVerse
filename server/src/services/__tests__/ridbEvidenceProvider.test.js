@@ -26,6 +26,31 @@ function requirement(topic, overrides = {}) {
 }
 
 describe('WP5B RIDB evidence provider', () => {
+  test.each(['Campground', 'Permit', 'Timed Entry'])('does not invent a reservation URL from a %s facility ID', FacilityTypeDescription => {
+    const provider = createRidbEvidenceProvider({ ridbClient: {}, now: () => NOW });
+    const request = provider.buildRequest(requirement('campgrounds'));
+    const raw = { ...FIXTURE, facilities: [{ FacilityID: '123', FacilityName: 'Recorded listing', FacilityTypeDescription }] };
+    const facts = provider.normalize(raw, request, { observedAt: NOW.toISOString() }).filter(row => row.evidenceType === 'fact');
+    expect(facts.length).toBe(1);
+    expect(facts[0].source.url).toBeNull();
+    expect(facts[0].claim.normalizedValue).toMatchObject({ reservationUrl: null, currentAvailability: null });
+  });
+
+  test('does not bind a different recreation area to the requested park', () => {
+    const provider = createRidbEvidenceProvider({ ridbClient: {} });
+    const request = provider.buildRequest(requirement('campgrounds'));
+    expect(provider.normalize({ ...FIXTURE, recArea: { RecAreaID: '123', RecAreaName: 'Unrelated Park' } }, request)).toEqual([]);
+  });
+
+  test('separates a returned official listing from a reservation and rejects unsafe URLs', () => {
+    const provider = createRidbEvidenceProvider({ ridbClient: {} });
+    const request = provider.buildRequest(requirement('campgrounds'));
+    const raw = { ...FIXTURE, facilities: [{ FacilityID: '123', FacilityTypeDescription: 'Campground',
+      FacilityURL: 'https://www.nps.gov/yose/planyourvisit/camping.htm', FacilityReservationURL: 'javascript:alert(1)' }] };
+    const fact = provider.normalize(raw, request).find(row => row.evidenceType === 'fact');
+    expect(fact.claim.normalizedValue.reservationUrl).toBeNull();
+    expect(fact.source.url).toBe(raw.facilities[0].FacilityURL);
+  });
   test('supports park campground and permit requirements only', () => {
     const provider = createRidbEvidenceProvider({ ridbClient: {} });
     expect(provider.supports(requirement('campgrounds'))).toBe(true);
