@@ -4,11 +4,18 @@ const fs = require('fs');
 const path = require('path');
 const { assessMongoTarget } = require('./mongoTargetGuard');
 
-// Load every application model, including ones not imported by today's routes.
+// Historical analytics collections stay in MongoDB for account erasure. Their
+// indexes are not provisioned or checked at startup, so a retired TTL definition
+// cannot block the server.
+const RETIRED_INDEX_MODELS = new Set(['Analytics.js', 'AnalyticsSnapshot.js']);
+
+// Load every active application model, including ones not imported by today's routes.
 // Call only with automatic indexing/collection creation disabled on the connection.
 function applicationModels() {
   const directory = path.join(__dirname, '../models');
-  return fs.readdirSync(directory).filter((file) => file.endsWith('.js')).sort()
+  return fs.readdirSync(directory)
+    .filter((file) => file.endsWith('.js') && !RETIRED_INDEX_MODELS.has(file))
+    .sort()
     .map((file) => require(path.join(directory, file)));
 }
 

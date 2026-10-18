@@ -5,7 +5,6 @@ const Conversation = require('../models/Conversation');
 const Feedback = require('../models/Feedback');
 const AnonymousSession = require('../models/AnonymousSession');
 const SiteSettings = require('../models/SiteSettings');
-const Analytics = require('../models/Analytics');
 const { ANONYMOUS_USER_MESSAGE_LIMIT } = require('../config/anonymousChatLimits');
 const { invalidateSiteSettingsCache } = require('../middleware/siteSettings');
 const { eraseAccountData } = require('../services/accountErasureService');
@@ -786,124 +785,6 @@ exports.userAction = async (req, res, next) => {
           error: 'Invalid action'
         });
     }
-  } catch (error) {
-    next(error);
-  }
-};
-
-// @desc    Get traffic analytics
-// @route   GET /api/admin/analytics/traffic
-// @access  Admin only
-exports.getTrafficAnalytics = async (req, res, next) => {
-  try {
-    const days = parseInt(req.query.days) || 30;
-    const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-    const endDate = new Date();
-
-    const [eventCounts, dailyViewsRaw] = await Promise.all([
-      Analytics.getEventCounts(startDate, endDate),
-      Analytics.aggregate([
-        { $match: { eventType: 'page_view', timestamp: { $gte: startDate, $lte: endDate } } },
-        { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$timestamp' } }, count: { $sum: 1 } } },
-        { $sort: { _id: 1 } }
-      ])
-    ]);
-
-    const dailyViews = [];
-    for (let i = days - 1; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
-      const found = dailyViewsRaw.find((d) => d._id === dateStr);
-      dailyViews.push({ _id: dateStr, count: found ? found.count : 0 });
-    }
-
-    res.status(200).json({
-      success: true,
-      data: { eventCounts, dailyViews }
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// @desc    Get popular parks
-// @route   GET /api/admin/analytics/popular-parks
-// @access  Admin only
-exports.getPopularParks = async (req, res, next) => {
-  try {
-    const days = parseInt(req.query.days) || 30;
-    const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-    const endDate = new Date();
-
-    const popularParks = await Analytics.getPopularContent(startDate, endDate, 'parks');
-
-    res.status(200).json({
-      success: true,
-      data: popularParks
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// @desc    Get search analytics
-// @route   GET /api/admin/analytics/search
-// @access  Admin only
-exports.getSearchAnalytics = async (req, res, next) => {
-  try {
-    const days = parseInt(req.query.days) || 30;
-    const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-    const endDate = new Date();
-
-    const searchAnalytics = await Analytics.getSearchAnalytics(startDate, endDate);
-
-    res.status(200).json({
-      success: true,
-      data: searchAnalytics
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// @desc    Get error analytics
-// @route   GET /api/admin/analytics/errors
-// @access  Admin only
-exports.getErrorAnalytics = async (req, res, next) => {
-  try {
-    const days = parseInt(req.query.days) || 30;
-    const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-    const endDate = new Date();
-
-    const errorAnalytics = await Analytics.getErrorAnalytics(startDate, endDate);
-
-    res.status(200).json({
-      success: true,
-      data: errorAnalytics
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// @desc    Get AI satisfaction analytics
-// @route   GET /api/admin/analytics/ai-satisfaction
-// @access  Admin only
-exports.getAISatisfaction = async (req, res, next) => {
-  try {
-    const [feedbackAnalytics, poorPerforming] = await Promise.all([
-      Feedback.getFeedbackAnalytics(),
-      Feedback.getPoorPerformingResponses()
-    ]);
-
-    res.status(200).json({
-      success: true,
-      data: {
-        ...feedbackAnalytics,
-        poorPerforming
-      }
-    });
   } catch (error) {
     next(error);
   }
