@@ -50,7 +50,7 @@ export default function LandingDailyFeedClient({ initialDailyFeed = null }) {
               className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-4 ring-1"
               style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
             >
-              <Sparkles className="h-4 w-4" style={{ color: 'var(--text-primary)' }} />
+              <Sparkles className="h-4 w-4" style={{ color: 'var(--icon-trailie)' }} />
               <span className="text-sm font-medium uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>
                 Daily Inspiration
               </span>

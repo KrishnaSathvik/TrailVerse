@@ -11,7 +11,7 @@ export default function ComparePageSeo() {
                 <div>
                   <div className="public-eyebrow"
                   >
-                    <Columns className="h-4 w-4" style={{ color: 'var(--text-secondary)' }} />
+                    <Columns className="h-4 w-4" style={{ color: 'var(--icon-discovery)' }} />
                     <span className="text-xs font-medium uppercase tracking-wider"
                       style={{ color: 'var(--text-secondary)' }}
                     >

@@ -3,10 +3,10 @@ import { Cloud, Sun, Snowflake, Sunrise, Wind } from '@components/icons';
 import { parseParkWeatherInfo } from '@/utils/parkWeatherInfoUtils';
 
 const SEASON_ICONS = {
-  spring: Sunrise,
-  summer: Sun,
-  fall: Wind,
-  winter: Snowflake,
+  spring: { Icon: Sunrise, color: 'var(--icon-event)' },
+  summer: { Icon: Sun, color: 'var(--icon-warning)' },
+  fall: { Icon: Wind, color: 'var(--icon-discovery)' },
+  winter: { Icon: Snowflake, color: 'var(--icon-water)' },
 };
 
 function SectionHeading({ children }) {
@@ -15,7 +15,7 @@ function SectionHeading({ children }) {
       className="text-xl font-semibold mb-3 flex items-center gap-2"
       style={{ color: 'var(--text-primary)' }}
     >
-      <Cloud className="h-5 w-5 shrink-0" style={{ color: 'var(--text-secondary)' }} />
+      <Cloud className="h-5 w-5 shrink-0" style={{ color: 'var(--icon-water)' }} />
       {children}
     </h3>
   );
@@ -33,7 +33,8 @@ function SeasonWeatherTable({ seasons }) {
     >
       <ul className="m-0 p-0 list-none">
         {seasons.map((season, index) => {
-          const Icon = SEASON_ICONS[season.key] || Cloud;
+          const seasonIcon = SEASON_ICONS[season.key] || { Icon: Cloud, color: 'var(--icon-water)' };
+          const Icon = seasonIcon.Icon;
           return (
             <li
               key={season.key}
@@ -43,7 +44,7 @@ function SeasonWeatherTable({ seasons }) {
               }}
             >
               <div className="flex items-center gap-2 w-24 sm:w-28 shrink-0 pt-0.5 sm:pt-0">
-                <Icon className="h-4 w-4 shrink-0" style={{ color: 'var(--text-secondary)' }} />
+                <Icon className="h-4 w-4 shrink-0" style={{ color: seasonIcon.color }} />
                 <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
                   {season.label}
                 </span>

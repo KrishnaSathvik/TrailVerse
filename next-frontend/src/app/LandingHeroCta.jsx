@@ -34,9 +34,9 @@ const shortcutClass =
   'inline-flex min-h-14 min-w-0 items-center justify-center gap-1.5 rounded-xl border border-emerald-800/35 bg-[var(--surface)] px-2 py-2.5 text-left text-xs font-semibold leading-snug text-[var(--text-primary)] shadow-sm transition hover:border-emerald-700 hover:bg-[var(--bg-secondary)] active:translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 dark:border-emerald-200/30 sm:gap-2.5 sm:px-5 sm:text-sm';
 
 const SECONDARY_LINKS = [
-  { href: '/compare', ctaId: 'hero_compare_parks', label: 'Compare parks', icon: 'ArrowsLeftRight' },
-  { href: '/guides', ctaId: 'hero_planning_guides', label: 'Planning guides', icon: 'Bookmark' },
-  { href: BROWSE_HUB_PATH, ctaId: 'hero_discover', label: 'Activities', icon: 'Compass' },
+  { href: '/compare', ctaId: 'hero_compare_parks', label: 'Compare parks', icon: 'ArrowsLeftRight', tone: 'var(--icon-discovery)' },
+  { href: '/guides', ctaId: 'hero_planning_guides', label: 'Planning guides', icon: 'Bookmark', tone: 'var(--icon-nature)' },
+  { href: BROWSE_HUB_PATH, ctaId: 'hero_discover', label: 'Activities', icon: 'Compass', tone: 'var(--icon-water)' },
 ];
 
 function HeroPrimaryActions() {
@@ -78,7 +78,7 @@ export function LandingExploreShortcuts() {
     <nav aria-label="Explore national parks" className="mx-auto grid w-full grid-cols-3 gap-2 sm:max-w-2xl sm:gap-3">
       {SECONDARY_LINKS.map((item) => (
         <TrackedLink key={item.ctaId} href={item.href} ctaId={item.ctaId} label={item.label} surface="homepage_shortcuts" className={shortcutClass}>
-          <IconGlyph name={item.icon} className="h-4 w-4 shrink-0 text-emerald-700 dark:text-emerald-400 sm:h-5 sm:w-5" />
+          <IconGlyph name={item.icon} className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" style={{ color: item.tone }} />
           <span>{item.label}</span>
         </TrackedLink>
       ))}

@@ -63,6 +63,7 @@ export default function ParkExploreTabs({
                   className="h-6 w-6"
                   weight="fill"
                   aria-hidden
+                  style={{ color: isActive ? 'currentColor' : (tab.iconColor || 'currentColor') }}
                 />
               </span>
               <span className="line-clamp-2 leading-tight">{tab.label}</span>

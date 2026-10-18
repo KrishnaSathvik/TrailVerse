@@ -179,7 +179,7 @@ const BlogContent = ({ initialData }) => {
             <div
               className="public-eyebrow"
             >
-              <BookOpen className="h-4 w-4" style={{ color: 'var(--text-secondary)' }} />
+              <BookOpen className="h-4 w-4" style={{ color: 'var(--icon-travel)' }} />
               <span className="text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
                 Stories & Guides
               </span>
@@ -331,7 +331,7 @@ const BlogContent = ({ initialData }) => {
                   </>
                 ) : (
                   <div className="text-center py-24">
-                    <BookOpen className="h-16 w-16 mx-auto mb-4" style={{ color: 'var(--text-tertiary)' }} />
+                    <BookOpen className="h-16 w-16 mx-auto mb-4" style={{ color: 'var(--icon-travel)' }} />
                     <p className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>No articles found</p>
                     <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Browse by category above or clear the tag filter.</p>
                   </div>

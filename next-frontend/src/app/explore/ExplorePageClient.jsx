@@ -393,7 +393,7 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
           <div className="public-content">
             <div className="relative">
               <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5"
-                style={{ color: 'var(--text-tertiary)' }}
+                style={{ color: 'var(--icon-discovery)' }}
               />
               <input
                 type="text"
@@ -425,7 +425,7 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
           {/* Quick stats — mobile/tablet (desktop uses unified toolbar below) */}
           <div className="mt-8 flex flex-wrap items-center gap-6 text-sm lg:hidden" style={{ color: 'var(--text-secondary)' }}>
             <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4" />
+              <MapPin className="h-4 w-4" style={{ color: 'var(--icon-nature)' }} />
               <span>
                 Showing {resultsRangeStart}-{resultsRangeEnd} of {resultsTotal} parks
               </span>
@@ -466,7 +466,7 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition"
                 style={{ backgroundColor: 'var(--bg-secondary)', borderWidth: '1px', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
               >
-                <SlidersHorizontal className="h-4 w-4" />
+                <SlidersHorizontal className="h-4 w-4" style={{ color: 'var(--icon-discovery)' }} />
                 <span className="text-sm">Filters</span>
                 {activeFiltersCount > 0 && (
                   <span className="ml-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-forest-500 text-white">{activeFiltersCount}</span>
@@ -532,7 +532,7 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
                       boxShadow: isActive ? 'var(--shadow-lg)' : 'var(--shadow)',
                     }}
                   >
-                    <Icon className="h-4 w-4 flex-shrink-0" />
+                    <Icon className="h-4 w-4 flex-shrink-0" style={{ color: 'var(--icon-discovery)' }} />
                     <span>{label}</span>
                   </button>
                 );
@@ -728,7 +728,7 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
                           color: isActive ? 'var(--text-primary)' : 'var(--text-tertiary)',
                         }}
                       >
-                        <Icon className="h-4 w-4 shrink-0" />
+                        <Icon className="h-4 w-4 shrink-0" style={{ color: isActive ? 'currentColor' : 'var(--icon-discovery)' }} />
                         <span className="hidden sm:inline">{key === 'grid' ? 'Grid' : 'List'}</span>
                       </button>
                     );
@@ -763,7 +763,7 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
 
               {!showParksLoading && !error && filteredParks.length === 0 && (
                 <div className="text-center py-24">
-                  <Compass className="h-16 w-16 mx-auto mb-4" style={{ color: 'var(--text-tertiary)' }} />
+                  <Compass className="h-16 w-16 mx-auto mb-4" style={{ color: 'var(--icon-discovery)' }} />
                   <p className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>No parks found</p>
                   <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>Try adjusting your search or filters</p>
                   <button

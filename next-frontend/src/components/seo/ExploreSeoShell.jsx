@@ -24,7 +24,7 @@ export default function ExploreSeoShell({
           <div
             className="public-eyebrow"
           >
-            <IconGlyph name="Compass" className="h-4 w-4" style={{ color: 'var(--text-secondary)' }} />
+            <IconGlyph name="Compass" className="h-4 w-4" style={{ color: 'var(--icon-discovery)' }} />
             <span
               className="text-xs font-medium uppercase tracking-wider"
               style={{ color: 'var(--text-secondary)' }}

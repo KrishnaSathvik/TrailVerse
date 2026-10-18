@@ -124,22 +124,22 @@ const ParkDetailInner = ({
   const showTransitTab = parkHasGtfs(npsParkCode);
 
   const allTabs = useMemo(() => [
-    { id: 'overview', label: 'Overview', icon: Info },
-    { id: 'alerts', label: 'Alerts', icon: AlertTriangle },
-    { id: 'places', label: 'What to See', icon: MapPinCheck },
-    { id: 'activities', label: 'Things to Do', icon: Mountain },
-    { id: 'tours', label: 'Self-Guided Tours', icon: Route },
-    { id: 'visitorcenters', label: 'Visitor Centers', icon: Landmark },
-    { id: 'camping', label: 'Where to Stay', icon: Tent },
-    { id: 'parking', label: 'Parking & Access', icon: Car },
-    { id: 'facilities', label: 'Amenities', icon: Utensils },
-    ...(showTransitTab ? [{ id: 'transit', label: 'Transit', icon: Bus }] : []),
-    { id: 'brochures', label: 'Brochures', icon: BookOpen },
-    { id: 'permits', label: 'Permits', icon: Ticket },
-    { id: 'photos', label: 'Photos', icon: Camera },
-    { id: 'videos', label: 'Videos', icon: Play },
-    { id: 'webcams', label: 'Webcams', icon: Monitor },
-    { id: 'reviews', label: 'Reviews', icon: Star },
+    { id: 'overview', label: 'Overview', icon: Info, iconColor: 'var(--icon-discovery)' },
+    { id: 'alerts', label: 'Alerts', icon: AlertTriangle, iconColor: 'var(--icon-warning)' },
+    { id: 'places', label: 'What to See', icon: MapPinCheck, iconColor: 'var(--icon-discovery)' },
+    { id: 'activities', label: 'Things to Do', icon: Mountain, iconColor: 'var(--icon-nature)' },
+    { id: 'tours', label: 'Self-Guided Tours', icon: Route, iconColor: 'var(--icon-stop-hike)' },
+    { id: 'visitorcenters', label: 'Visitor Centers', icon: Landmark, iconColor: 'var(--icon-stop-visitor)' },
+    { id: 'camping', label: 'Where to Stay', icon: Tent, iconColor: 'var(--icon-stop-camp)' },
+    { id: 'parking', label: 'Parking & Access', icon: Car, iconColor: 'var(--icon-stop-transport)' },
+    { id: 'facilities', label: 'Amenities', icon: Utensils, iconColor: 'var(--icon-stop-dining)' },
+    ...(showTransitTab ? [{ id: 'transit', label: 'Transit', icon: Bus, iconColor: 'var(--icon-stop-transport)' }] : []),
+    { id: 'brochures', label: 'Brochures', icon: BookOpen, iconColor: 'var(--icon-travel)' },
+    { id: 'permits', label: 'Permits', icon: Ticket, iconColor: 'var(--icon-event)' },
+    { id: 'photos', label: 'Photos', icon: Camera, iconColor: 'var(--icon-discovery)' },
+    { id: 'videos', label: 'Videos', icon: Play, iconColor: 'var(--icon-event)' },
+    { id: 'webcams', label: 'Webcams', icon: Monitor, iconColor: 'var(--icon-water)' },
+    { id: 'reviews', label: 'Reviews', icon: Star, iconColor: 'var(--icon-warning)' },
   ], [showTransitTab]);
   const [activeActivityTab, setActiveActivityTab] = useState('All');
   const [expandedActivityList, setExpandedActivityList] = useState(() => new Set());
@@ -641,6 +641,7 @@ const ParkDetailInner = ({
       label: 'Lodging',
       description: 'Hotels, lodges, and stays near the park',
       icon: Tent,
+      color: 'var(--icon-stop-lodging)',
       query: 'lodging'
     },
     {
@@ -648,6 +649,7 @@ const ParkDetailInner = ({
       label: 'Food',
       description: 'Restaurants and quick stops nearby',
       icon: Utensils,
+      color: 'var(--icon-stop-dining)',
       query: 'restaurants'
     },
     {
@@ -655,6 +657,7 @@ const ParkDetailInner = ({
       label: 'Gas',
       description: 'Fuel stops before or after your visit',
       icon: Car,
+      color: 'var(--icon-stop-transport)',
       query: 'gas stations'
     },
     {
@@ -662,6 +665,7 @@ const ParkDetailInner = ({
       label: 'Attractions',
       description: 'Nearby points of interest and landmarks',
       icon: Camera,
+      color: 'var(--icon-discovery)',
       query: 'attractions'
     },
   ];
@@ -858,9 +862,9 @@ const ParkDetailInner = ({
                   <div className="flex items-center gap-3 mb-2">
                     <div
                       className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: 'var(--surface-hover)' }}
+                      style={{ backgroundColor: 'color-mix(in srgb, var(--icon-travel) 14%, transparent)' }}
                     >
-                      <Clock className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
+                      <Clock className="h-5 w-5" style={{ color: 'var(--icon-travel)' }} />
                     </div>
                     <h3
                       className="font-semibold text-sm uppercase tracking-wider"
@@ -901,9 +905,9 @@ const ParkDetailInner = ({
                   <div className="flex items-center gap-3 mb-2">
                     <div
                       className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: 'var(--surface-hover)' }}
+                      style={{ backgroundColor: 'color-mix(in srgb, var(--icon-event) 14%, transparent)' }}
                     >
-                      <DollarSign className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
+                      <DollarSign className="h-5 w-5" style={{ color: 'var(--icon-event)' }} />
                     </div>
                     <h3
                       className="font-semibold text-sm uppercase tracking-wider"
@@ -936,9 +940,9 @@ const ParkDetailInner = ({
                   <div className="flex items-center gap-3 mb-2">
                     <div
                       className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: 'var(--surface-hover)' }}
+                      style={{ backgroundColor: 'color-mix(in srgb, var(--icon-discovery) 14%, transparent)' }}
                     >
-                      <Phone className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
+                      <Phone className="h-5 w-5" style={{ color: 'var(--icon-discovery)' }} />
                     </div>
                     <h3
                       className="font-semibold text-sm uppercase tracking-wider"
@@ -3177,7 +3181,7 @@ const ParkDetailInner = ({
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2"
                   style={{ color: 'var(--text-primary)' }}
                 >
-                  <MapPin className="h-5 w-5" />
+                  <MapPin className="h-5 w-5" style={{ color: 'var(--icon-nature)' }} />
                   Location
                 </h3>
                 <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
@@ -3197,7 +3201,7 @@ const ParkDetailInner = ({
                         borderColor: 'var(--border)'
                       }}
                     >
-                      <Navigation className="h-4 w-4" />
+                      <Navigation className="h-4 w-4" style={{ color: 'var(--icon-nature)' }} />
                       View on Map
                     </button>
                   )}
@@ -3215,7 +3219,7 @@ const ParkDetailInner = ({
                         borderColor: 'var(--border)',
                       }}
                     >
-                      <MapIcon className="h-4 w-4" />
+                      <MapIcon className="h-4 w-4" style={{ color: 'var(--icon-discovery)' }} />
                       Open in Google Maps
                     </a>
                   )}
@@ -3233,7 +3237,7 @@ const ParkDetailInner = ({
                         borderColor: 'var(--border)',
                       }}
                     >
-                      <Route className="h-4 w-4" />
+                      <Route className="h-4 w-4" style={{ color: 'var(--icon-stop-transport)' }} />
                       Get directions
                     </a>
                   )}
@@ -3252,7 +3256,7 @@ const ParkDetailInner = ({
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2"
                   style={{ color: 'var(--text-primary)' }}
                 >
-                  <MapPinCheck className="h-5 w-5" />
+                  <MapPinCheck className="h-5 w-5" style={{ color: 'var(--icon-nature)' }} />
                   Around This Park
                 </h3>
                 <p className="text-sm mb-2"
@@ -3285,9 +3289,9 @@ const ParkDetailInner = ({
                       >
                         <div
                           className="h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                          style={{ backgroundColor: 'var(--surface)' }}
+                          style={{ backgroundColor: `color-mix(in srgb, ${section.color} 14%, transparent)` }}
                         >
-                          <Icon className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
+                          <Icon className="h-5 w-5" style={{ color: section.color }} />
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>

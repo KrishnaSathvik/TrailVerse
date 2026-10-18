@@ -1,4 +1,5 @@
 import { getNpsSymbolForActivity } from '@/lib/discoverActivityNpsSymbols';
+import { activityIconColor } from '@/lib/iconSemantics';
 
 export function getActivityIconSrc(iconKey) {
   const symbol = getNpsSymbolForActivity(iconKey);
@@ -9,15 +10,16 @@ export function ActivityIcon({ iconKey, className = 'h-7 w-7', style }) {
   const src = getActivityIconSrc(iconKey);
 
   return (
-    <img
-      src={src}
-      alt=""
+    <span
       aria-hidden
-      className={`shrink-0 object-contain dark:invert ${className}`}
-      style={style}
-      width={28}
-      height={28}
-      decoding="async"
+      className={`activity-icon shrink-0 ${className}`}
+      style={{
+        backgroundColor: activityIconColor(iconKey),
+        WebkitMaskImage: `url(${src})`,
+        maskImage: `url(${src})`,
+        maskMode: 'alpha',
+        ...style,
+      }}
     />
   );
 }

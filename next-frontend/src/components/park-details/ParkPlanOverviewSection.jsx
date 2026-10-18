@@ -114,15 +114,10 @@ export default function ParkPlanOverviewSection({
         >
           <Button
             onClick={onPlan}
-            variant="secondary"
+            variant="success"
             size="md"
             icon={Calendar}
             className="w-full sm:w-auto sm:min-w-[220px]"
-            style={{
-              backgroundColor: 'var(--accent-green)',
-              color: '#fff',
-              borderColor: 'transparent',
-            }}
           >
             {planCta.button}
           </Button>
@@ -132,7 +127,7 @@ export default function ParkPlanOverviewSection({
             className="inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition hover:opacity-80 sm:justify-start"
             style={{ color: 'var(--text-secondary)' }}
           >
-            <Compare className="h-4 w-4 shrink-0" />
+            <Compare className="h-4 w-4 shrink-0" style={{ color: 'var(--icon-discovery)' }} />
             Compare parks
           </Link>
         </div>

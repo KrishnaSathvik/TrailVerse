@@ -140,7 +140,7 @@ const Footer = () => {
                 style={linkStyle}
                 aria-label="Google Maps"
               >
-                <Map className="h-5 w-5" />
+                <Map className="h-5 w-5" style={{ color: 'var(--icon-nature)' }} />
               </a>
             </div>
           </div>
@@ -191,7 +191,7 @@ const Footer = () => {
                 className={`inline-flex items-center gap-2 ${linkClass}`}
                 style={linkStyle}
               >
-                <Mail className="h-4 w-4 shrink-0" />
+                <Mail className="h-4 w-4 shrink-0" style={{ color: 'var(--icon-trailie)' }} />
                 Email us
               </a>
             </li>

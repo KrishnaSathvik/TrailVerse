@@ -21,6 +21,26 @@
   --error: #dc2626;
   --error-red: #dc2626;
   --warning: #d97706;
+  --icon-nature: #047857;
+  --icon-discovery: #0369A1;
+  --icon-water: #0284C7;
+  --icon-travel: #B45309;
+  --icon-trailie: #047857;
+  --icon-event: #EA580C;
+  --icon-warning: #d97706;
+  --icon-success: #047857;
+  --icon-muted: var(--text-tertiary);
+  --icon-stop-park: #047857;
+  --icon-stop-hike: #0369A1;
+  --icon-stop-camp: #B45309;
+  --icon-stop-lodging: #9A3412;
+  --icon-stop-visitor: #0F766E;
+  --icon-stop-dining: #C2410C;
+  --icon-stop-transport: #0284C7;
+  --map-pin-park: #2d6a4f;
+  --map-pin-site: #2563eb;
+  --map-pin-place: #7c3aed;
+  --map-pin-camp: #d97706;
   --skeleton: #DDD8D0;
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
   --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06);
@@ -83,6 +103,26 @@ html:not(.theme-ready) *::after {
     --error: #ef4444;
     --error-red: #ef4444;
     --warning: #f59e0b;
+    --icon-nature: #34d399;
+    --icon-discovery: #38bdf8;
+    --icon-water: #7dd3fc;
+    --icon-travel: #fbbf24;
+    --icon-trailie: #6ee7b7;
+    --icon-event: #fb923c;
+    --icon-warning: #fbbf24;
+    --icon-success: #34d399;
+    --icon-muted: var(--text-tertiary);
+    --icon-stop-park: #34d399;
+    --icon-stop-hike: #38bdf8;
+    --icon-stop-camp: #fbbf24;
+    --icon-stop-lodging: #fdba74;
+    --icon-stop-visitor: #5eead4;
+    --icon-stop-dining: #fb923c;
+    --icon-stop-transport: #7dd3fc;
+    --map-pin-park: #4ade80;
+    --map-pin-site: #60a5fa;
+    --map-pin-place: #c4b5fd;
+    --map-pin-camp: #fbbf24;
     --skeleton: rgba(255, 255, 255, 0.12);
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
     --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
@@ -132,6 +172,26 @@ html:not(.theme-ready) *::after {
   --error: #ef4444;
   --error-red: #ef4444;
   --warning: #f59e0b;
+  --icon-nature: #34d399;
+  --icon-discovery: #38bdf8;
+  --icon-water: #7dd3fc;
+  --icon-travel: #fbbf24;
+  --icon-trailie: #6ee7b7;
+  --icon-event: #fb923c;
+  --icon-warning: #fbbf24;
+  --icon-success: #34d399;
+  --icon-muted: var(--text-tertiary);
+  --icon-stop-park: #34d399;
+  --icon-stop-hike: #38bdf8;
+  --icon-stop-camp: #fbbf24;
+  --icon-stop-lodging: #fdba74;
+  --icon-stop-visitor: #5eead4;
+  --icon-stop-dining: #fb923c;
+  --icon-stop-transport: #7dd3fc;
+  --map-pin-park: #4ade80;
+  --map-pin-site: #60a5fa;
+  --map-pin-place: #c4b5fd;
+  --map-pin-camp: #fbbf24;
   
   /* Skeleton */
   --skeleton: rgba(255, 255, 255, 0.12);
@@ -177,7 +237,27 @@ html:not(.theme-ready) *::after {
   --error: #dc2626;         /* Error red for destructive actions */
   --error-red: #dc2626;     /* Error red for destructive actions */
   --warning: #d97706;       /* Warning orange */
-  
+  --icon-nature: #047857;
+  --icon-discovery: #0369A1;
+  --icon-water: #0284C7;
+  --icon-travel: #B45309;
+  --icon-trailie: #047857;
+  --icon-event: #EA580C;
+  --icon-warning: #d97706;
+  --icon-success: #047857;
+  --icon-muted: var(--text-tertiary);
+  --icon-stop-park: #047857;
+  --icon-stop-hike: #0369A1;
+  --icon-stop-camp: #B45309;
+  --icon-stop-lodging: #9A3412;
+  --icon-stop-visitor: #0F766E;
+  --icon-stop-dining: #C2410C;
+  --icon-stop-transport: #0284C7;
+  --map-pin-park: #2d6a4f;
+  --map-pin-site: #2563eb;
+  --map-pin-place: #7c3aed;
+  --map-pin-camp: #d97706;
+
   /* Skeleton */
   --skeleton: #DDD8D0;
 

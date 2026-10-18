@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { GripVertical, X, Edit2, Check, MapPin, Mountain, Tent, Info, Home, Utensils, Clock } from '@components/icons';
+import { stopTypeColor } from '@/lib/iconSemantics';
+import { GripVertical, X, Edit2, Check, MapPin, Mountain, Tent, Info, Home, Utensils, Car, Clock } from '@components/icons';
 
 const TYPE_ICONS = {
   park: MapPin,
@@ -12,19 +13,23 @@ const TYPE_ICONS = {
   lodging: Home,
   restaurant: Utensils,
   food: Utensils,
+  transport: Car,
+  shuttle: Car,
   custom: MapPin,
 };
 
 const TYPE_COLORS = {
-  park: 'var(--accent-green)',
-  landmark: 'var(--accent-green)',
-  trail: '#3B82F6',
-  campground: '#8B6914',
-  visitor_center: '#7C3AED',
-  lodging: '#7C3AED',
-  restaurant: '#F59E0B',
-  food: '#F59E0B',
-  custom: 'var(--text-tertiary)',
+  park: stopTypeColor('park'),
+  landmark: stopTypeColor('landmark'),
+  trail: stopTypeColor('trail'),
+  campground: stopTypeColor('campground'),
+  visitor_center: stopTypeColor('visitor_center'),
+  lodging: stopTypeColor('lodging'),
+  restaurant: stopTypeColor('restaurant'),
+  food: stopTypeColor('food'),
+  transport: stopTypeColor('transport'),
+  shuttle: stopTypeColor('shuttle'),
+  custom: stopTypeColor('custom'),
 };
 
 const DIFFICULTY_COLORS = {

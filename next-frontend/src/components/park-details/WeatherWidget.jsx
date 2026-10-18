@@ -74,7 +74,8 @@ const WeatherWidget = ({ parkCode, latitude, longitude, parkName: _parkName }) =
         condition: current.weather?.[0]?.description || 'Partly Cloudy',
         humidity: current.main?.humidity || 65,
         windSpeed: Math.round(current.wind?.speed || 8),
-        visibility: Math.round((current.visibility || 10000) / 1609.34) // Convert meters to miles
+        visibility: Math.round((current.visibility || 10000) / 1609.34), // Convert meters to miles
+        icon: getWeatherIconFromCode(current.weather?.[0]?.icon),
       },
       forecast: forecast?.list ? groupForecastByDay(forecast.list) : []
     };
@@ -148,6 +149,15 @@ const WeatherWidget = ({ parkCode, latitude, longitude, parkName: _parkName }) =
     }
   };
 
+  const weatherIconColor = (icon) => {
+    switch (icon) {
+      case 'sun': return 'var(--icon-warning)';
+      case 'rain': return 'var(--icon-discovery)';
+      case 'snow': return 'var(--icon-water)';
+      default: return 'var(--icon-discovery)';
+    }
+  };
+
   const displayWeather = getDisplayWeather();
 
   return (
@@ -210,26 +220,34 @@ const WeatherWidget = ({ parkCode, latitude, longitude, parkName: _parkName }) =
               {displayWeather.current.condition}
             </p>
           </div>
-          <Cloud className="h-16 w-16 text-blue-400" />
+          {(() => {
+            const CurrentIcon = getWeatherIcon(displayWeather.current.icon);
+            return (
+              <CurrentIcon
+                className="h-16 w-16"
+                style={{ color: weatherIconColor(displayWeather.current.icon) }}
+              />
+            );
+          })()}
         </div>
 
         <div className="grid grid-cols-3 gap-3 text-xs">
           <div className="flex items-center gap-1"
             style={{ color: 'var(--text-secondary)' }}
           >
-            <Droplets className="h-3 w-3" />
+            <Droplets className="h-3 w-3" style={{ color: 'var(--icon-water)' }} />
             <span>{displayWeather.current.humidity}%</span>
           </div>
           <div className="flex items-center gap-1"
             style={{ color: 'var(--text-secondary)' }}
           >
-            <Wind className="h-3 w-3" />
+            <Wind className="h-3 w-3" style={{ color: 'var(--icon-discovery)' }} />
             <span>{displayWeather.current.windSpeed} mph</span>
           </div>
           <div className="flex items-center gap-1"
             style={{ color: 'var(--text-secondary)' }}
           >
-            <Eye className="h-3 w-3" />
+            <Eye className="h-3 w-3" style={{ color: 'var(--icon-nature)' }} />
             <span>{displayWeather.current.visibility} mi</span>
           </div>
         </div>
@@ -251,7 +269,7 @@ const WeatherWidget = ({ parkCode, latitude, longitude, parkName: _parkName }) =
               >
                 {day.day}
               </span>
-              <Icon className="h-5 w-5 text-blue-400" />
+              <Icon className="h-5 w-5" style={{ color: weatherIconColor(day.icon) }} />
               <div className="flex items-center gap-2 text-sm">
                 <span className="font-semibold"
                   style={{ color: 'var(--text-primary)' }}

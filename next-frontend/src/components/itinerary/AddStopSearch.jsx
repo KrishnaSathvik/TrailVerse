@@ -1,17 +1,18 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { iconTint, stopTypeColor } from '@/lib/iconSemantics';
 import { Search, X, MapPin, Mountain, Tent, Home, Utensils, Clock, ChevronLeft, Plus } from '@components/icons';
 import Spinner from '../common/Spinner';
 import { getApiBaseUrl } from '../../lib/apiBase';
 
 const STOP_TYPES = [
-  { id: 'park', label: 'Park', Icon: MapPin, color: 'var(--accent-green)' },
-  { id: 'trail', label: 'Trail', Icon: Mountain, color: '#3B82F6' },
-  { id: 'campground', label: 'Camp', Icon: Tent, color: '#8B6914' },
-  { id: 'lodging', label: 'Lodging', Icon: Home, color: '#7C3AED' },
-  { id: 'food', label: 'Food', Icon: Utensils, color: '#F59E0B' },
-  { id: 'custom', label: 'Custom', Icon: MapPin, color: 'var(--text-tertiary)' },
+  { id: 'park', label: 'Park', Icon: MapPin, color: stopTypeColor('park') },
+  { id: 'trail', label: 'Trail', Icon: Mountain, color: stopTypeColor('trail') },
+  { id: 'campground', label: 'Camp', Icon: Tent, color: stopTypeColor('campground') },
+  { id: 'lodging', label: 'Lodging', Icon: Home, color: stopTypeColor('lodging') },
+  { id: 'food', label: 'Food', Icon: Utensils, color: stopTypeColor('food') },
+  { id: 'custom', label: 'Custom', Icon: MapPin, color: stopTypeColor('custom') },
 ];
 
 // Types that require a park selection first, then show sub-resources
@@ -240,13 +241,12 @@ export default function AddStopSearch({ onSelect, onClose }) {
                   onClick={() => handleTypeChange(id)}
                   className="flex flex-col items-center gap-1.5 rounded-xl px-2 py-2.5 text-xs font-medium transition-all duration-200"
                   style={{
-                    backgroundColor: isActive ? `${color}18` : 'var(--surface-hover)',
+                    backgroundColor: isActive ? iconTint(color) : 'var(--surface-hover)',
                     border: isActive ? `2px solid ${color}` : '2px solid var(--border)',
-                    color: isActive ? color : 'var(--text-secondary)',
-                    boxShadow: isActive ? `0 0 0 1px ${color}30` : 'none'
+                    color: 'var(--text-secondary)',
                   }}
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon className="h-4 w-4" style={{ color }} />
                   {label}
                 </button>
               );
@@ -327,7 +327,7 @@ export default function AddStopSearch({ onSelect, onClose }) {
                         }}
                       >
                         <div className="flex items-center justify-center h-8 w-8 rounded-lg flex-shrink-0"
-                          style={{ backgroundColor: `${typeColor}15` }}>
+                          style={{ backgroundColor: iconTint(typeColor) }}>
                           <TypeIcon className="h-4 w-4" style={{ color: typeColor }} />
                         </div>
                         <span className="flex-1 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>

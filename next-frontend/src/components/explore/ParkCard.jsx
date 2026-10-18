@@ -61,7 +61,7 @@ const ExploreListCard = ({ park, rating, detailHref, onNavigate }) => (
       </p>
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-1" style={{ color: 'var(--text-tertiary)' }}>
-          <MapPin className="h-4 w-4" />
+          <MapPin className="h-4 w-4" style={{ color: 'var(--icon-nature)' }} />
           <span className="text-sm">{park.states}</span>
         </div>
         {rating && rating.totalReviews > 0 ? (
@@ -121,7 +121,7 @@ const ExploreGridCard = ({ park, rating, detailHref, priority = false, onNavigat
       </p>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1" style={{ color: 'var(--text-tertiary)' }}>
-          <MapPin className="h-4 w-4" />
+          <MapPin className="h-4 w-4" style={{ color: 'var(--icon-nature)' }} />
           <span className="text-sm">{park.states}</span>
         </div>
         {rating && rating.totalReviews > 0 ? (

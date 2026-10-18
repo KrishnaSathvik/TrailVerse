@@ -6,27 +6,32 @@ const QuickInfoCard = ({ park }) => {
   const infoItems = [
     {
       icon: Clock,
+      color: 'var(--icon-travel)',
       label: 'Hours',
       value: park.operatingHours?.[0]?.standardHours?.monday || 'Varies by season'
     },
     {
       icon: DollarSign,
+      color: 'var(--icon-event)',
       label: 'Entrance Fee',
       value: getPrimaryEntranceFeeSummary(park.entranceFees).price,
     },
     {
       icon: Phone,
+      color: 'var(--icon-discovery)',
       label: 'Contact',
       value: park.contacts?.phoneNumbers?.[0]?.phoneNumber || 'N/A'
     },
     {
       icon: Globe,
+      color: 'var(--icon-water)',
       label: 'Website',
       value: park.url ? 'Visit Website' : 'N/A',
       link: park.url
     },
     {
       icon: MapPin,
+      color: 'var(--icon-nature)',
       label: 'Address',
       value: park.addresses?.[0]?.line1 || 'N/A'
     }
@@ -52,9 +57,9 @@ const QuickInfoCard = ({ park }) => {
           return (
             <div key={index} className="flex gap-3">
               <div className="flex-shrink-0 h-10 w-10 rounded-lg flex items-center justify-center"
-                style={{ backgroundColor: 'var(--surface-hover)' }}
+                style={{ backgroundColor: `color-mix(in srgb, ${item.color} 14%, transparent)` }}
               >
-                <Icon className="h-5 w-5" style={{ color: 'var(--text-secondary)' }} />
+                <Icon className="h-5 w-5" style={{ color: item.color }} />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium uppercase tracking-wider mb-1"

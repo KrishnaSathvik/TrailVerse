@@ -367,7 +367,7 @@ const EventsPage = ({ initialData }) => {
           <div>
             <div className="public-eyebrow"
             >
-              <CalendarDays className="h-4 w-4" style={{ color: 'var(--text-secondary)' }} />
+              <CalendarDays className="h-4 w-4" style={{ color: 'var(--icon-event)' }} />
               <span className="text-xs font-medium uppercase tracking-wider"
                 style={{ color: 'var(--text-secondary)' }}
               >
@@ -440,7 +440,7 @@ const EventsPage = ({ initialData }) => {
                 onClick={() => setShowFilters(value => !value)}
                 className="public-action public-action-secondary gap-2 px-3 text-sm font-medium"
               >
-                <Filter className="h-4 w-4 shrink-0" />
+                <Filter className="h-4 w-4 shrink-0" style={{ color: 'var(--icon-event)' }} />
                 Categories
                 {activeFiltersCount > 0 && <span className="rounded-md px-1.5 text-xs" style={{ backgroundColor: 'var(--accent-green-light)', color: 'var(--accent-green)' }}>{activeFiltersCount}</span>}
                 <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
@@ -459,7 +459,7 @@ const EventsPage = ({ initialData }) => {
                       backgroundColor: viewMode === key ? 'var(--text-primary)' : 'transparent',
                       color: viewMode === key ? 'var(--bg-primary)' : 'var(--text-secondary)',
                     }}>
-                    <Icon className="h-4 w-4" />{label}
+                    <Icon className="h-4 w-4" style={{ color: viewMode === key ? 'currentColor' : (key === 'calendar' ? 'var(--icon-event)' : 'currentColor') }} />{label}
                   </button>
                 ))}
               </div>
@@ -551,7 +551,7 @@ const EventsPage = ({ initialData }) => {
               {!isLoading && !error && filteredEvents.length === 0 && (
                 <div className="text-center py-24">
                   <CalendarDays className="h-16 w-16 mx-auto mb-4"
-                    style={{ color: 'var(--text-tertiary)' }}
+                    style={{ color: 'var(--icon-event)' }}
                   />
                   <p className="text-lg font-semibold mb-2"
                     style={{ color: 'var(--text-primary)' }}

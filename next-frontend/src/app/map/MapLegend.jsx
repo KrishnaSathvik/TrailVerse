@@ -1,10 +1,5 @@
 'use client';
 
-import {
-  getCampgroundMarkerColors,
-  getParkMarkerColors,
-  getPlaceMarkerColors,
-} from '@/lib/parkMapBasemap';
 
 function LegendDot({ color, compact, dimmed = false }) {
   return (
@@ -35,8 +30,9 @@ function FilterChip({
       ].join(' ')}
       style={{
         borderColor: 'var(--border)',
-        backgroundColor: active ? 'var(--surface-hover)' : 'var(--bg-primary)',
-        color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+        backgroundColor: 'var(--bg-primary)',
+        color: active ? 'var(--text-primary)' : 'var(--text-tertiary)',
+        boxShadow: 'var(--shadow-sm)',
       }}
       aria-pressed={active}
       aria-label={ariaLabel}
@@ -51,7 +47,6 @@ function FilterChip({
 }
 
 export default function MapLegend({
-  isDark,
   showNationalParks = true,
   onToggleNationalParks,
   showOtherSites = true,
@@ -65,20 +60,9 @@ export default function MapLegend({
   compact = false,
   className = '',
 }) {
-  const parkColors = getParkMarkerColors(isDark);
-  const placeColors = getPlaceMarkerColors(isDark);
-  const campgroundColors = getCampgroundMarkerColors(isDark);
-
   return (
     <div
-      className={`mx-auto flex w-fit max-w-full flex-wrap items-center justify-center gap-1.5 rounded-2xl border ${className} ${
-        compact ? 'px-2 py-1.5' : 'px-2.5 py-2'
-      }`}
-      style={{
-        backgroundColor: 'var(--bg-secondary)',
-        borderColor: 'var(--border)',
-        color: 'var(--text-secondary)',
-      }}
+      className={`mx-auto flex w-fit max-w-full flex-wrap items-center justify-center gap-1.5 ${className}`}
       role="group"
       aria-label="Map filters"
     >
@@ -87,7 +71,7 @@ export default function MapLegend({
         active={showNationalParks}
         onClick={onToggleNationalParks}
         ariaLabel={showNationalParks ? 'Hide national parks on map' : 'Show national parks on map'}
-        color={parkColors.nationalPark}
+        color="var(--map-pin-park)"
         label="National Parks"
       />
       <FilterChip
@@ -95,7 +79,7 @@ export default function MapLegend({
         active={showOtherSites}
         onClick={onToggleOtherSites}
         ariaLabel={showOtherSites ? 'Hide other NPS sites on map' : 'Show other NPS sites on map'}
-        color={parkColors.otherSite}
+        color="var(--map-pin-site)"
         label="Other NPS Sites"
       />
       <FilterChip
@@ -103,7 +87,7 @@ export default function MapLegend({
         active={showPlaces}
         onClick={onTogglePlaces}
         ariaLabel={showPlaces ? 'Hide What to See on map' : 'Show What to See on map'}
-        color={placeColors.default}
+        color="var(--map-pin-place)"
         label="What to See"
         count={placeCount}
       />
@@ -112,7 +96,7 @@ export default function MapLegend({
         active={showCampgrounds}
         onClick={onToggleCampgrounds}
         ariaLabel={showCampgrounds ? 'Hide campgrounds on map' : 'Show campgrounds on map'}
-        color={campgroundColors.default}
+        color="var(--map-pin-camp)"
         label="Campgrounds"
         count={campgroundCount}
       />

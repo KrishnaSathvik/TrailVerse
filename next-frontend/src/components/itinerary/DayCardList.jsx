@@ -1,27 +1,30 @@
 'use client';
 
 import { groundedPlaceType } from '@/lib/tripPresentation';
+import { iconTint, stopTypeColor } from '@/lib/iconSemantics';
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, Mountain, Tent, Info, Home, Utensils, Clock, MoreVertical, Plus, ArrowLeft, ExternalLink, Trash2 } from '@components/icons';
+import { MapPin, Mountain, Tent, Info, Home, Utensils, Car, Clock, MoreVertical, Plus, ArrowLeft, ExternalLink, Trash2 } from '@components/icons';
 
 // ── Type metadata ────────────────────────────────────────────────
 const TYPE_META = {
-  park:           { icon: MapPin,   label: 'Park',      color: 'var(--accent-green)' },
-  landmark:       { icon: MapPin,   label: 'Landmark',  color: 'var(--accent-green)' },
-  trail:          { icon: Mountain, label: 'Hike',      color: '#3B82F6' },
-  campground:     { icon: Tent,     label: 'Camp',      color: '#8B6914' },
-  visitor_center: { icon: Info,     label: 'Visitor Ctr', color: '#7C3AED' },
-  lodging:        { icon: Home,     label: 'Lodging',   color: '#7C3AED' },
-  restaurant:     { icon: Utensils, label: 'Dining',    color: '#F59E0B' },
-  food:           { icon: Utensils, label: 'Dining',    color: '#F59E0B' },
-  custom:         { icon: MapPin,   label: 'Custom',    color: 'var(--text-tertiary)' },
+  park:           { icon: MapPin,   label: 'Park',      color: stopTypeColor('park') },
+  landmark:       { icon: MapPin,   label: 'Landmark',  color: stopTypeColor('landmark') },
+  trail:          { icon: Mountain, label: 'Hike',      color: stopTypeColor('trail') },
+  campground:     { icon: Tent,     label: 'Camp',      color: stopTypeColor('campground') },
+  visitor_center: { icon: Info,     label: 'Visitor Ctr', color: stopTypeColor('visitor_center') },
+  lodging:        { icon: Home,     label: 'Lodging',   color: stopTypeColor('lodging') },
+  restaurant:     { icon: Utensils, label: 'Dining',    color: stopTypeColor('restaurant') },
+  food:           { icon: Utensils, label: 'Dining',    color: stopTypeColor('food') },
+  transport:      { icon: Car,      label: 'Transit',   color: stopTypeColor('transport') },
+  shuttle:        { icon: Car,      label: 'Transit',   color: stopTypeColor('shuttle') },
+  custom:         { icon: MapPin,   label: 'Custom',    color: stopTypeColor('custom') },
 };
 
 const DIFFICULTY_COLORS = {
-  easy:      { bg: 'rgba(34,197,94,0.12)',  text: '#16a34a' },
-  moderate:  { bg: 'rgba(234,179,8,0.12)',  text: '#ca8a04' },
-  hard:      { bg: 'rgba(249,115,22,0.12)', text: '#ea580c' },
-  strenuous: { bg: 'rgba(239,68,68,0.12)',  text: '#dc2626' },
+  easy:      { text: 'var(--icon-success)' },
+  moderate:  { text: 'var(--icon-warning)' },
+  hard:      { text: 'var(--icon-event)' },
+  strenuous: { text: 'var(--error)' },
 };
 
 // ── Helpers ──────────────────────────────────────────────────────
@@ -81,7 +84,7 @@ function groupStopsByPeriod(stops) {
 function CompactStopCard({ stop, dayId, allDays, selectedStopId, onStopClick, onRemoveStop, onMoveStop }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
-  const meta = { ...(TYPE_META[stop.type] || TYPE_META.custom), label: groundedPlaceType(stop) || '', color: 'var(--text-secondary)' };
+  const meta = { ...(TYPE_META[stop.type] || TYPE_META.custom), label: groundedPlaceType(stop) || '' };
   const Icon = meta.icon;
   const isSelected = stop.id === selectedStopId;
 
@@ -120,7 +123,7 @@ function CompactStopCard({ stop, dayId, allDays, selectedStopId, onStopClick, on
         )}
         <span
           className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
-          style={{ backgroundColor: `${meta.color}15`, color: meta.color }}
+          style={{ backgroundColor: iconTint(meta.color), color: meta.color }}
         >
           <Icon className="h-2.5 w-2.5" />
           {meta.label}
@@ -129,7 +132,7 @@ function CompactStopCard({ stop, dayId, allDays, selectedStopId, onStopClick, on
           <span
             className="rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
             style={{
-              backgroundColor: DIFFICULTY_COLORS[stop.difficulty]?.bg || 'rgba(0,0,0,0.06)',
+              backgroundColor: iconTint(DIFFICULTY_COLORS[stop.difficulty]?.text || 'var(--icon-muted)'),
               color: DIFFICULTY_COLORS[stop.difficulty]?.text || 'var(--text-tertiary)',
             }}
           >

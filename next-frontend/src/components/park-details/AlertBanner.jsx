@@ -11,31 +11,19 @@ const AlertBanner = ({
   const types = {
     info: {
       icon: Info,
-      bgColor: 'bg-blue-500/10',
-      borderColor: 'border-blue-500/30',
-      iconColor: 'text-blue-400',
-      textColor: 'text-blue-300'
+      color: 'var(--icon-discovery)',
     },
     warning: {
       icon: AlertTriangle,
-      bgColor: 'bg-yellow-500/10',
-      borderColor: 'border-yellow-500/30',
-      iconColor: 'text-yellow-400',
-      textColor: 'text-yellow-300'
+      color: 'var(--icon-warning)',
     },
     success: {
       icon: CheckCircle,
-      bgColor: 'bg-green-500/10',
-      borderColor: 'border-green-500/30',
-      iconColor: 'text-green-400',
-      textColor: 'text-green-300'
+      color: 'var(--icon-success)',
     },
     error: {
       icon: XCircle,
-      bgColor: 'bg-red-500/10',
-      borderColor: 'border-red-500/30',
-      iconColor: 'text-red-400',
-      textColor: 'text-red-300'
+      color: 'var(--error)',
     }
   };
 
@@ -43,12 +31,18 @@ const AlertBanner = ({
   const Icon = config.icon;
 
   return (
-    <div className={`rounded-xl p-4 backdrop-blur border ${config.bgColor} ${config.borderColor}`}>
+    <div
+      className="rounded-xl p-4 border"
+      style={{
+        backgroundColor: `color-mix(in srgb, ${config.color} 12%, transparent)`,
+        borderColor: `color-mix(in srgb, ${config.color} 35%, transparent)`,
+      }}
+    >
       <div className="flex gap-3">
-        <Icon className={`h-5 w-5 flex-shrink-0 ${config.iconColor}`} />
+        <Icon className="h-5 w-5 flex-shrink-0" style={{ color: config.color }} />
         <div className="flex-1 min-w-0">
           {title && (
-            <h4 className={`font-semibold mb-1 ${config.textColor}`}>
+            <h4 className="font-semibold mb-1" style={{ color: config.color }}>
               {title}
             </h4>
           )}

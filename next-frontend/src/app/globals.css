@@ -1184,7 +1184,8 @@ section {
   .info-description { font-size: 16px; }
   .info-section { padding-block: 2rem; }
 }
-.info-icon { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 12px; background: var(--bg-secondary); color: var(--accent-green); margin-bottom: 1rem; flex-shrink: 0; }
+.info-icon { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 12px; background: color-mix(in srgb, var(--icon-trailie) 14%, transparent); color: var(--icon-trailie); margin-bottom: 1rem; flex-shrink: 0; }
+.activity-icon { display: inline-block; background-color: var(--icon-nature); -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; -webkit-mask-size: contain; mask-size: contain; mask-mode: alpha; }
 .info-icon svg { width: 22px; height: 22px; }
 /* Keep reusable story content aligned only inside the footer page layout. */
 .info-stories { width: 100%; max-width: var(--public-shell-width); margin-inline: auto; padding-inline: var(--public-gutter); }

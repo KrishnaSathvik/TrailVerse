@@ -136,7 +136,7 @@ export default async function LandingPage() {
             <div className={`flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between ${LANDING_SECTION_HEADER_MB}`}>
               <div>
                 <div className="public-eyebrow" >
-                  <IconGlyph name="Mountain" className="h-4 w-4" style={{ color: 'var(--text-primary)' }} />
+                  <IconGlyph name="Mountain" className="h-4 w-4" style={{ color: 'var(--icon-nature)' }} />
                   <span className="text-sm font-medium uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>Popular Destinations</span>
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>Start exploring</h2>
