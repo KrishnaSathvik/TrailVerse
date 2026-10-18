@@ -223,8 +223,7 @@ class FeatureAnnouncementController {
         exploreByActivityUrl: `${baseUrl}/discover`,
         mapUrl: `${baseUrl}/map`,
         compareUrl: `${baseUrl}/compare`,
-        chatgptUrl:
-          'https://chatgpt.com/plugins/plugin_asdk_app_69e9c67943c08191a37c464b803ebdbe',
+        chatgptUrl: 'https://chatgpt.com/plugins/trailverse',
         exploreUrl: `${baseUrl}/explore`,
         testimonialsUrl: `${baseUrl}/testimonials`,
         unsubscribeUrl: `${baseUrl}/unsubscribe?email=${encodeURIComponent(user.email || '')}`

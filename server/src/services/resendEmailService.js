@@ -331,8 +331,7 @@ class ResendEmailService {
         exploreByActivityUrl: `${baseUrl}/discover`,
         mapUrl: `${baseUrl}/map`,
         compareUrl: `${baseUrl}/compare`,
-        chatgptUrl:
-          'https://chatgpt.com/plugins/plugin_asdk_app_69e9c67943c08191a37c464b803ebdbe',
+        chatgptUrl: 'https://chatgpt.com/plugins/trailverse',
         exploreUrl: `${baseUrl}/explore`,
         testimonialsUrl: `${baseUrl}/testimonials`,
         unsubscribeUrl: `${baseUrl}/unsubscribe?email=${encodeURIComponent(user.email || '')}`
@@ -345,7 +344,7 @@ class ResendEmailService {
         from: `${fromName} <${fromAddress}>`,
         to: user.email,
         reply_to: 'trailverseteam@gmail.com',
-        subject: "🎉 What's new in TrailVerse — ChatGPT app, voice, map & more",
+        subject: "It's been a while — here's what's new with TrailVerse",
         html,
         tags: [
           { name: 'category', value: 'feature-announcement' },

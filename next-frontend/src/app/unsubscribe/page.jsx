@@ -28,7 +28,9 @@ export default function UnsubscribePage() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
-      <UnsubscribeClient />
+      <main className="info-page">
+        <UnsubscribeClient />
+      </main>
       <Footer />
     </div>
   );

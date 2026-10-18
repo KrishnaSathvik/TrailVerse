@@ -65,8 +65,7 @@ async function previewEmail() {
       exploreByActivityUrl: `${baseUrl}/discover`,
       mapUrl: `${baseUrl}/map`,
       compareUrl: `${baseUrl}/compare`,
-      chatgptUrl:
-        'https://chatgpt.com/plugins/plugin_asdk_app_69e9c67943c08191a37c464b803ebdbe',
+      chatgptUrl: 'https://chatgpt.com/plugins/trailverse',
       exploreUrl: `${baseUrl}/explore`,
       testimonialsUrl: `${baseUrl}/testimonials`,
       unsubscribeUrl: `${baseUrl}/unsubscribe?email=${encodeURIComponent(testUser.email)}`
@@ -97,7 +96,7 @@ async function sendTestEmail() {
 
     if (options.dryRun) {
       console.log('🔍 DRY RUN: Would send feature announcement email to:', testUser.email);
-      console.log("📧 Subject: It's been a while — here's what's new in TrailVerse");
+      console.log("📧 Subject: It's been a while — here's what's new with TrailVerse");
       return;
     }
 

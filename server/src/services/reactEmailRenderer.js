@@ -211,9 +211,7 @@ class ReactEmailRenderer {
       exploreByActivityUrl: exploreByActivityUrl || discoverUrl || `${base}/discover`,
       mapUrl: mapUrl || `${base}/map`,
       compareUrl: compareUrl || `${base}/compare`,
-      chatgptUrl:
-        chatgptUrl ||
-        'https://chatgpt.com/plugins/plugin_asdk_app_69e9c67943c08191a37c464b803ebdbe',
+      chatgptUrl: chatgptUrl || 'https://chatgpt.com/plugins/trailverse',
       exploreUrl: exploreUrl || `${base}/explore`,
       testimonialsUrl: testimonialsUrl || `${base}/testimonials`,
       unsubscribeUrl: unsubscribeUrl || `${base}/unsubscribe`
