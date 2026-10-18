@@ -133,15 +133,16 @@ blogPostSchema.index({ views: -1, status: 1 }); // Popular posts
 blogPostSchema.index({ author: 1, status: 1 }); // Author's posts
 blogPostSchema.index({ scheduledAt: 1, status: 1 }); // Scheduled posts
 
-// Text index for search functionality
+// Text index for search functionality.
+// Weights match the existing production index and must stay 1/1/1.
 blogPostSchema.index({ 
   title: 'text',
   excerpt: 'text',
   content: 'text'
 }, {
   weights: {
-    title: 10,
-    excerpt: 5,
+    title: 1,
+    excerpt: 1,
     content: 1
   }
 });
