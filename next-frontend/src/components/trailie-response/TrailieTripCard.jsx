@@ -1,5 +1,6 @@
 'use client';
 import { tripBases, tripTitle } from '@/lib/tripPresentation';
+import { logItineraryOpened } from '@/utils/analytics';
 
 export default function TrailieTripCard({ plan, locked = false, onOpen, refinement = null }) {
   if (locked || !plan?.days?.length) return null;
@@ -17,7 +18,7 @@ export default function TrailieTripCard({ plan, locked = false, onOpen, refineme
       </ol>
       {days.length > 3 && <p className="mb-3 text-sm text-[var(--text-secondary)]">+ {days.length - 3} more {updated ? 'updated ' : ''}days</p>}
       {updated && !days.length && <p className="my-3 text-sm text-[var(--text-secondary)]">Trip preferences updated. Your day-by-day plan is unchanged.</p>}
-      <button type="button" onClick={() => onOpen?.('itinerary')} className="inline-flex min-h-11 items-center gap-3 rounded-full bg-[var(--accent-green)] px-5 py-2.5 text-sm font-semibold text-white">Open trip <span aria-hidden="true">→</span></button>
+      <button type="button" onClick={() => { logItineraryOpened(); onOpen?.('itinerary'); }} className="inline-flex min-h-11 items-center gap-3 rounded-full bg-[var(--accent-green)] px-5 py-2.5 text-sm font-semibold text-white">Open trip <span aria-hidden="true">→</span></button>
     </section>
   );
 }

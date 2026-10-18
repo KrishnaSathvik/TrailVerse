@@ -76,13 +76,6 @@ export function useAdminDashboard({ autoFetch = true } = {}) {
         growthResponse,
         aiStatsResponse,
         anonStatsResponse,
-        trafficResponse,
-        searchResponse,
-        errorResponse,
-        satisfactionResponse,
-        mcpResponse,
-        performanceResponse,
-        popularParksResponse,
       ] = await Promise.all([
         blogService.getAllPosts({ status: 'published', limit: 1000 }),
         blogService.getAllPosts({ status: 'draft', limit: 1000 }),
@@ -94,13 +87,6 @@ export function useAdminDashboard({ autoFetch = true } = {}) {
         safeGet('/admin/user-growth', { data: { data: [] } }, 'User growth'),
         safeGet('/admin/ai-stats', { data: { data: null } }, 'AI stats'),
         safeGet('/admin/anonymous-stats', { data: { data: null } }, 'Anonymous funnel'),
-        safeGet('/admin/analytics/traffic', { data: { data: null } }, 'Traffic'),
-        safeGet('/admin/analytics/search', { data: { data: null } }, 'Search'),
-        safeGet('/admin/analytics/errors', { data: { data: null } }, 'Errors'),
-        safeGet('/admin/analytics/ai-satisfaction', { data: { data: null } }, 'AI satisfaction'),
-        safeGet('/analytics/mcp?period=30d', { data: { data: null } }, 'MCP usage'),
-        safeGet('/analytics/performance?period=24h', { data: { data: null } }, 'API performance'),
-        safeGet('/admin/analytics/popular-parks', { data: { data: null } }, 'Popular parks'),
       ]);
 
       allPosts = [
@@ -137,23 +123,6 @@ export function useAdminDashboard({ autoFetch = true } = {}) {
       setUserGrowth(normalizeSparklineDays(growthResponse.data?.data));
       setAIStats(aiStatsResponse.data?.data || null);
       setAnonymousStats(anonStatsResponse.data?.data || null);
-
-      const traffic = trafficResponse.data?.data;
-      if (traffic) {
-        setTrafficData({
-          ...traffic,
-          dailyViews: normalizeSparklineDays(traffic.dailyViews, '_id'),
-        });
-      } else {
-        setTrafficData(null);
-      }
-
-      setSearchData(Array.isArray(searchResponse.data?.data) ? searchResponse.data.data : []);
-      setErrorData(Array.isArray(errorResponse.data?.data) ? errorResponse.data.data : []);
-      setSatisfactionData(satisfactionResponse.data?.data || null);
-      setMcpData(mcpResponse.data?.data || null);
-      setPerformanceData(performanceResponse.data?.data || null);
-      setPopularParks(Array.isArray(popularParksResponse.data?.data) ? popularParksResponse.data.data : []);
       setLoadWarnings(failures);
       hasLoadedRef.current = true;
 

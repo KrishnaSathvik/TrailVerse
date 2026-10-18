@@ -35,7 +35,7 @@ const policySections = [
     "title": "Technical information and analytics",
     "paragraphs": [
       "Our application can record IP addresses, user agents, page URLs, referral information, browser and session identifiers, actions, request timing, and error or diagnostic details. Some events are associated with your account when signed in.",
-      "We use application analytics, Google Analytics when configured, and Vercel analytics and performance services. Some analytics use browser identifiers or account context and can run when you browse. Browser privacy controls and blocking tools may affect collection.",
+      "We use Google Analytics 4 for traffic and acquisition, and PostHog for product analytics across the site. PostHog does not record session replays or form contents. Chat messages, itinerary contents, names, email addresses, and search text are not sent to these analytics tools. If analytics opt-out is set in this browser, both tools stop. Browser privacy controls and blocking tools may also prevent collection.",
       "AI diagnostics can include request or response content and related metadata. Information you include in a message can therefore appear in operational records as well as your conversation."
     ]
   },
@@ -51,7 +51,7 @@ const policySections = [
     "id": "sharing",
     "title": "Who receives information",
     "paragraphs": [
-      "Our service providers process information needed for hosting, databases, email delivery, analytics, AI, search, maps, and weather. Depending on the feature, these include Anthropic, OpenAI, Google, MapTiler, OpenWeather, Resend, and Vercel, along with configured hosting, database, and web-search providers.",
+      "Our service providers process information needed for hosting, databases, email delivery, analytics, AI, search, maps, and weather. Depending on the feature, these include Anthropic, OpenAI, Google, PostHog, MapTiler, OpenWeather, Resend, and Vercel, along with configured hosting, database, and web-search providers.",
       "Park information is obtained from the National Park Service and other relevant sources. A park name, coordinates, or research query may be sent to a provider when that feature is used. Provider availability varies by configuration.",
       "Reviews, comments, and approved testimonials are public. If you create a public trip link, anyone with that link can view the shared trip and conversation. Removing a link or account cannot recall copies that other people have already saved.",
       "TrailVerse does not sell personal information. Information may also be disclosed when required by law or to protect rights and safety. Service providers and connected apps have their own privacy policies."
@@ -79,7 +79,7 @@ const policySections = [
     "title": "Retention and deletion",
     "paragraphs": [
       "Account-linked information is retained to provide the service until you remove it or delete your account, subject to operational and legal needs. Guest chat records are configured to expire after 48 hours of inactivity. Database expiry cleanup is asynchronous.",
-      "Raw application analytics are configured for a seven-day expiry window. This is not a single retention period for every record: AI request logs, aggregate analytics, deletion-audit records, infrastructure logs, backups, and provider records can have different lifecycles. Contact us for information about a particular record or service.",
+      "Google Analytics and PostHog keep analytics under their own retention settings. Older TrailVerse analytics records that were stored before this change remain until they are separately retired. AI request logs, deletion-audit records, infrastructure logs, backups, and provider records can have different lifecycles. Contact us for information about a particular record or service.",
       "Account deletion removes linked trips, favorites, visits, reviews, comments, subscriptions, and controlled uploaded files. References such as likes are removed or anonymized. A limited deletion-audit record with hashed identifiers and operation outcomes is configured for a one-year expiry.",
       "Guest submissions and data not linked to your account may need a separate request. Local browser data, third-party records, and copies saved by other people are not all removed by deleting a TrailVerse account."
     ]

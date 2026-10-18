@@ -19,7 +19,7 @@ import { useParks, useAllParksLite } from '@/hooks/useParks';
 import { useParkRatings } from '@/hooks/useParkRatings';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useSearchPrefetch } from '@/hooks/useSmartPrefetch';
-import { logSearch, logSearchResultClick, logEvent } from '@/utils/analytics';
+import { captureFilter, logSearch, logSearchResultClick } from '@/utils/analytics';
 import npsApi from '@/services/npsApi';
 import { saveParkSearchSession } from '@/lib/parkSearchSession';
 import { parkToSlug } from '@/utils/parkSlug';
@@ -491,7 +491,7 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
                   >
                     <button
                       type="button"
-                      onClick={() => { setSortBy('name'); setShowSortDropdown(false); }}
+                      onClick={() => { setSortBy('name'); setShowSortDropdown(false); captureFilter('sort_name'); }}
                       className="w-full px-4 py-2.5 text-left text-sm font-medium transition-colors"
                       style={{ backgroundColor: sortBy === 'name' ? 'var(--bg-tertiary)' : 'transparent', color: sortBy === 'name' ? 'var(--text-primary)' : 'var(--text-secondary)' }}
                     >
@@ -499,7 +499,7 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
                     </button>
                     <button
                       type="button"
-                      onClick={() => { setSortBy('state'); setShowSortDropdown(false); }}
+                      onClick={() => { setSortBy('state'); setShowSortDropdown(false); captureFilter('sort_state'); }}
                       className="w-full px-4 py-2.5 text-left text-sm font-medium transition-colors"
                       style={{ backgroundColor: sortBy === 'state' ? 'var(--bg-tertiary)' : 'transparent', color: sortBy === 'state' ? 'var(--text-primary)' : 'var(--text-secondary)' }}
                     >
@@ -553,7 +553,7 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
               <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setFilters((prev) => ({ ...prev, nationalParksOnly: !prev.nationalParksOnly }))}
+                  onClick={() => { setFilters((prev) => ({ ...prev, nationalParksOnly: !prev.nationalParksOnly })); captureFilter('national_parks_only'); }}
                   className="hidden items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition lg:inline-flex"
                   style={{
                     backgroundColor: filters.nationalParksOnly ? 'var(--surface-active)' : 'var(--bg-primary)',
@@ -679,7 +679,7 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
                     >
                       <button
                         type="button"
-                        onClick={() => { setSortBy('name'); setShowSortDropdown(false); }}
+                        onClick={() => { setSortBy('name'); setShowSortDropdown(false); captureFilter('sort_name'); }}
                         className="w-full px-4 py-2.5 text-left text-sm font-medium transition-colors"
                         style={{
                           backgroundColor: sortBy === 'name' ? 'var(--bg-tertiary)' : 'transparent',
@@ -690,7 +690,7 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
                       </button>
                       <button
                         type="button"
-                        onClick={() => { setSortBy('state'); setShowSortDropdown(false); }}
+                        onClick={() => { setSortBy('state'); setShowSortDropdown(false); captureFilter('sort_state'); }}
                         className="w-full px-4 py-2.5 text-left text-sm font-medium transition-colors"
                         style={{
                           backgroundColor: sortBy === 'state' ? 'var(--bg-tertiary)' : 'transparent',

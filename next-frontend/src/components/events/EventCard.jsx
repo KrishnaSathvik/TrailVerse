@@ -2,6 +2,7 @@ import React, { memo, useCallback, useMemo } from 'react';
 // import { Link } from 'react-router-dom';
 import { Landmark, Clock, MapPinCheck, ExternalLink, Heart, HeartOff } from '@components/icons';
 import Button from '../common/Button';
+import { captureEventLink } from '@/utils/analytics';
 import { htmlToPlainText } from '../../utils/htmlUtils';
 import ExpandableDescription from '../discover/ExpandableDescription';
 
@@ -125,6 +126,7 @@ const EventCard = memo(({ event, categories, onSaveEvent, onUnsaveEvent, isSaved
         <div className="mt-auto flex items-center justify-end pt-2">
           <Button
             href={event.detailsUrl || `https://www.nps.gov/planyourvisit/event-details.htm?id=${event.id}`}
+            onClick={() => captureEventLink(event.detailsUrl, event.id)}
             target="_blank"
             rel="noopener noreferrer"
             variant="secondary"

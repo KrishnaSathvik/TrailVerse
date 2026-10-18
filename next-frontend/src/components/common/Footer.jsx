@@ -9,6 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 import { usePWAInstall } from '../../hooks/usePWAInstall';
 import PWAInstallInstructionsModal from './PWAInstallInstructionsModal';
 import SyncStatus from './SyncStatus';
+import { captureNavigation } from '@/utils/analytics';
 
 const linkClass = 'transition hover:opacity-80';
 const linkStyle = { color: 'var(--text-secondary)' };
@@ -43,7 +44,7 @@ function FooterLink({ href, children, external = false }) {
 
   return (
     <li>
-      <Link href={href} className={linkClass} style={linkStyle}>
+      <Link href={href} className={linkClass} style={linkStyle} onClick={() => captureNavigation('footer', href)}>
         {children}
       </Link>
     </li>

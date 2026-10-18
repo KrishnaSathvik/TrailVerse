@@ -1,285 +1,116 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('react-ga4', () => ({
-  default: {
-    initialize: vi.fn(),
-    send: vi.fn(),
-    event: vi.fn(),
-  },
+const capture = vi.fn();
+const identify = vi.fn();
+const reset = vi.fn();
+const optOut = vi.fn();
+const optIn = vi.fn();
+
+vi.mock('@/lib/posthogClient', () => ({
+  initPostHog: vi.fn(),
+  capturePostHog: (...args) => capture(...args),
+  identifyPostHog: (...args) => identify(...args),
+  resetPostHog: (...args) => reset(...args),
+  optOutPostHog: (...args) => optOut(...args),
+  optInPostHog: (...args) => optIn(...args),
 }));
-
-const mockVercelTrack = vi.fn();
-vi.mock('@vercel/analytics', () => ({
-  track: (...args) => mockVercelTrack(...args),
-}));
-
-const mockFetch = vi.fn(() => Promise.resolve({ ok: true }));
-global.fetch = mockFetch;
 
 import {
-  initGA,
-  trackPageView,
-  trackEvent,
-  logPageView,
-  logEvent,
-  logParkView,
-  logSearch,
-  logShare,
-  logAIChat,
-  logBlogView,
-  logEventView,
-  logUserAction,
-  logCtaClick,
-  logParkEngagement,
-  sanitizeVercelEventData,
-  trackVercel,
+  captureSearch,
   isAnalyticsAllowed,
-  logNewsletterSignup,
-  sanitizeNewsletterAnalytics,
+  logAIChat,
+  logPageView,
+  logSearch,
+  logUserLogin,
+  logUserLogout,
+  optOutAnalytics,
+  pageCategory,
+  trackPageView,
 } from '../analytics';
-import ReactGA from 'react-ga4';
 
-const mockLocation = {
-  href: 'http://localhost:3000/test',
-  pathname: '/test',
-  search: '',
-  hash: '',
-};
-Object.defineProperty(window, 'location', {
-  value: mockLocation,
-  writable: true,
-});
-
-const mockConsoleLog = vi.fn();
-global.console.log = mockConsoleLog;
-
-describe('Analytics', () => {
+describe('analytics', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    vi.unstubAllEnvs();
-    localStorage.removeItem('analytics_opt_out');
-    localStorage.removeItem('user');
-    sessionStorage.removeItem('tv_session_id');
+    capture.mockClear();
+    identify.mockClear();
+    reset.mockClear();
+    window.localStorage.clear();
+    window.gtag = vi.fn();
+    window.history.pushState({}, '', '/explore?q=yellowstone');
   });
 
-  afterEach(() => {
-    vi.clearAllMocks();
+  it('sends one GA pageview and one PostHog page_viewed without the query string', () => {
+    logPageView();
+    expect(window.gtag).toHaveBeenCalledTimes(1);
+    expect(window.gtag).toHaveBeenCalledWith('event', 'page_view', expect.objectContaining({
+      page_path: '/explore',
+      page_location: expect.stringMatching(/\/explore$/),
+    }));
+    expect(capture).toHaveBeenCalledTimes(1);
+    expect(capture).toHaveBeenCalledWith('page_viewed', expect.objectContaining({
+      page_category: 'explore',
+      signed_in: false,
+    }));
+    const payload = JSON.stringify(capture.mock.calls);
+    expect(payload).not.toContain('yellowstone');
   });
 
-  describe('initGA', () => {
-    it('should initialize GA when tracking ID is provided', () => {
-      vi.stubEnv('NEXT_PUBLIC_GA_TRACKING_ID', 'G-TEST123');
-      initGA();
-      expect(ReactGA.initialize).toHaveBeenCalledWith('G-TEST123', {
-        gaOptions: { siteSpeedSampleRate: 100 },
-      });
-    });
-
-    it('should not initialize GA when tracking ID is not provided', () => {
-      initGA();
-      expect(ReactGA.initialize).not.toHaveBeenCalled();
-    });
+  it('does not send a second pageview for the same explicit path helper beyond one call', () => {
+    trackPageView('/parks/yellowstone-national-park?tab=alerts');
+    expect(window.gtag).toHaveBeenCalledTimes(1);
+    expect(capture).toHaveBeenCalledWith('page_viewed', expect.objectContaining({
+      page_category: 'park',
+      content_key: 'yellowstone-national-park',
+    }));
   });
 
-  describe('page views', () => {
-    it('trackPageView sends GA pageview', () => {
-      trackPageView('/custom-path');
-      expect(ReactGA.send).toHaveBeenCalledWith({
-        hitType: 'pageview',
-        page: '/custom-path',
-      });
-    });
-
-    it('logPageView uses current location', () => {
-      logPageView();
-      expect(ReactGA.send).toHaveBeenCalledWith({
-        hitType: 'pageview',
-        page: '/test',
-      });
-    });
+  it('classifies the main site sections', () => {
+    expect(pageCategory('/')).toBe('home');
+    expect(pageCategory('/map')).toBe('map');
+    expect(pageCategory('/plan-ai/abc')).toBe('trailie');
+    expect(pageCategory('/blog/best-hikes')).toBe('blog');
+    expect(pageCategory('/trailie-demo')).toBe('demo');
+    expect(pageCategory('/itineraries/zion-weekend')).toBe('itineraries');
+    expect(pageCategory('/discover/activity/hiking')).toBe('discover');
+    expect(pageCategory('/compare')).toBe('compare');
+    expect(pageCategory('/events')).toBe('events');
+    expect(pageCategory('/where-next')).toBe('where_next');
+    expect(pageCategory('/privacy')).toBe('info');
   });
 
-  describe('emitProductEvent via logEvent', () => {
-    it('sends GA, Vercel, and queues backend', () => {
-      logEvent('Auth', 'login_success', 'email');
-      expect(ReactGA.event).toHaveBeenCalledWith(expect.objectContaining({
-        category: 'Auth',
-        action: 'login_success',
-        label: 'email',
-      }));
-      expect(mockVercelTrack).toHaveBeenCalledWith('auth_login_success', expect.objectContaining({
-        label: 'email',
-        user_type: 'anonymous',
-      }));
+  it('records search outcome without the query text', () => {
+    logSearch('hidden canyon query', 4, 'parks');
+    captureSearch({ surface: 'map', resultCount: 2, hasQuery: true });
+    expect(capture).toHaveBeenNthCalledWith(1, 'search_performed', {
+      surface: 'explore',
+      result_count: 4,
+      has_query: true,
     });
+    expect(JSON.stringify(capture.mock.calls)).not.toContain('hidden canyon');
   });
 
-  describe('trackEvent', () => {
-    it('delegates to logEvent pipeline', () => {
-      trackEvent('button', 'click', 'signup');
-      expect(mockVercelTrack).toHaveBeenCalledWith('button_click', expect.any(Object));
-    });
+  it('records Trailie outcome without message text and identifies only the user id', () => {
+    logAIChat('Meet me at the secret trailhead', 1200, true, { hasItinerary: true });
+    expect(capture).toHaveBeenCalledWith('trailie_response_completed', expect.objectContaining({
+      outcome: 'success',
+      message_length: 'Meet me at the secret trailhead'.length,
+      has_itinerary: true,
+      duration_ms: 1200,
+    }));
+    expect(JSON.stringify(capture.mock.calls)).not.toContain('secret trailhead');
+
+    logUserLogin('507f1f77bcf86cd799439011');
+    expect(identify).toHaveBeenCalledWith('507f1f77bcf86cd799439011');
+    logUserLogout();
+    expect(reset).toHaveBeenCalled();
   });
 
-  describe('content events', () => {
-    it('logParkView hits all channels', () => {
-      logParkView('yose', 'Yosemite National Park');
-      expect(ReactGA.event).toHaveBeenCalled();
-      expect(mockVercelTrack).toHaveBeenCalledWith('park_view', expect.objectContaining({
-        park_code: 'yose',
-        source: 'unknown',
-      }));
-    });
-
-    it('logSearch hits Vercel with search metadata', () => {
-      logSearch('hiking trails', 5, 'landing');
-      expect(mockVercelTrack).toHaveBeenCalledWith('search_query', expect.objectContaining({
-        search_type: 'landing',
-        result_count: 5,
-        has_results: true,
-      }));
-    });
-
-    it('logShare hits Vercel', () => {
-      logShare('facebook', 'park details', 'park');
-      expect(mockVercelTrack).toHaveBeenCalledWith('share', expect.objectContaining({
-        platform: 'facebook',
-        content_type: 'park',
-      }));
-    });
-
-    it('logAIChat distinguishes success and error', () => {
-      logAIChat('hello', 1200, true);
-      expect(mockVercelTrack).toHaveBeenCalledWith('trailie_message', expect.objectContaining({
-        message_length: 5,
-        response_time_ms: 1200,
-      }));
-      logAIChat('hello', 0, false);
-      expect(mockVercelTrack).toHaveBeenCalledWith('trailie_message_error', expect.any(Object));
-    });
-
-    it('logBlogView hits Vercel', () => {
-      logBlogView('Top 10 National Parks', 'blog-1', 'guides');
-      expect(mockVercelTrack).toHaveBeenCalledWith('blog_view', expect.objectContaining({
-        blog_id: 'blog-1',
-        category: 'guides',
-      }));
-    });
-
-    it('logEventView hits Vercel', () => {
-      logEventView('Ranger Talk', 'evt-1', 'yell');
-      expect(mockVercelTrack).toHaveBeenCalledWith('event_view', expect.objectContaining({
-        event_id: 'evt-1',
-        park_code: 'yell',
-      }));
-    });
-  });
-
-  describe('engagement events', () => {
-    it('logUserAction hits Vercel', () => {
-      logUserAction('review_prompt_shown', 'Yosemite');
-      expect(mockVercelTrack).toHaveBeenCalledWith('user_review_prompt_shown', expect.any(Object));
-    });
-
-    it('logParkEngagement uses structured park events', () => {
-      logParkEngagement({ action: 'favorite_add', parkCode: 'yell', parkName: 'Yellowstone' });
-      expect(mockVercelTrack).toHaveBeenCalledWith('park_favorite_add', expect.objectContaining({
-        park_code: 'yell',
-      }));
-    });
-
-    it('logCtaClick includes surface and destination', () => {
-      logCtaClick({
-        ctaId: 'plan_with_trailie',
-        label: 'Plan with Trailie',
-        surface: 'park_hero',
-        destination: '/plan-ai',
-        parkCode: 'yell',
-      });
-      expect(mockVercelTrack).toHaveBeenCalledWith('cta_click', expect.objectContaining({
-        cta_id: 'plan_with_trailie',
-        surface: 'park_hero',
-        park_code: 'yell',
-      }));
-    });
-
-    it('logNewsletterSignup fires submit/success/error with source and without PII', () => {
-      logNewsletterSignup('newsletter_signup_submit', {
-        source: 'newsletter-page',
-        email: 'secret@example.com',
-        confirmToken: 'abc',
-      });
-      logNewsletterSignup('newsletter_signup_success', { source: 'newsletter-page' });
-      logNewsletterSignup('newsletter_signup_error', { source: 'blog-footer' });
-
-      expect(mockVercelTrack).toHaveBeenCalledWith(
-        'newsletter_signup_submit',
-        expect.objectContaining({ source: 'newsletter-page' })
-      );
-      expect(mockVercelTrack).toHaveBeenCalledWith(
-        'newsletter_signup_success',
-        expect.objectContaining({ source: 'newsletter-page' })
-      );
-      expect(mockVercelTrack).toHaveBeenCalledWith(
-        'newsletter_signup_error',
-        expect.objectContaining({ source: 'blog-footer' })
-      );
-
-      const submitPayload = mockVercelTrack.mock.calls.find(([name]) => name === 'newsletter_signup_submit')[1];
-      expect(submitPayload.email).toBeUndefined();
-      expect(submitPayload.confirmToken).toBeUndefined();
-    });
-
-    it('sanitizeNewsletterAnalytics strips email and tokens', () => {
-      expect(sanitizeNewsletterAnalytics({
-        source: 'blog-footer',
-        email: 'reader@example.com',
-        firstName: 'Ada',
-        confirmToken: 'tok',
-        unsubscribeToken: 'unsub',
-      })).toEqual({ source: 'blog-footer' });
-    });
-
-    it('ignores unknown newsletter analytics actions', () => {
-      logNewsletterSignup('newsletter_confirmed', { source: 'newsletter-page' });
-      expect(mockVercelTrack).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('privacy', () => {
-    it('sanitizeVercelEventData truncates long strings', () => {
-      const long = 'x'.repeat(300);
-      expect(sanitizeVercelEventData({ label: long })).toEqual({
-        label: 'x'.repeat(255),
-      });
-    });
-
-    it('trackVercel respects opt-out', () => {
-      localStorage.setItem('analytics_opt_out', 'true');
-      trackVercel('test_event', { surface: 'hero' });
-      expect(mockVercelTrack).not.toHaveBeenCalled();
-      expect(isAnalyticsAllowed()).toBe(false);
-    });
-
-    it('blocks GA when opted out', () => {
-      localStorage.setItem('analytics_opt_out', 'true');
-      logEvent('Auth', 'login_success', 'email');
-      expect(ReactGA.event).not.toHaveBeenCalled();
-      expect(mockVercelTrack).not.toHaveBeenCalled();
-    });
-
-    it('attaches browser and user identity on backend events', () => {
-      localStorage.setItem('user', JSON.stringify({ _id: 'u1' }));
-      localStorage.setItem('token', 'test-token');
-      for (let i = 0; i < 10; i += 1) {
-        logParkView('yose', 'Yosemite National Park');
-      }
-      expect(mockFetch).toHaveBeenCalled();
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(body.browserId).toBeTruthy();
-      expect(body.userId).toBe('u1');
-      expect(body.events.some((event) => event.userType === 'authenticated')).toBe(true);
-      expect(mockFetch.mock.calls[0][1].headers.Authorization).toBe('Bearer test-token');
-    });
+  it('opt-out blocks GA and PostHog', () => {
+    optOutAnalytics();
+    expect(isAnalyticsAllowed()).toBe(false);
+    logPageView();
+    logAIChat('hello', 10, false);
+    expect(window.gtag).not.toHaveBeenCalled();
+    expect(capture).not.toHaveBeenCalled();
+    expect(optOut).toHaveBeenCalled();
   });
 });

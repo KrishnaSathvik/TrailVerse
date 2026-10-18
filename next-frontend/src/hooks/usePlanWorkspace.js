@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useToast } from '../context/ToastContext';
 import tripService from '../services/tripService';
+import { logItineraryRevised, logSavedTripOpened } from '@/utils/analytics';
 
 /**
  * Shared state for the plan workspace.
@@ -43,6 +44,7 @@ export default function usePlanWorkspace(tripId) {
         const tripData = data.data || data;
         if (cancelled) return;
         applyTripResult(tripData);
+        logSavedTripOpened(Boolean(tripData.plan?.days?.length));
       } catch (err) {
         if (!cancelled) {
           setError(err);
@@ -67,6 +69,7 @@ export default function usePlanWorkspace(tripId) {
       applyTripResult(tripData);
       setIsDirty(false);
       setSaveState('saved');
+      logItineraryRevised('workspace');
       setTimeout(() => setSaveState('idle'), 2000);
       return { ok: true };
     } catch (err) {

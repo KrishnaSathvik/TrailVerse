@@ -6,7 +6,6 @@ const { canonicalParkMatchesActivity } = require('../catalog/canonicalPark');
 const { canonicalListToApiParks } = require('../adapters/npsParkAdapter');
 const { filterParksBySearchQuery, applyPinnedParksToResults } = require('../utils/parkSearchQuery');
 const { resolveSearchPinsFromQuery } = require('../utils/searchIntentPins');
-const { logParkSearch } = require('./parkSearchAnalytics');
 
 /**
  * @param {{
@@ -62,21 +61,10 @@ async function executeParkSearch({ q, state, activity, limit, pinned, req, sourc
     }
   }
 
-  let searchId = null;
-  if (req && (query || activity || state)) {
-    searchId = logParkSearch(req, {
-      query: query || null,
-      state: state ? String(state).toUpperCase() : null,
-      activity: activity || null,
-      parks,
-      source,
-    });
-  }
-
   return {
     parks: canonicalListToApiParks(parks),
     count,
-    searchId,
+    searchId: null,
   };
 }
 
