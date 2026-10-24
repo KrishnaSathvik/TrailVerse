@@ -713,6 +713,61 @@ const ParkDetailInner = ({
     return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(parkLocation)}`;
   };
 
+  // Phones show these below the photo so they don't cover it; larger screens overlay them.
+  const renderHeroActions = (overlay) => (
+    <>
+      <Button
+        onClick={handleMarkVisited}
+        disabled={markingAsVisited || removingVisited}
+        variant={isVisited ? 'success' : 'secondary'}
+        size="sm"
+        icon={isVisited ? MapPinCheck : MapPin}
+        className={overlay ? 'shrink-0' : 'flex-1'}
+        style={overlay ? {
+          backgroundColor: isVisited ? 'rgba(34, 197, 94, 0.35)' : 'rgba(255, 255, 255, 0.12)',
+          borderWidth: '1px',
+          borderColor: isVisited ? 'rgba(255, 255, 255, 0.45)' : 'rgba(255, 255, 255, 0.35)',
+          color: '#fff',
+          opacity: (markingAsVisited || removingVisited) ? 0.6 : 1,
+        } : undefined}
+        title={isVisited ? 'Remove from visited' : 'Mark as visited'}
+      >
+        {isVisited ? 'Visited' : 'Mark as Visited'}
+      </Button>
+
+      <Button
+        onClick={handleSavePark}
+        disabled={savingPark}
+        variant={isSaved ? 'danger' : 'secondary'}
+        size="sm"
+        icon={Heart}
+        iconWeight={isSaved ? 'fill' : 'regular'}
+        className={overlay ? 'shrink-0' : 'flex-1'}
+        style={overlay ? {
+          backgroundColor: isSaved ? 'rgba(239, 68, 68, 0.35)' : 'rgba(255, 255, 255, 0.12)',
+          borderWidth: '1px',
+          borderColor: isSaved ? 'rgba(255, 255, 255, 0.45)' : 'rgba(255, 255, 255, 0.35)',
+          color: '#fff',
+        } : undefined}
+        title={isSaved ? 'Remove from favorites' : 'Add to favorites'}
+      >
+        {isSaved ? 'Favorited' : 'Favorite'}
+      </Button>
+
+      <div className={overlay ? 'shrink-0' : 'basis-full'}>
+        <ShareButtons
+          url={shareUrl}
+          title={park.fullName}
+          description={park.description}
+          image={park.images?.[0]?.url}
+          type="park"
+          showPrint={false}
+          heroOverlay={overlay}
+        />
+      </div>
+    </>
+  );
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
@@ -786,60 +841,17 @@ const ParkDetailInner = ({
                     </h2>
                   </div>
 
-                  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2.5 lg:gap-3">
-                    <Button
-                      onClick={handleMarkVisited}
-                      disabled={markingAsVisited || removingVisited}
-                      variant={isVisited ? 'success' : 'secondary'}
-                      size="sm"
-                      icon={isVisited ? MapPinCheck : MapPin}
-                      className="w-full sm:w-auto shrink-0"
-                      style={{
-                        backgroundColor: isVisited ? 'rgba(34, 197, 94, 0.35)' : 'rgba(255, 255, 255, 0.12)',
-                        borderWidth: '1px',
-                        borderColor: isVisited ? 'rgba(255, 255, 255, 0.45)' : 'rgba(255, 255, 255, 0.35)',
-                        color: '#fff',
-                        opacity: (markingAsVisited || removingVisited) ? 0.6 : 1,
-                      }}
-                      title={isVisited ? 'Remove from visited' : 'Mark as visited'}
-                    >
-                      {isVisited ? 'Visited' : 'Mark as Visited'}
-                    </Button>
-
-                    <Button
-                      onClick={handleSavePark}
-                      disabled={savingPark}
-                      variant={isSaved ? 'danger' : 'secondary'}
-                      size="sm"
-                      icon={Heart}
-                      iconWeight={isSaved ? 'fill' : 'regular'}
-                      className="w-full sm:w-auto shrink-0"
-                      style={{
-                        backgroundColor: isSaved ? 'rgba(239, 68, 68, 0.35)' : 'rgba(255, 255, 255, 0.12)',
-                        borderWidth: '1px',
-                        borderColor: isSaved ? 'rgba(255, 255, 255, 0.45)' : 'rgba(255, 255, 255, 0.35)',
-                        color: '#fff',
-                      }}
-                      title={isSaved ? 'Remove from favorites' : 'Add to favorites'}
-                    >
-                      {isSaved ? 'Favorited' : 'Favorite'}
-                    </Button>
-
-                    <ShareButtons
-                      url={shareUrl}
-                      title={park.fullName}
-                      description={park.description}
-                      image={park.images?.[0]?.url}
-                      type="park"
-                      showPrint={false}
-                      heroOverlay
-                    />
+                  <div className="hidden sm:flex sm:flex-row sm:flex-wrap sm:items-center sm:gap-2.5 lg:gap-3">
+                    {renderHeroActions(true)}
                   </div>
                 </div>
               </div>
             </div>
         </div>
       </section>
+      <div className="mt-3 flex flex-wrap gap-2 sm:hidden">
+        {renderHeroActions(false)}
+      </div>
       </div>
 
       {/* Main Content */}

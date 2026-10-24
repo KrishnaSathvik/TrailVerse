@@ -9,7 +9,7 @@ export function getTestimonialBadge(testimonial) {
   const source = testimonial?.source;
 
   if (source === 'admin-created') {
-    return { label: 'Admin-added story', variant: 'muted', showAward: false };
+    return null;
   }
 
   if (source === 'press') {
