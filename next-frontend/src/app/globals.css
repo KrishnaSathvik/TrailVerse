@@ -358,6 +358,13 @@ body.mobile-nav-open {
   width: min(100%, calc(52rem * var(--park-hero-ratio)));
 }
 
+/* Very wide photos get too short on phones to fit the back button, states tag and title. */
+@media (max-width: 639px) {
+  .park-detail-hero {
+    min-height: 15rem;
+  }
+}
+
 /* Mobile-specific chat interface improvements */
 @media (max-width: 640px) {
   /* Ensure chat input doesn't get cut off on mobile */
