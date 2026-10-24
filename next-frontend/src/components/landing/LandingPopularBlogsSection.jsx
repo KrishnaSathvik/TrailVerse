@@ -22,7 +22,7 @@ export default function LandingPopularBlogsSection({ posts = [] }) {
       className={LANDING_SECTION}
       style={{ backgroundColor: 'var(--bg-primary)' }}
     >
-      <div className="public-shell">
+      <div className="public-full">
         <div className={`flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between ${LANDING_SECTION_HEADER_MB}`}>
           <div>
             <div
@@ -64,7 +64,7 @@ export default function LandingPopularBlogsSection({ posts = [] }) {
                 boxShadow: 'var(--shadow-lg)',
               }}
             >
-              <div className="relative aspect-[16/9] overflow-hidden">
+              <div className="relative aspect-[16/11] overflow-hidden sm:aspect-[16/9]">
                 <Image
                   src={post.featuredImage || '/og-image-trailverse.jpg'}
                   alt={post.title}
@@ -72,13 +72,25 @@ export default function LandingPopularBlogsSection({ posts = [] }) {
                   sizes="(max-width: 768px) 100vw, 50vw"
                   className="object-cover transition-transform duration-500 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                <span className="absolute top-4 left-4 inline-flex px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-black/45 text-white backdrop-blur-sm border border-white/10">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent sm:from-black/70 sm:via-black/10" />
+                <span className="absolute top-4 left-4 hidden sm:inline-flex px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-black/45 text-white backdrop-blur-sm border border-white/10">
                   {formatCategory(post.category)}
                 </span>
+                {/* Phones: same overlay card as Popular Destinations */}
+                <div className="absolute bottom-0 left-0 right-0 p-5 sm:hidden">
+                  <div className="flex items-center gap-2 mb-2">
+                    <IconGlyph name="Bookmark" className="h-3.5 w-3.5 text-white/70" />
+                    <span className="text-xs font-medium text-white/70 uppercase tracking-wider">{formatCategory(post.category)}</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-white leading-tight line-clamp-2">{post.title}</h3>
+                  <div className="mt-2 flex items-center gap-4 text-xs text-white/70">
+                    {post.readTime ? <span>{post.readTime} min read</span> : null}
+                    <BlogViewCount views={post.views} className="inline-flex items-center gap-1" />
+                  </div>
+                </div>
               </div>
-              <div className="p-5 sm:p-6">
-                <h3 className="text-lg sm:text-xl font-semibold leading-tight mb-2 line-clamp-2" style={{ color: 'var(--text-primary)' }}>
+              <div className="hidden sm:block p-6">
+                <h3 className="text-xl font-semibold leading-tight mb-2 line-clamp-2" style={{ color: 'var(--text-primary)' }}>
                   {post.title}
                 </h3>
                 {post.excerpt && (
@@ -86,7 +98,7 @@ export default function LandingPopularBlogsSection({ posts = [] }) {
                     {post.excerpt}
                   </p>
                 )}
-                <div className="flex items-center gap-4 text-xs sm:text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                <div className="flex items-center gap-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>
                   {post.readTime ? <span>{post.readTime} min read</span> : null}
                   <BlogViewCount views={post.views} className="inline-flex items-center gap-1" />
                 </div>
