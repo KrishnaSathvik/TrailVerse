@@ -12,6 +12,7 @@ import {
   Img,
 } from '@react-email/components';
 import * as React from 'react';
+import { SUPPORT_EMAIL } from '../config/publicEmails.js';
 
 const fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 
@@ -126,7 +127,7 @@ const VerificationEmail = ({
                     FAQ
                   </Link>
                   {' · '}
-                  <Link href="mailto:trailverseteam@gmail.com" style={{ color: '#06B569', textDecoration: 'underline' }}>
+                  <Link href={`mailto:${SUPPORT_EMAIL}`} style={{ color: '#06B569', textDecoration: 'underline' }}>
                     Contact support
                   </Link>
                 </Text>

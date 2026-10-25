@@ -65,7 +65,7 @@ async function main() {
       const { error } = await resend.emails.send({
         from: `${process.env.EMAIL_FROM_NAME || 'TrailVerse'} <${process.env.EMAIL_FROM_ADDRESS}>`,
         to: user.email,
-        reply_to: 'trailverseteam@gmail.com',
+        reply_to: 'support@nationalparksexplorerusa.com',
         subject: `New on TrailVerse: ${post.title}`,
         html,
         tags: [

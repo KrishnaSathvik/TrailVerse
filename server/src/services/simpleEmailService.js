@@ -3,6 +3,7 @@ const handlebars = require('handlebars');
 const fs = require('fs').promises;
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const { SUPPORT_EMAIL } = require('../config/publicEmails');
 
 // Create reusable transporter object using Gmail SMTP
 const transporter = nodemailer.createTransport({
@@ -70,7 +71,7 @@ const compileTemplate = async (templateName, data) => {
       instagramUrl: 'https://www.instagram.com/trailverseapp/',
       facebookUrl: 'https://www.facebook.com/travelswithkrishna/',
       unsubscribeUrl: `https://www.nationalparksexplorerusa.com/unsubscribe?email=${data.email || ''}`,
-      supportEmail: 'trailverseteam@gmail.com',
+      supportEmail: SUPPORT_EMAIL,
       showAddress: false, // Hide the address
       ...data
     };

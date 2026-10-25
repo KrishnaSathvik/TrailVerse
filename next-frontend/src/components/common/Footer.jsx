@@ -10,6 +10,7 @@ import { usePWAInstall } from '../../hooks/usePWAInstall';
 import PWAInstallInstructionsModal from './PWAInstallInstructionsModal';
 import SyncStatus from './SyncStatus';
 import { captureNavigation } from '@/utils/analytics';
+import { HELLO_EMAIL } from '@/lib/publicEmails';
 
 const linkClass = 'transition hover:opacity-80';
 const linkStyle = { color: 'var(--text-secondary)' };
@@ -187,7 +188,7 @@ const Footer = () => {
             )}
             <li>
               <a
-                href="mailto:trailverseteam@gmail.com"
+                href={`mailto:${HELLO_EMAIL}`}
                 className={`inline-flex items-center gap-2 ${linkClass}`}
                 style={linkStyle}
               >

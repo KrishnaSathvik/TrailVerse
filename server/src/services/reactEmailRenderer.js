@@ -5,6 +5,7 @@ require('@babel/register')({
 
 const { render } = require('@react-email/render');
 const React = require('react');
+const { SUPPORT_EMAIL } = require('../config/publicEmails');
 
 // Import React Email components
 const WelcomeEmail = require('../emails/WelcomeEmail.jsx').default;
@@ -181,7 +182,7 @@ class ReactEmailRenderer {
       }),
       dataRetentionPeriod: dataRetentionPeriod || '30 days',
       reactivationUrl: reactivationUrl || 'https://nationalparksexplorerusa.com/reactivate?token=abc123',
-      supportEmail: supportEmail || 'trailverseteam@gmail.com'
+      supportEmail: supportEmail || SUPPORT_EMAIL
     });
 
     return await render(emailComponent);

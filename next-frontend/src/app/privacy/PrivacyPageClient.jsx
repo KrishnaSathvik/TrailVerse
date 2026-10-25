@@ -1,5 +1,6 @@
 import InfoPageHeader from '@/components/info/InfoPageHeader';
 import LegalSections from '@/components/common/LegalSections';
+import { SUPPORT_EMAIL } from '@/lib/publicEmails';
 
 const policySections = [
   {
@@ -7,7 +8,7 @@ const policySections = [
     "title": "About this policy",
     "paragraphs": [
       "This policy explains how TrailVerse handles information when you browse parks, create an account, use Trailie, submit content, subscribe to emails, or use the TrailVerse ChatGPT app or Claude connector. TrailVerse is independent of the National Park Service.",
-      "Questions or requests about your information can be sent to trailverseteam@gmail.com."
+      `Questions or requests about your information can be sent to ${SUPPORT_EMAIL}.`
     ]
   },
   {
@@ -89,7 +90,7 @@ const policySections = [
     "title": "Your choices and requests",
     "paragraphs": [
       "You can update your profile and manage saved content in your account. To delete the account, open Profile settings → Privacy & Security → Delete Account, enter your password, and type DELETE.",
-      "Unsubscribe from marketing emails through the links in those messages. Contact trailverseteam@gmail.com to request access, correction, deletion, or a portable copy of information, or to ask about a guest submission. We may need to verify your identity. Rights and any applicable exceptions depend on your location.",
+      `Unsubscribe from marketing emails through the links in those messages. Contact ${SUPPORT_EMAIL} to request access, correction, deletion, or a portable copy of information, or to ask about a guest submission. We may need to verify your identity. Rights and any applicable exceptions depend on your location.`,
       "The current site does not provide a universal cookie-consent switch or a self-service export of all personal information. Browser controls can be used to manage local storage and cookies."
     ]
   },
@@ -104,7 +105,7 @@ const policySections = [
     "id": "changes",
     "title": "Updates and contact",
     "paragraphs": [
-      "Changes to this policy will be posted here. For questions, privacy requests, or concerns, email trailverseteam@gmail.com."
+      `Changes to this policy will be posted here. For questions, privacy requests, or concerns, email ${SUPPORT_EMAIL}.`
     ]
   }
 ];
@@ -119,7 +120,7 @@ export default function PrivacyPageContent() {
       <LegalSections sections={sections} />
       <section className="info-section">
         <h2 className="mb-4">Questions about your information?</h2>
-        <a className="public-action public-action-secondary px-5" href="mailto:trailverseteam@gmail.com">Contact us</a>
+        <a className="public-action public-action-secondary px-5" href={`mailto:${SUPPORT_EMAIL}`}>Contact us</a>
       </section>
     </main>
   );

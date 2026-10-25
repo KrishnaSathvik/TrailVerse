@@ -12,6 +12,7 @@ import {
   Img,
 } from '@react-email/components';
 import * as React from 'react';
+import { SUPPORT_EMAIL } from '../config/publicEmails.js';
 
 const fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 
@@ -105,7 +106,7 @@ const UnsubscribeEmail = ({
               {/* Feedback */}
               <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
                 💬 We'd love to know why you're unsubscribing. Your feedback helps us create better content.{' '}
-                <Link href="mailto:trailverseteam@gmail.com?subject=Unsubscribe Feedback" style={{ color: '#06B569', textDecoration: 'underline' }}>
+                <Link href={`mailto:${SUPPORT_EMAIL}?subject=Unsubscribe Feedback`} style={{ color: '#06B569', textDecoration: 'underline' }}>
                   Share feedback
                 </Link>
               </Text>
@@ -136,7 +137,7 @@ const UnsubscribeEmail = ({
                     FAQ
                   </Link>
                   {' · '}
-                  <Link href="mailto:trailverseteam@gmail.com" style={{ color: '#06B569', textDecoration: 'underline' }}>
+                  <Link href={`mailto:${SUPPORT_EMAIL}`} style={{ color: '#06B569', textDecoration: 'underline' }}>
                     Contact support
                   </Link>
                 </Text>

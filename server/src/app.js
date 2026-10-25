@@ -9,6 +9,7 @@ const swaggerUi = require('swagger-ui-express');
 const http = require('http');
 const socketIo = require('socket.io');
 const { getUploadsDir } = require('./utils/uploads');
+const { SUPPORT_EMAIL } = require('./config/publicEmails');
 
 const app = express();
 
@@ -22,7 +23,7 @@ const swaggerOptions = {
       description: 'API for TrailVerse - AI-Powered National Parks Trip Planner',
       contact: {
         name: 'TrailVerse Team',
-        email: 'trailverseteam@gmail.com'
+        email: SUPPORT_EMAIL
       }
     },
     servers: [

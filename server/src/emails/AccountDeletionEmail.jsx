@@ -12,6 +12,7 @@ import {
   Img,
 } from '@react-email/components';
 import * as React from 'react';
+import { SUPPORT_EMAIL } from '../config/publicEmails.js';
 
 const fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 
@@ -21,7 +22,7 @@ const AccountDeletionEmail = ({
   deletionDate = 'January 15, 2025',
   dataRetentionPeriod = '30 days',
   reactivationUrl = 'https://nationalparksexplorerusa.com/reactivate?token=abc123',
-  supportEmail = 'trailverseteam@gmail.com',
+  supportEmail = SUPPORT_EMAIL,
 }) => {
   const previewText = `Your TrailVerse account has been deleted - ${username}`;
 

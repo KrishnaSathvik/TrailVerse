@@ -3,6 +3,7 @@
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import NewsletterWidget from '@/components/blog/NewsletterWidget';
+import { SUPPORT_EMAIL } from '@/lib/publicEmails';
 
 export default function NewsletterSignupSlot() {
   const searchParams = useSearchParams();
@@ -46,7 +47,7 @@ export default function NewsletterSignupSlot() {
         </p>
       ) : null}
       {unsubscribeError ? (
-        <p className="text-sm mb-4 text-[var(--error)]" role="alert">We couldn’t complete your unsubscribe request. Try the link in your email again, or contact trailverseteam@gmail.com.</p>
+        <p className="text-sm mb-4 text-[var(--error)]" role="alert">We couldn’t complete your unsubscribe request. Try the link in your email again, or contact {SUPPORT_EMAIL}.</p>
       ) : null}
       {subscribeError ? (
         <p className="text-sm mb-4" role="alert" style={{ color: 'var(--error, #ef4444)' }}>

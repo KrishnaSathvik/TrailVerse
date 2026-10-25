@@ -1,5 +1,6 @@
 import InfoPageHeader from '@/components/info/InfoPageHeader';
 import LegalSections from '@/components/common/LegalSections';
+import { SUPPORT_EMAIL } from '@/lib/publicEmails';
 
 
 
@@ -213,10 +214,10 @@ export default function TermsPageContent() {
           <p className="mb-4">Questions about these Terms?</p>
           <p className="mb-2">
             <strong>Email:</strong>{' '}
-            <a href="mailto:trailverseteam@gmail.com" 
+            <a href={`mailto:${SUPPORT_EMAIL}`}
                style={{ color: 'var(--accent-green)' }}
                className="hover:opacity-80 transition">
-              trailverseteam@gmail.com
+              {SUPPORT_EMAIL}
             </a>
           </p>
           <p className="mb-2">
@@ -287,7 +288,7 @@ export default function TermsPageContent() {
                 Need clarification on our terms? We&apos;re here to help.
               </p>
               <a
-                href="mailto:trailverseteam@gmail.com"
+                href={`mailto:${SUPPORT_EMAIL}`}
                 className="inline-flex items-center gap-2 px-6 py-3 public-action rounded-xl font-semibold transition"
                 style={{
                   backgroundColor: 'var(--bg-secondary)',

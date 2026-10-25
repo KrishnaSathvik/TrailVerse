@@ -3,6 +3,7 @@ const handlebars = require('handlebars');
 const fs = require('fs').promises;
 const path = require('path');
 const reactEmailRenderer = require('./reactEmailRenderer');
+const { SUPPORT_EMAIL } = require('../config/publicEmails');
 
 /**
  * Resend is built lazily, mirroring the OpenAI (Stage 14.7C) and NPS (Stage
@@ -79,7 +80,7 @@ const compileTemplate = async (templateName, data) => {
       helpUrl: `${process.env.WEBSITE_URL || 'https://www.nationalparksexplorerusa.com'}/faq`,
       dashboardUrl: `${process.env.WEBSITE_URL || 'https://www.nationalparksexplorerusa.com'}/profile`,
       unsubscribeUrl: `${process.env.WEBSITE_URL || 'https://www.nationalparksexplorerusa.com'}/unsubscribe?email=${data.email || ''}`,
-      supportEmail: process.env.SUPPORT_EMAIL || 'trailverseteam@gmail.com',
+      supportEmail: SUPPORT_EMAIL,
       showAddress: false,
       ...data
     };
@@ -104,7 +105,7 @@ class ResendEmailService {
       const { data, error } = await resend.emails.send({
         from: `${process.env.EMAIL_FROM_NAME || 'TrailVerse'} <${process.env.EMAIL_FROM_ADDRESS || 'noreply@nationalparksexplorerusa.com'}>`,
         to: user.email,
-        reply_to: 'trailverseteam@gmail.com',
+        reply_to: SUPPORT_EMAIL,
         subject: 'Welcome to TrailVerse! 🏞️',
         html,
         // Add tags for tracking
@@ -136,7 +137,7 @@ class ResendEmailService {
       const { data, error } = await resend.emails.send({
         from: `${process.env.EMAIL_FROM_NAME || 'TrailVerse'} <${process.env.EMAIL_FROM_ADDRESS || 'noreply@nationalparksexplorerusa.com'}>`,
         to: user.email,
-        reply_to: 'trailverseteam@gmail.com',
+        reply_to: SUPPORT_EMAIL,
         subject: 'Verify Your TrailVerse Account',
         html,
         // Add tags for tracking
@@ -169,7 +170,7 @@ class ResendEmailService {
       const { data, error } = await resend.emails.send({
         from: `${process.env.EMAIL_FROM_NAME || 'TrailVerse'} <${process.env.EMAIL_FROM_ADDRESS || 'noreply@nationalparksexplorerusa.com'}>`,
         to: user.email,
-        reply_to: 'trailverseteam@gmail.com',
+        reply_to: SUPPORT_EMAIL,
         subject: 'Reset Your TrailVerse Password',
         html,
         // Add tags for tracking
@@ -216,7 +217,7 @@ class ResendEmailService {
       const { data, error } = await resend.emails.send({
         from: `${process.env.EMAIL_FROM_NAME || 'TrailVerse'} <${process.env.EMAIL_FROM_ADDRESS || 'noreply@nationalparksexplorerusa.com'}>`,
         to: user.email,
-        reply_to: 'trailverseteam@gmail.com',
+        reply_to: SUPPORT_EMAIL,
         subject: `New TrailVerse Blog: ${post.title}`,
         html,
         // Add tags for tracking
@@ -343,7 +344,7 @@ class ResendEmailService {
       const { data, error } = await resend.emails.send({
         from: `${fromName} <${fromAddress}>`,
         to: user.email,
-        reply_to: 'trailverseteam@gmail.com',
+        reply_to: SUPPORT_EMAIL,
         subject: "It's been a while — here's what's new with TrailVerse",
         html,
         tags: [
@@ -423,7 +424,7 @@ class ResendEmailService {
       const { data, error } = await resend.emails.send({
         from: `${process.env.EMAIL_FROM_NAME || 'TrailVerse'} <${process.env.EMAIL_FROM_ADDRESS || 'noreply@nationalparksexplorerusa.com'}>`,
         to: user.email,
-        reply_to: 'trailverseteam@gmail.com',
+        reply_to: SUPPORT_EMAIL,
         subject: 'You\'ve been unsubscribed from TrailVerse',
         html,
         // Add tags for tracking
@@ -456,13 +457,13 @@ class ResendEmailService {
         }),
         dataRetentionPeriod: '30 days',
         reactivationUrl: `${process.env.CLIENT_URL || 'https://nationalparksexplorerusa.com'}/reactivate?token=${user._id}`,
-        supportEmail: 'trailverseteam@gmail.com'
+        supportEmail: SUPPORT_EMAIL
       });
 
       const { data, error } = await resend.emails.send({
         from: `${process.env.EMAIL_FROM_NAME || 'TrailVerse'} <${process.env.EMAIL_FROM_ADDRESS || 'noreply@nationalparksexplorerusa.com'}>`,
         to: user.email,
-        reply_to: 'trailverseteam@gmail.com',
+        reply_to: SUPPORT_EMAIL,
         subject: 'Your TrailVerse account has been deleted',
         html,
         // Add tags for tracking
@@ -493,7 +494,7 @@ class ResendEmailService {
       const { data, error } = await resend.emails.send({
         from: `${process.env.EMAIL_FROM_NAME || 'TrailVerse'} <${process.env.EMAIL_FROM_ADDRESS || 'noreply@nationalparksexplorerusa.com'}>`,
         to: subscriber.email,
-        reply_to: 'trailverseteam@gmail.com',
+        reply_to: SUPPORT_EMAIL,
         subject: 'Confirm your Where Next? subscription',
         html,
         tags: [

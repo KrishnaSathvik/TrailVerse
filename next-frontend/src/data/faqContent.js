@@ -1,3 +1,5 @@
+import { SUPPORT_EMAIL } from '@/lib/publicEmails';
+
 // Shared by the visible FAQ and FAQPage structured data. Audited against local code, October 15, 2026.
 export const FAQ_CATEGORIES = [
   {
@@ -126,7 +128,7 @@ export const FAQ_CATEGORIES = [
       },
       {
         "question": "How can I contact support?",
-        "answer": "Email trailverseteam@gmail.com for questions, corrections, privacy requests, or bug reports. For a park closure, permit, reservation, or emergency, contact the responsible park or service directly."
+        "answer": `Email ${SUPPORT_EMAIL} for questions, corrections, privacy requests, or bug reports. For a park closure, permit, reservation, or emergency, contact the responsible park or service directly.`
       }
     ]
   }

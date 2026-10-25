@@ -6,6 +6,7 @@ import Footer from '@/components/common/Footer';
 import IconGlyph from '@/components/common/IconGlyph';
 import FeaturedStoryCard from '@/components/common/FeaturedStoryCard';
 import { NPS_DISCLAIMER } from '@/lib/npsDisclaimer';
+import { HELLO_EMAIL } from '@/lib/publicEmails';
 
 export const metadata = {
   title: 'About Krishna — The Story Behind TrailVerse',
@@ -29,7 +30,7 @@ export const metadata = {
   },
 };
 
-const contactEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'trailverseteam@gmail.com';
+const contactEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL || HELLO_EMAIL;
 
 const skills = [
   {

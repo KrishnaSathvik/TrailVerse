@@ -51,7 +51,7 @@ const templateData = {
   helpUrl: 'https://www.nationalparksexplorerusa.com/faq',
   dashboardUrl: 'https://www.nationalparksexplorerusa.com/profile',
   unsubscribeUrl: `https://www.nationalparksexplorerusa.com/unsubscribe?email=${sampleUser.email}`,
-  supportEmail: 'trailverseteam@gmail.com'
+  supportEmail: 'support@nationalparksexplorerusa.com'
 };
 
 async function generatePreview() {

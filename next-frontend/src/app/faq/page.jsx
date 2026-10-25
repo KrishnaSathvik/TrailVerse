@@ -4,6 +4,7 @@ import Footer from '@/components/common/Footer';
 import Button from '@/components/common/Button';
 import FAQAccordionClient from './FAQAccordionClient';
 import { FAQ_CATEGORIES } from '@/data/faqContent';
+import { SUPPORT_EMAIL } from '@/lib/publicEmails';
 
 export const metadata = {
   title: 'FAQ — Trailie, Trip Planning & TrailVerse Features',
@@ -65,7 +66,7 @@ export default function FAQPage() {
                 <p className="text-base mb-6 public-content" style={{ color: 'var(--text-secondary)' }}>
                   Can&apos;t find the answer you&apos;re looking for? Our support team is here to help.
                 </p>
-                <Button href="mailto:trailverseteam@gmail.com" variant="secondary" size="md" className="public-action" style={{ borderRadius: '12px', boxShadow: 'none', outline: undefined }}>
+                <Button href={`mailto:${SUPPORT_EMAIL}`} variant="secondary" size="md" className="public-action" style={{ borderRadius: '12px', boxShadow: 'none', outline: undefined }}>
                   Contact Support
                 </Button>
               </div>

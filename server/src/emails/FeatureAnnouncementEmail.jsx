@@ -11,6 +11,7 @@ import {
   Img,
 } from '@react-email/components';
 import * as React from 'react';
+import { HELLO_EMAIL, SUPPORT_EMAIL } from '../config/publicEmails.js';
 
 const fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 
@@ -94,7 +95,7 @@ const FeatureAnnouncementEmail = ({
 
               <Text style={textStyle}>
                 And if something doesn&apos;t work well, or there&apos;s something you wish it could do, email me at{' '}
-                <Link href="mailto:trailverseteam@gmail.com" style={linkStyle}>trailverseteam@gmail.com</Link>
+                <Link href={`mailto:${HELLO_EMAIL}`} style={linkStyle}>{HELLO_EMAIL}</Link>
                 . That feedback genuinely helps me figure out what to improve next.
               </Text>
 
@@ -122,7 +123,7 @@ const FeatureAnnouncementEmail = ({
                     FAQ
                   </Link>
                   {' · '}
-                  <Link href="mailto:trailverseteam@gmail.com" style={linkStyle}>
+                  <Link href={`mailto:${SUPPORT_EMAIL}`} style={linkStyle}>
                     Contact support
                   </Link>
                   {' · '}
