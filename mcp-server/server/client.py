@@ -238,6 +238,7 @@ class TrailVerseClient:
         form_data: dict[str, Any] | None = None,
         messages: list[dict[str, str]] | None = None,
         anonymous_id: str | None = None,
+        time_zone: str | None = None,
     ) -> dict[str, Any]:
         """
         Call the shared Trailie planner; the backend owns runtime/model routing.
@@ -245,6 +246,7 @@ class TrailVerseClient:
         form_data: optional structured constraints (dates, groupSize, budget, etc.).
         messages: full conversation history for multi-turn continuity.
         anonymous_id: stable session identity for backend session lookup.
+        time_zone: client-reported IANA zone, when the MCP client supplies one.
         """
         metadata: dict[str, Any] = {
             "skipUserContext": True,
@@ -254,6 +256,8 @@ class TrailVerseClient:
             metadata["parkCode"] = self._validate_park_code(park_code)
         if form_data:
             metadata["formData"] = form_data
+        if time_zone:
+            metadata["timeZone"] = time_zone
         body: dict[str, Any] = {
             "messages": messages if messages else [{"role": "user", "content": message}],
             "provider": "auto",

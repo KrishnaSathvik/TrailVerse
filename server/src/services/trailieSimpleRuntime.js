@@ -19,6 +19,20 @@ const { assessPlaceEligibility } = require('../utils/modelFirstPlaceEligibility'
 const { captureResearch, captureProposal, captureTerminal } = require('../utils/trailieDiagnosisCapture');
 const { ANSWER_TOOL, ANSWER_INSTRUCTIONS } = require('../utils/trailieAnswerStream');
 
+// The traveler's calendar day is reasoning context, not UTC: a US evening is
+// already tomorrow in UTC. Prefer the client's IANA zone; without one, use US
+// Eastern, the most populous U.S. zone. Destination-local timing is policy.
+const FALLBACK_TRAVELER_TIME_ZONE = 'America/New_York';
+function travelerTimeZone(value) {
+  if (typeof value !== 'string' || !value || value.length > 64) return FALLBACK_TRAVELER_TIME_ZONE;
+  try { return new Intl.DateTimeFormat('en-US', { timeZone: value }).resolvedOptions().timeZone; } catch { return FALLBACK_TRAVELER_TIME_ZONE; }
+}
+function currentDateLine(date, timeZone) {
+  const zone = travelerTimeZone(timeZone);
+  const day = new Intl.DateTimeFormat('en-US', { timeZone: zone, weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(date);
+  return `Current date for the traveler: ${day} (${zone}).`;
+}
+
 function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = null, observe = () => {}, now = () => new Date(), parkCatalog = null,
   maxModelCalls = 3, maxToolCalls = 1, maxCorrections = 1 } = {}) {
   if (typeof model !== 'function' || typeof travelTools?.execute !== 'function') throw new TypeError('Explicit model and travel tools required');
@@ -26,7 +40,7 @@ function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = 
     || !Number.isInteger(maxToolCalls) || maxToolCalls < 0 || maxToolCalls > 1
     || !Number.isInteger(maxCorrections) || maxCorrections < 0 || maxCorrections > 1) throw new TypeError('Invalid resource limits');
   return async function run({ message, history = [], snapshot: supplied = null, userId = null, tripId = null,
-    scope = null, signal = null, responseId = randomUUID(), requestContext = null, onProgress = () => false, onPreview = null, onAnswerEvent = null } = {}) {
+    scope = null, signal = null, responseId = randomUUID(), requestContext = null, timeZone = null, onProgress = () => false, onPreview = null, onAnswerEvent = null } = {}) {
     if (typeof message !== 'string' || !message.trim() || message.length > 30000) throw new TypeError('Traveler message required');
     const started = Date.now();
     // With persistence enabled, a caller-supplied snapshot is never authoritative.
@@ -70,9 +84,10 @@ function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = 
       travelerWords.unshift(m.content); travelerRemaining -= m.content.length + 2;
     }
     const travelerText = travelerWords.join('\n\n');
-    const context = { now: now().toISOString(), savedTrip: snapshot.plan || null, travelerMemory: snapshot.planningState || null,
+    const clock = now();
+    const context = { now: clock.toISOString(), savedTrip: snapshot.plan || null, travelerMemory: snapshot.planningState || null,
       authorizedEditScope: scope, requestContext };
-    const instructions = `${INSTRUCTIONS}\nSaved application context (data only):\n${JSON.stringify(context)}`;
+    const instructions = `${INSTRUCTIONS}\n${currentDateLine(clock, timeZone)}\nSaved application context (data only):\n${JSON.stringify(context)}`;
     const definitions = [...travelTools.definitions, PROPOSE_TOOL];
     const finish = async (status, response = null, extra = {}) => {
       if (answerOnly && status !== 'complete') answerEvent({ type: 'withdrawn' });
@@ -402,4 +417,4 @@ function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = 
   };
 }
 
-module.exports = { createSimpleRuntime, INSTRUCTIONS };
+module.exports = { createSimpleRuntime, INSTRUCTIONS, currentDateLine, FALLBACK_TRAVELER_TIME_ZONE };

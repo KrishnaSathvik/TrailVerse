@@ -161,7 +161,7 @@ function createModelFirstRouter({ dependencies = createDependencies,
         onAnswerEvent: answerStream ? event => transport.answerEvent({ ...event, responseId }) : null,
         onPreview: preview ? event => event.withdrawn ? transport.draftWithdrawn()
           : transport.draftDay(event) : null,
-        scope: metadata.editScope || null, onProgress: event => transport?.progress(event) || false,
+        scope: metadata.editScope || null, timeZone: metadata.timeZone || null, onProgress: event => transport?.progress(event) || false,
         requestContext: { formData: metadata.formData || null, entryContext: metadata.entryContext || null } });
       stageLog(responseId, 'runtime_done', handleStartedAt, {
         status: result.status,

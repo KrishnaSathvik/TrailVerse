@@ -1706,6 +1706,9 @@ const TripPlannerChat = ({
         // stamp a monotonic responseVersion and the persistence guard can reject
         // stale writes.
         priorResponseVersion: currentPlanRef.current?.responseVersion || 0,
+        // IANA zone so Trailie reads "today" and relative dates on the traveler's
+        // calendar; the server validates it and falls back when missing.
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || null,
         ...(planningStateRef.current ? { planningState: planningStateRef.current } : {}),
         ...(dayByDayPlanIntake ? { dayByDayPlanIntake: true } : {}),
         ...(intakeParkName ? { intakeParkName, parkName: intakeParkName } : {}),

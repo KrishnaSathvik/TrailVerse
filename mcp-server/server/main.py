@@ -489,6 +489,19 @@ def _detect_mcp_client(ctx: Context | None) -> str:
     return "unknown"
 
 
+def _client_time_zone(ctx: Context | None) -> str | None:
+    """IANA zone from ChatGPT's openai/userLocation hint; the backend validates it and falls back."""
+    if ctx is None:
+        return None
+    try:
+        meta = ctx.request_context.meta
+        location = (meta.model_dump() if meta is not None else {}).get("openai/userLocation") or {}
+        zone = location.get("timezone") if isinstance(location, dict) else None
+        return zone if isinstance(zone, str) and 0 < len(zone) <= 64 else None
+    except Exception:
+        return None
+
+
 def _send_analytics(event: dict[str, Any]) -> None:
     """Fire-and-forget PostHog capture. Never blocks tool execution or sends trip text."""
     token = os.environ.get("POSTHOG_PROJECT_TOKEN")
@@ -663,6 +676,7 @@ async def plan_trip(
                     form_data=form_data or None,
                     messages=conv.messages,
                     anonymous_id=conv.anonymous_id,
+                    time_zone=_client_time_zone(ctx),
                 )
         except TrailVerseAPIError as e:
             logger.exception("plan_trip backend call failed")
