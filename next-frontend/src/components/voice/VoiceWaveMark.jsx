@@ -2,7 +2,7 @@
 
 /**
  * Static Trailie Voice identity mark — white waveform bars.
- * Used in dock header, minimized pill, and immersive visual chrome.
+ * Used in dock header and immersive status chrome.
  */
 export default function VoiceWaveMark({ size = 'md', tone = 'dark', className = '' }) {
   return (

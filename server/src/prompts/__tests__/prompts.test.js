@@ -23,7 +23,8 @@ describe('Trailie prompts module', () => {
   test('voice prompt preserves tool routing and injection defense', () => {
     expect(TRAILIE_VOICE_INSTRUCTIONS).toContain('search_parks');
     expect(TRAILIE_VOICE_INSTRUCTIONS).toContain('get_park_details');
-    expect(TRAILIE_VOICE_INSTRUCTIONS).toContain('STARTUP RULE');
+    expect(TRAILIE_VOICE_INSTRUCTIONS).toContain('STARTUP');
+    expect(TRAILIE_VOICE_INSTRUCTIONS).toContain('Remain completely silent');
     expect(TRAILIE_VOICE_INSTRUCTIONS).toContain(ABOUT_TRAILIE_VOICE);
     expect(TRAILIE_VOICE_INSTRUCTIONS).toContain(PROMPT_INJECTION_DEFENSE);
   });

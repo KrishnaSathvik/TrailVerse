@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import { X } from '@components/icons';
 import { useVoiceSession } from '@/context/VoiceSessionContext';
 import VoiceDock from './VoiceDock';
-import VoiceMinimizedPill from './VoiceMinimizedPill';
 import VoiceImmersive from './VoiceImmersive';
 
 const VOICE_HINT_DISMISSED_KEY = 'trailie-voice-hint-dismissed';
@@ -157,7 +156,6 @@ export default function VoiceButton() {
       )}
 
       {uiMode === 'docked' && <VoiceDock />}
-      {uiMode === 'minimized' && <VoiceMinimizedPill />}
       {uiMode === 'immersive' && <VoiceImmersive />}
     </>
   );

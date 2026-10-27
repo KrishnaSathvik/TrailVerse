@@ -4,20 +4,29 @@ import { useMemo, useState } from 'react';
 import { VoiceSessionContext } from '@/context/VoiceSessionContext';
 import VoiceDock from '@/components/voice/VoiceDock';
 import VoiceImmersive from '@/components/voice/VoiceImmersive';
-import VoiceMinimizedPill from '@/components/voice/VoiceMinimizedPill';
 import VoiceButton from '@/components/voice/VoiceButton';
 
 /**
  * Local visual QA harness — no OpenAI calls.
- * Visit /dev/voice-ui and switch states to review dock / immersive / mini / auth.
+ * Visit /dev/voice-ui and switch states to review dock / immersive / auth.
  */
+const LONG_REPLY = [
+  'Gateway Arch National Park is a convenient option if you are near St. Louis.',
+  'You can visit the museum beneath the Arch, walk the riverfront, and ride to the top when tickets are available.',
+  'If you want more nature-focused time, I can also compare nearby options like Mark Twain National Forest day trips or a longer drive toward Ozark landscapes.',
+  'Tell me your dates, how far you will drive, and whether you prefer city sightseeing or quieter trails.',
+].join(' ');
+
 const SCENES = [
   { id: 'launcher', label: 'Idle launcher' },
-  { id: 'listening', label: 'Listening dock' },
-  { id: 'speaking', label: 'Speaking dock' },
-  { id: 'muted', label: 'Muted dock' },
-  { id: 'minimized', label: 'Minimized' },
+  { id: 'listening', label: 'Listening' },
+  { id: 'hearing', label: 'Hearing you' },
+  { id: 'thinking', label: 'Thinking' },
+  { id: 'checking', label: 'Checking park' },
+  { id: 'speaking', label: 'Speaking' },
+  { id: 'muted', label: 'Muted' },
   { id: 'immersive', label: 'Immersive' },
+  { id: 'history', label: 'Long conversation' },
   { id: 'auth', label: 'Signup gate' },
   { id: 'error', label: 'Permission / error' },
 ];
@@ -28,7 +37,12 @@ function buildScene(scene, setScene) {
     transcript: [],
     isTrailieSpeaking: false,
     isToolCalling: false,
+    toolName: null,
+    toolArgs: null,
+    toolStartedAt: null,
     toolCallInfo: null,
+    responsePending: false,
+    thinkingStartedAt: null,
     error: null,
     authRequired: false,
     permissionDenied: false,
@@ -44,7 +58,6 @@ function buildScene(scene, setScene) {
     startSession: noop,
     endCall: () => setScene('launcher'),
     retry: noop,
-    minimize: () => setScene('minimized'),
     expand: () => setScene('immersive'),
     dock: () => setScene('listening'),
     setUiMode: noop,
@@ -58,7 +71,53 @@ function buildScene(scene, setScene) {
         ...base,
         status: 'connected',
         uiMode: 'docked',
-        transcript: [],
+        audioLevel: 0.12,
+        transcript: [
+          { id: 'u1', role: 'user', text: 'What national park would you recommend near me?' },
+          { id: 'a1', role: 'assistant', text: LONG_REPLY },
+        ],
+      };
+    case 'hearing':
+      return {
+        ...base,
+        status: 'listening',
+        uiMode: 'docked',
+        audioLevel: 0.65,
+        transcript: [
+          { id: 'u1', role: 'user', text: 'What national park would you recommend near me?' },
+          { id: 'a1', role: 'assistant', text: LONG_REPLY },
+        ],
+      };
+    case 'thinking':
+      return {
+        ...base,
+        status: 'connected',
+        uiMode: 'docked',
+        responsePending: true,
+        thinkingStartedAt: Date.now() - 800,
+        audioLevel: 0,
+        transcript: [
+          { id: 'u1', role: 'user', text: 'What national park would you recommend near me?' },
+          { id: 'a1', role: 'assistant', text: LONG_REPLY },
+        ],
+      };
+    case 'checking':
+      return {
+        ...base,
+        status: 'connected',
+        uiMode: 'docked',
+        isToolCalling: true,
+        toolName: 'get_park_details',
+        toolArgs: { park_code: 'zion' },
+        toolStartedAt: Date.now() - 1200,
+        toolCallInfo: 'get_park_details',
+        responsePending: true,
+        thinkingStartedAt: Date.now() - 2000,
+        audioLevel: 0,
+        transcript: [
+          { id: 'u1', role: 'user', text: 'How is the weather at Zion?' },
+          { id: 'a1', role: 'assistant', text: LONG_REPLY },
+        ],
       };
     case 'speaking':
       return {
@@ -68,9 +127,12 @@ function buildScene(scene, setScene) {
         isTrailieSpeaking: true,
         audioLevel: 0.7,
         transcript: [
+          { id: 'u1', role: 'user', text: 'What should I not miss in Yosemite?' },
           {
+            id: 'a1',
             role: 'assistant',
             text: 'Yosemite Valley is best early. Start at Tunnel View, then Glacier Point if roads are open.',
+            streaming: true,
           },
         ],
       };
@@ -82,28 +144,40 @@ function buildScene(scene, setScene) {
         userMuted: true,
         micActive: false,
         audioLevel: 0,
-      };
-    case 'minimized':
-      return {
-        ...base,
-        status: 'connected',
-        uiMode: 'minimized',
-        audioLevel: 0.4,
+        transcript: [
+          { id: 'a1', role: 'assistant', text: LONG_REPLY },
+        ],
       };
     case 'immersive':
       return {
         ...base,
-        status: 'speaking',
+        status: 'listening',
         uiMode: 'immersive',
-        isTrailieSpeaking: true,
-        audioLevel: 0.65,
+        audioLevel: 0.4,
         transcript: [
-          {
-            role: 'assistant',
-            text: 'For a first visit, give yourself a full day in the valley and keep Half Dome for another trip unless you already have permits.',
-          },
+          { id: 'u1', role: 'user', text: 'What national park would you recommend near me?' },
+          { id: 'a1', role: 'assistant', text: LONG_REPLY },
+          { id: 'u2', role: 'user', text: 'What about something with hiking trails?' },
         ],
       };
+    case 'history': {
+      const turns = [];
+      for (let i = 1; i <= 10; i += 1) {
+        turns.push({ id: `u${i}`, role: 'user', text: `Question ${i}: park tip?` });
+        turns.push({
+          id: `a${i}`,
+          role: 'assistant',
+          text: `Answer ${i}. ${LONG_REPLY}`,
+        });
+      }
+      return {
+        ...base,
+        status: 'listening',
+        uiMode: 'immersive',
+        audioLevel: 0.45,
+        transcript: turns,
+      };
+    }
     case 'auth':
       return {
         ...base,
@@ -146,12 +220,12 @@ export default function VoiceUiQaPage() {
           Trailie Voice UI
         </h1>
         <p className="mt-2 max-w-2xl text-sm" style={{ color: 'var(--text-secondary)' }}>
-          Mocked session states for visual review. Switch scenes below; the live components render in the
-          corner exactly as they do in product.
+          Mocked session states for visual review. Dock and immersive share one conversation transcript;
+          live status stays independent of message history.
         </p>
 
         <div
-          className="sticky top-0 z-[100] mt-6 flex flex-wrap gap-2 py-3"
+          className="sticky top-0 z-[70] mt-6 flex flex-wrap gap-2 py-3"
           data-testid="voice-ui-scenes"
           style={{ background: 'color-mix(in srgb, var(--bg-primary) 92%, transparent)', backdropFilter: 'blur(8px)' }}
         >
@@ -202,7 +276,6 @@ export default function VoiceUiQaPage() {
           <VoiceSessionContext.Provider value={value}>
             {value.uiMode === 'closed' && <VoiceButton />}
             {value.uiMode === 'docked' && <VoiceDock />}
-            {value.uiMode === 'minimized' && <VoiceMinimizedPill />}
             {value.uiMode === 'immersive' && <VoiceImmersive />}
           </VoiceSessionContext.Provider>
         </div>

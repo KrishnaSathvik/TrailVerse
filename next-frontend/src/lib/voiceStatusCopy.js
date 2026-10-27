@@ -1,44 +1,45 @@
-export function getToolLabel(toolName) {
-  switch (toolName) {
-    case 'get_park_details':
-      return 'Checking park information…';
-    case 'search_parks':
-      return 'Searching parks…';
-    case 'compare_parks':
-      return 'Comparing parks…';
-    case 'find_events':
-      return 'Finding events…';
-    default:
-      return 'Checking park information…';
-  }
+import { deriveVoiceActivity, getContextualToolLabel } from './voiceActivity';
+
+/** @deprecated Prefer getContextualToolLabel from voiceActivity */
+export function getToolLabel(toolName, args) {
+  return getContextualToolLabel(toolName, args || {});
 }
 
+/**
+ * Centralized status label used by dock/immersive.
+ * Prefer useVoiceActivity for visual + anti-flicker timers.
+ */
 export function getVoiceStatusText({
   status,
   isToolCalling,
   toolCallInfo,
+  toolName,
+  toolArgs,
+  toolStartedAt,
+  isTrailieSpeaking,
   userMuted,
   permissionDenied,
   authRequired,
+  responsePending,
+  thinkingStartedAt,
+  bargeInEnabled,
+  now,
 }) {
-  if (authRequired) return 'Free sessions used';
-  if (permissionDenied) return 'Microphone blocked';
-  if (userMuted) return 'Muted';
-  if (isToolCalling) return getToolLabel(toolCallInfo);
-  switch (status) {
-    case 'connecting':
-      return 'Connecting…';
-    case 'listening':
-      return 'Listening…';
-    case 'speaking':
-      return 'Speaking…';
-    case 'error':
-      return 'Connection lost';
-    case 'connected':
-      return 'Listening';
-    default:
-      return 'Ready';
-  }
+  return deriveVoiceActivity({
+    status,
+    isTrailieSpeaking,
+    isToolCalling,
+    toolName: toolName || toolCallInfo || null,
+    toolArgs: toolArgs || null,
+    toolStartedAt: toolStartedAt || null,
+    userMuted,
+    permissionDenied,
+    authRequired,
+    responsePending: Boolean(responsePending),
+    thinkingStartedAt: thinkingStartedAt || null,
+    bargeInEnabled: Boolean(bargeInEnabled),
+    now: now || Date.now(),
+  }).label;
 }
 
 export function getSuggestedPrompts({ parkCode, pagePath }) {

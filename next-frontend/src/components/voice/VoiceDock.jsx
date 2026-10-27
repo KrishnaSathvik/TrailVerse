@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { Minimize, Maximize, Microphone } from '@components/icons';
+import { Maximize, Microphone } from '@components/icons';
 import { createAppIcon } from '@/components/icons/createAppIcon';
 import {
   MicrophoneSlashIcon,
@@ -10,10 +10,11 @@ import {
   CircleNotchIcon,
 } from '@phosphor-icons/react';
 import { useVoiceSession } from '@/context/VoiceSessionContext';
-import VoiceWaveform from './VoiceWaveform';
 import VoiceWaveMark from './VoiceWaveMark';
+import VoiceActivityMark from './VoiceActivityMark';
 import VoiceAuthGate from './VoiceAuthGate';
-import { getSuggestedPrompts, getVoiceStatusText } from '@/lib/voiceStatusCopy';
+import useVoiceActivity from '@/hooks/useVoiceActivity';
+import { getSuggestedPrompts } from '@/lib/voiceStatusCopy';
 
 const MicrophoneSlash = createAppIcon(MicrophoneSlashIcon);
 const PhoneDisconnect = createAppIcon(PhoneDisconnectIcon);
@@ -34,46 +35,70 @@ function HeaderIcon({ onClick, label, children }) {
   );
 }
 
-function shortCaption(text, max = 160) {
-  if (!text) return '';
-  const trimmed = text.trim();
-  if (trimmed.length <= max) return trimmed;
-  return `${trimmed.slice(0, max).replace(/\s+\S*$/, '')}…`;
-}
-
 export default function VoiceDock() {
   const {
     status,
     transcript,
     isTrailieSpeaking,
     isToolCalling,
-    toolCallInfo,
+    toolName,
+    toolArgs,
+    toolStartedAt,
     error,
     authRequired,
     permissionDenied,
     userMuted,
+    bargeInEnabled,
+    responsePending,
+    thinkingStartedAt,
     audioLevel,
     parkCode,
     pagePath,
     endCall,
     retry,
-    minimize,
     expand,
     toggleMute,
   } = useVoiceSession();
 
+  const activity = useVoiceActivity({
+    status,
+    isTrailieSpeaking,
+    isToolCalling,
+    toolName,
+    toolArgs,
+    toolStartedAt,
+    userMuted,
+    permissionDenied,
+    authRequired,
+    responsePending,
+    thinkingStartedAt,
+    bargeInEnabled,
+  });
+
   const panelRef = useRef(null);
-  const captionRef = useRef(null);
+  const replyRef = useRef(null);
+  const stickRef = useRef(true);
+  const announcedRef = useRef('');
 
   useEffect(() => {
     panelRef.current?.querySelector('button')?.focus?.();
   }, []);
 
+  const lastAssistant = [...transcript].reverse().find((m) => m.role === 'assistant');
+  const latestReply = lastAssistant?.text || '';
+
   useEffect(() => {
-    if (captionRef.current) {
-      captionRef.current.scrollTop = captionRef.current.scrollHeight;
+    const el = replyRef.current;
+    if (!el || !stickRef.current) return;
+    el.scrollTop = el.scrollHeight;
+  }, [latestReply, lastAssistant?.streaming]);
+
+  // Soften SR chatter: announce only when the status label meaningfully changes.
+  useEffect(() => {
+    if (activity.label && activity.label !== announcedRef.current) {
+      announcedRef.current = activity.label;
     }
-  }, [transcript]);
+  }, [activity.label]);
 
   if (authRequired) {
     return (
@@ -89,32 +114,15 @@ export default function VoiceDock() {
     );
   }
 
-  const lastAssistant = [...transcript].reverse().find((m) => m.role === 'assistant');
-  const captionText = shortCaption(lastAssistant?.text || '');
-  const statusText = getVoiceStatusText({
-    status,
-    isToolCalling,
-    toolCallInfo,
-    userMuted,
-    permissionDenied,
-    authRequired,
-  });
-
-  const waveVariant = userMuted
-    ? 'muted'
-    : isTrailieSpeaking
-      ? 'speak'
-      : status === 'listening' || status === 'connected'
-        ? 'listen'
-        : 'idle';
-
-  const showIdleHint =
-    !captionText &&
+  const showIdle =
+    !latestReply &&
     !isToolCalling &&
+    !responsePending &&
     status !== 'connecting' &&
     status !== 'error';
 
   const suggestions = getSuggestedPrompts({ parkCode, pagePath });
+  const liveAccent = activity.id === 'listening' || activity.id === 'hearing';
 
   return (
     <div
@@ -130,34 +138,46 @@ export default function VoiceDock() {
           <span className="trailie-voice-dock-mark">
             <VoiceWaveMark size="sm" tone="light" />
           </span>
-          <div className="min-w-0">
+          <div className="trailie-voice-dock-title-row min-w-0">
             <p className="trailie-voice-dock-title">Trailie</p>
-            <p className="trailie-voice-dock-sub" aria-live="polite">
-              {status === 'connecting' ? (
+            <p
+              className="trailie-voice-dock-sub"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              {activity.id === 'connecting' ? (
                 <span className="inline-flex items-center gap-1.5">
                   <CircleNotch size={12} className="voice-spinner" />
-                  {statusText}
+                  {activity.label}
                 </span>
               ) : (
-                statusText
+                <>
+                  {liveAccent ? (
+                    <span className="trailie-voice-status-dot" aria-hidden="true" />
+                  ) : null}
+                  <span className={liveAccent ? 'trailie-voice-status-live' : undefined}>
+                    {activity.label}
+                  </span>
+                </>
               )}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-0.5">
-          <HeaderIcon onClick={minimize} label="Minimize">
-            <Minimize className="h-4 w-4" />
-          </HeaderIcon>
-          <HeaderIcon onClick={expand} label="Expand to full screen">
-            <Maximize className="h-4 w-4" />
-          </HeaderIcon>
-        </div>
+        <HeaderIcon onClick={expand} label="Expand to full screen">
+          <Maximize className="h-4 w-4" />
+        </HeaderIcon>
       </div>
 
       <div className="trailie-voice-dock-body">
         <div className="trailie-voice-dock-visual" aria-hidden="true">
-          <VoiceWaveform level={audioLevel} variant={waveVariant} bars={7} />
+          <VoiceActivityMark visual={activity.visual} audioLevel={audioLevel} size="md" />
         </div>
+
+        {activity.id === 'thinking' || activity.id === 'checking' ? (
+          <p className="trailie-voice-dock-activity-hint">
+            {activity.id === 'checking' ? activity.label : 'Working on your answer.'}
+          </p>
+        ) : null}
 
         {error && (
           <p className="trailie-voice-dock-error" role="alert">
@@ -172,26 +192,41 @@ export default function VoiceDock() {
           </button>
         )}
 
-        <div ref={captionRef} className="trailie-voice-dock-caption">
-          {captionText ? (
-            <p>{captionText}</p>
-          ) : showIdleHint ? (
+        {latestReply ? (
+          <div className="trailie-voice-dock-latest">
+            <p className="trailie-voice-dock-latest-label">Last response</p>
+            <div
+              ref={replyRef}
+              className="trailie-voice-dock-latest-body"
+              onScroll={() => {
+                const el = replyRef.current;
+                if (!el) return;
+                stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+              }}
+            >
+              <p>
+                {latestReply}
+                {lastAssistant?.streaming ? <span className="trailie-voice-caret" /> : null}
+              </p>
+            </div>
+          </div>
+        ) : showIdle ? (
+          <div>
             <p className="trailie-voice-dock-hint">
               Ask me about a park or your next trip.
             </p>
-          ) : null}
-        </div>
-
-        {showIdleHint && !error && status === 'connected' && (
-          <div className="trailie-voice-dock-suggestions">
-            {suggestions.slice(0, 2).map((q) => (
-              <span key={q}>{q}</span>
-            ))}
+            {status === 'connected' && !error && (
+              <div className="trailie-voice-dock-suggestions">
+                {suggestions.slice(0, 2).map((q) => (
+                  <span key={q}>{q}</span>
+                ))}
+              </div>
+            )}
           </div>
-        )}
+        ) : null}
       </div>
 
-      {status !== 'error' && (
+      {status !== 'error' ? (
         <div className="trailie-voice-dock-footer">
           <button
             type="button"
@@ -213,9 +248,7 @@ export default function VoiceDock() {
             End call
           </button>
         </div>
-      )}
-
-      {status === 'error' && (
+      ) : (
         <div className="trailie-voice-dock-footer">
           <button
             type="button"

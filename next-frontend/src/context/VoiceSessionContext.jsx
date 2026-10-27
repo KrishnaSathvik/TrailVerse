@@ -26,7 +26,12 @@ export function VoiceSessionProvider({ children }) {
     transcript,
     isTrailieSpeaking,
     isToolCalling,
+    toolName,
+    toolArgs,
+    toolStartedAt,
     toolCallInfo,
+    responsePending,
+    thinkingStartedAt,
     error,
     authRequired,
     permissionDenied,
@@ -40,7 +45,7 @@ export function VoiceSessionProvider({ children }) {
     toggleMute,
   } = useRealtimeVoice();
 
-  const [uiMode, setUiMode] = useState('closed'); // closed | docked | minimized | immersive
+  const [uiMode, setUiMode] = useState('closed'); // closed | docked | immersive
   const startedParkRef = useRef(null);
   const prevHiddenRef = useRef(false);
   const uiModeRef = useRef(uiMode);
@@ -82,10 +87,6 @@ export function VoiceSessionProvider({ children }) {
     connect(code);
   }, [parkCode, connect]);
 
-  const minimize = useCallback(() => {
-    setUiMode((mode) => (mode === 'closed' ? mode : 'minimized'));
-  }, []);
-
   const expand = useCallback(() => {
     setUiMode((mode) => (mode === 'closed' ? mode : 'immersive'));
   }, []);
@@ -113,7 +114,12 @@ export function VoiceSessionProvider({ children }) {
       transcript,
       isTrailieSpeaking,
       isToolCalling,
+      toolName,
+      toolArgs,
+      toolStartedAt,
       toolCallInfo,
+      responsePending,
+      thinkingStartedAt,
       error,
       authRequired,
       permissionDenied,
@@ -130,7 +136,6 @@ export function VoiceSessionProvider({ children }) {
       startSession,
       endCall,
       retry,
-      minimize,
       expand,
       dock,
       setUiMode,
@@ -140,7 +145,12 @@ export function VoiceSessionProvider({ children }) {
       transcript,
       isTrailieSpeaking,
       isToolCalling,
+      toolName,
+      toolArgs,
+      toolStartedAt,
       toolCallInfo,
+      responsePending,
+      thinkingStartedAt,
       error,
       authRequired,
       permissionDenied,
@@ -157,7 +167,6 @@ export function VoiceSessionProvider({ children }) {
       startSession,
       endCall,
       retry,
-      minimize,
       expand,
       dock,
     ]

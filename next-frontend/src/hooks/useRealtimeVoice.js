@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { applyVoiceTranscriptEvent } from '@/lib/voiceTranscript';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -53,7 +54,13 @@ export default function useRealtimeVoice() {
   const [transcript, setTranscript] = useState([]);
   const [isTrailieSpeaking, setIsTrailieSpeaking] = useState(false);
   const [isToolCalling, setIsToolCalling] = useState(false);
+  const [toolName, setToolName] = useState(null);
+  const [toolArgs, setToolArgs] = useState(null);
+  const [toolStartedAt, setToolStartedAt] = useState(null);
+  /** @deprecated prefer toolName — kept for older UI consumers */
   const [toolCallInfo, setToolCallInfo] = useState(null);
+  const [responsePending, setResponsePending] = useState(false);
+  const [thinkingStartedAt, setThinkingStartedAt] = useState(null);
   const [error, setError] = useState(null);
   const [authRequired, setAuthRequired] = useState(false);
   const [userMuted, setUserMuted] = useState(false);
@@ -90,7 +97,12 @@ export default function useRealtimeVoice() {
       cleanupMedia();
       setIsTrailieSpeaking(false);
       setIsToolCalling(false);
+      setToolName(null);
+      setToolArgs(null);
+      setToolStartedAt(null);
       setToolCallInfo(null);
+      setResponsePending(false);
+      setThinkingStartedAt(null);
       setUserMuted(false);
       userMutedRef.current = false;
       setError('Voice session ended after inactivity. Tap Retry to reconnect.');
@@ -237,7 +249,29 @@ export default function useRealtimeVoice() {
     });
   }
 
+  function markResponsePending() {
+    responseActiveRef.current = true;
+    setResponsePending(true);
+    setThinkingStartedAt(Date.now());
+  }
+
+  function clearToolActivity() {
+    setIsToolCalling(false);
+    setToolName(null);
+    setToolArgs(null);
+    setToolStartedAt(null);
+    setToolCallInfo(null);
+  }
+
   async function executeFunctionCall(callId, fnName, fnArgs) {
+    // Checking state starts only when we actually execute with validated args.
+    setIsToolCalling(true);
+    setToolName(fnName);
+    setToolArgs(fnArgs && typeof fnArgs === 'object' ? fnArgs : {});
+    setToolStartedAt(Date.now());
+    setToolCallInfo(fnName);
+    if (!bargeInRef.current) setMicTracksEnabled(false);
+
     try {
       const headers = { 'Content-Type': 'application/json' };
       if (toolTokenRef.current) {
@@ -273,7 +307,7 @@ export default function useRealtimeVoice() {
             },
           })
         );
-        responseActiveRef.current = true;
+        markResponsePending();
         dc.send(JSON.stringify({ type: 'response.create' }));
       }
     } catch (err) {
@@ -290,9 +324,12 @@ export default function useRealtimeVoice() {
             },
           })
         );
-        responseActiveRef.current = true;
+        markResponsePending();
         dc.send(JSON.stringify({ type: 'response.create' }));
       }
+    } finally {
+      // Leave Checking as soon as the lookup finishes; Thinking covers the wait for audio.
+      clearToolActivity();
     }
   }
 
@@ -309,8 +346,9 @@ export default function useRealtimeVoice() {
         setPermissionDenied(false);
         setTranscript([]);
         setIsTrailieSpeaking(false);
-        setIsToolCalling(false);
-        setToolCallInfo(null);
+        clearToolActivity();
+        setResponsePending(false);
+        setThinkingStartedAt(null);
         setUserMuted(false);
         userMutedRef.current = false;
 
@@ -550,6 +588,7 @@ export default function useRealtimeVoice() {
           speechStartRef.current = null;
 
           const micEnabled = streamRef.current?.getAudioTracks()[0]?.enabled !== false;
+          // Barge-in off: never create a response from speech while Trailie is still answering.
           if (
             speechDuration > MIN_SPEECH_MS &&
             micEnabled &&
@@ -559,38 +598,31 @@ export default function useRealtimeVoice() {
           ) {
             const dc = dcRef.current;
             if (dc && dc.readyState === 'open') {
-              responseActiveRef.current = true;
+              markResponsePending();
               dc.send(JSON.stringify({ type: 'response.create' }));
             }
           }
           break;
         }
 
-        case 'conversation.item.done': {
-          if (event.item?.role === 'user') {
-            const parts = event.item.content || [];
-            const text = parts
-              .filter((p) => p.transcript)
-              .map((p) => p.transcript.trim())
-              .join(' ');
-            if (text && text.length > 1) {
-              setTranscript((prev) => {
-                const last = prev[prev.length - 1];
-                if (last && last.role === 'user') {
-                  return [...prev.slice(0, -1), { role: 'user', text: `${last.text} ${text}` }];
-                }
-                return [...prev, { role: 'user', text }];
-              });
-            }
-          }
+        case 'conversation.item.done':
+        case 'conversation.item.input_audio_transcription.delta':
+        case 'conversation.item.input_audio_transcription.completed':
+        case 'response.output_audio_transcript.delta':
+        case 'response.output_audio_transcript.done':
+        case 'response.output_text.delta':
+        case 'response.output_text.done':
+        case 'response.cancelled': {
+          setTranscript((prev) => applyVoiceTranscriptEvent(prev, event));
           break;
         }
 
         case 'output_audio_buffer.started': {
           bumpIdleTimer();
           setIsTrailieSpeaking(true);
-          setIsToolCalling(false);
-          setToolCallInfo(null);
+          clearToolActivity();
+          setResponsePending(false);
+          setThinkingStartedAt(null);
           setStatus('speaking');
           levelSourceRef.current = 'remote';
           if (!bargeInRef.current) {
@@ -606,40 +638,12 @@ export default function useRealtimeVoice() {
           break;
         }
 
-        case 'response.output_audio_transcript.delta': {
-          const delta = event.delta;
-          if (delta) {
-            setTranscript((prev) => {
-              const last = prev[prev.length - 1];
-              if (last && last.role === 'assistant' && last.streaming) {
-                return [...prev.slice(0, -1), { ...last, text: last.text + delta }];
-              }
-              return [...prev, { role: 'assistant', text: delta, streaming: true }];
-            });
-          }
-          break;
-        }
-
-        case 'response.output_audio_transcript.done': {
-          setTranscript((prev) => {
-            const last = prev[prev.length - 1];
-            if (last && last.role === 'assistant' && last.streaming) {
-              return [
-                ...prev.slice(0, -1),
-                { role: 'assistant', text: event.transcript || last.text },
-              ];
-            }
-            return prev;
-          });
-          break;
-        }
-
         case 'response.output_item.added': {
+          // Incomplete function_call items must NOT enter Checking — wait for args + execute.
           if (event.item?.type === 'function_call' && event.item?.name) {
-            setIsToolCalling(true);
-            setToolCallInfo(event.item.name);
-            setTranscript((prev) => prev.filter((m) => m.role === 'user'));
             if (!bargeInRef.current) setMicTracksEnabled(false);
+            // Hold Thinking while arguments stream in.
+            if (!responseActiveRef.current) markResponsePending();
             activeFnCallRef.current = {
               call_id: event.item.call_id,
               name: event.item.name,
@@ -653,7 +657,6 @@ export default function useRealtimeVoice() {
           if (activeFnCallRef.current && event.delta) {
             activeFnCallRef.current.arguments += event.delta;
           }
-          setIsToolCalling(true);
           break;
         }
 
@@ -664,8 +667,8 @@ export default function useRealtimeVoice() {
             try {
               fnArgs = JSON.parse(event.arguments || fnCall.arguments || '{}');
             } catch (_) {}
-            executeFunctionCall(fnCall.call_id, fnCall.name, fnArgs);
             activeFnCallRef.current = null;
+            executeFunctionCall(fnCall.call_id, fnCall.name, fnArgs);
           }
           break;
         }
@@ -675,12 +678,15 @@ export default function useRealtimeVoice() {
         }
 
         case 'response.done': {
-          responseActiveRef.current = false;
+          setTranscript((prev) => applyVoiceTranscriptEvent(prev, event));
+          // If a function call is still collecting args, keep pending — next turn continues.
           if (activeFnCallRef.current) break;
 
+          responseActiveRef.current = false;
+          setResponsePending(false);
+          setThinkingStartedAt(null);
           setIsTrailieSpeaking(false);
-          setIsToolCalling(false);
-          setToolCallInfo(null);
+          clearToolActivity();
           levelSourceRef.current = 'mic';
           bumpIdleTimer();
 
@@ -725,7 +731,12 @@ export default function useRealtimeVoice() {
     transcript,
     isTrailieSpeaking,
     isToolCalling,
+    toolName,
+    toolArgs,
+    toolStartedAt,
     toolCallInfo,
+    responsePending,
+    thinkingStartedAt,
     error,
     authRequired,
     permissionDenied,

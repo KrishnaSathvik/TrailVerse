@@ -3891,7 +3891,7 @@ router.post('/realtime-session', optionalAuth, async (req, res) => {
         const weather = weatherResult.status === 'fulfilled' ? weatherResult.value : null;
 
         if (park) {
-          let dataBlock = `\n\n--- LIVE PARK DATA (pre-loaded — use directly, do NOT call get_park_details for this park) ---`;
+          let dataBlock = `\n\n--- LIVE PARK DATA (pre-loaded for this session — reuse when fresh and relevant; refresh with get_park_details if a time-sensitive claim needs confirmation) ---`;
           dataBlock += `\nPark: ${park.fullName} (${parkCode})`;
           dataBlock += `\nState: ${park.states || 'N/A'}`;
           if (park.description) dataBlock += `\nOverview: ${park.description}`;
@@ -3939,7 +3939,7 @@ router.post('/realtime-session', optionalAuth, async (req, res) => {
           if (activities) dataBlock += `\nActivities: ${activities}`;
 
           dataBlock += `\n--- END LIVE DATA ---`;
-          dataBlock += `\n\nThe user is viewing ${park.fullName}. Use the data above to answer questions about THIS park instantly. Only call tools if the user asks about a DIFFERENT park, wants search/comparison, or asks about events/programs.`;
+          dataBlock += `\n\nThe user is viewing ${park.fullName}. Prefer the data above for THIS park when it answers the question. Call get_park_details if freshness is unclear for weather, alerts, fees, or hours. Call other tools when the user asks about a different park, wants search/comparison, or asks about events/programs.`;
 
           instructions += dataBlock;
         } else {
@@ -4029,6 +4029,18 @@ router.post('/realtime-session', optionalAuth, async (req, res) => {
         output_modalities: ['audio'],
         audio: {
           input: {
+            // Browser getUserMedia is typically close-talking (phone/headset).
+            // near_field matches that mic setup — not outdoor vs indoor context.
+            // Switch to far_field only if we later support distant room mics.
+            noise_reduction: { type: 'near_field' },
+            // Async user speech → text for the conversation UI. Off by default in Realtime;
+            // without this, immersive/dock never receive user turns.
+            transcription: {
+              model: 'gpt-4o-mini-transcribe',
+              language: 'en',
+            },
+            // create_response: false — client creates responses after committed speech.
+            // eagerness omitted → OpenAI default (medium). interrupt_response follows VOICE_BARGE_IN.
             turn_detection: {
               type: 'semantic_vad',
               interrupt_response: voiceConfig.bargeIn,
