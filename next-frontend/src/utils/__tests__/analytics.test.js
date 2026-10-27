@@ -38,7 +38,7 @@ describe('analytics', () => {
     window.history.pushState({}, '', '/explore?q=yellowstone');
   });
 
-  it('sends one GA pageview and one PostHog page_viewed without the query string', () => {
+  it('sends one GA pageview and one PostHog $pageview without the query string', () => {
     logPageView();
     expect(window.gtag).toHaveBeenCalledTimes(1);
     expect(window.gtag).toHaveBeenCalledWith('event', 'page_view', expect.objectContaining({
@@ -46,7 +46,7 @@ describe('analytics', () => {
       page_location: expect.stringMatching(/\/explore$/),
     }));
     expect(capture).toHaveBeenCalledTimes(1);
-    expect(capture).toHaveBeenCalledWith('page_viewed', expect.objectContaining({
+    expect(capture).toHaveBeenCalledWith('$pageview', expect.objectContaining({
       page_category: 'explore',
       signed_in: false,
     }));
@@ -57,7 +57,7 @@ describe('analytics', () => {
   it('does not send a second pageview for the same explicit path helper beyond one call', () => {
     trackPageView('/parks/yellowstone-national-park?tab=alerts');
     expect(window.gtag).toHaveBeenCalledTimes(1);
-    expect(capture).toHaveBeenCalledWith('page_viewed', expect.objectContaining({
+    expect(capture).toHaveBeenCalledWith('$pageview', expect.objectContaining({
       page_category: 'park',
       content_key: 'yellowstone-national-park',
     }));

@@ -1,7 +1,7 @@
 // next-frontend/src/utils/parkLinkifier.js
 
 // Map of park name variations to their slug
-// These are the 63 national parks — cover common name variations
+// These are the 64 national parks — cover common name variations
 const PARK_NAME_TO_SLUG = {
   'Yellowstone': 'yellowstone-national-park',
   'Yellowstone National Park': 'yellowstone-national-park',
@@ -30,6 +30,9 @@ const PARK_NAME_TO_SLUG = {
   'Carlsbad Caverns National Park': 'carlsbad-caverns-national-park',
   'Channel Islands': 'channel-islands-national-park',
   'Channel Islands National Park': 'channel-islands-national-park',
+  'Chiricahua National Park': 'chiricahua-national-park',
+  // Redesignated Oct 20, 2026 — older text still uses the monument name
+  'Chiricahua National Monument': 'chiricahua-national-park',
   'Congaree': 'congaree-national-park',
   'Congaree National Park': 'congaree-national-park',
   'Crater Lake': 'crater-lake-national-park',

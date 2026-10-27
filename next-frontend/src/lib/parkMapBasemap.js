@@ -66,7 +66,7 @@ export function getParkMapStyle(isDark) {
   return openTopoRasterStyle(isDark);
 }
 
-/** True only for the 63 official "National Park" designation (not monuments, historic sites, etc.) */
+/** True only for the official "National Park" designation (not monuments, historic sites, etc.) */
 export function isNationalParkDesignation(designation) {
   return designation === 'National Park';
 }

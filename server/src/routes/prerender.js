@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const { isCrawler } = require('../middleware/crawlerDetection');
 const BlogPost = require('../models/BlogPost');
+const { blogDateModified } = require('../utils/blogDates');
 const { getNpsService } = require('../services/npsService');
 
 /**
@@ -50,7 +51,7 @@ const generatePrerenderedHTML = async (req, res, next) => {
               url: `https://www.nationalparksexplorerusa.com/blog/${post.slug}`,
               type: 'article',
               published: post.publishedAt?.toISOString(),
-              modified: post.updatedAt?.toISOString(),
+              modified: blogDateModified(post)?.toISOString(),
               author: post.author?.name || 'Krishna'
             };
           }

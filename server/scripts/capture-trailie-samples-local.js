@@ -68,8 +68,6 @@ async function main() {
     const User = require('../src/models/User');
     const TripPlan = require('../src/models/TripPlan');
     const user = await User.create({ name: 'Sample Capture', firstName: 'Sample', lastName: 'Capture', email: `capture-${crypto.randomUUID()}@example.com`, password: crypto.randomBytes(24).toString('hex') });
-    process.env.TRAILIE_DAILY_TOKEN_LIMIT_EMAIL = user.email;
-    process.env.TRAILIE_DAILY_TOKEN_LIMIT = '1000000';
     const token = require('jsonwebtoken').sign({ id: String(user._id) }, process.env.JWT_SECRET, { expiresIn: '2h' });
     const app = require('express')(); app.use(require('express').json());
     const telemetry = [];

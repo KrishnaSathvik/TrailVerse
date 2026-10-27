@@ -10,6 +10,8 @@ import {
   getIntentLandingCanonicalUrl,
 } from '@/data/intentLandings';
 import { canonicalPageMetadata } from '@/lib/seo';
+import { fetchIntentLandingParks } from '@/lib/intentLandingApi';
+import { pickListedParkImage, shareImageFields } from '@/lib/shareParkImage';
 
 /**
  * @param {string} path — e.g. /parks-for-couples
@@ -20,6 +22,14 @@ export function createIntentLandingPageExports(path) {
     if (!landing) return { title: 'Not Found | TrailVerse' };
 
     const canonical = getIntentLandingCanonicalUrl(landing);
+    let listedImage = null;
+    try {
+      const { parks } = await fetchIntentLandingParks(landing, { limit: 8 });
+      listedImage = pickListedParkImage(parks);
+    } catch {
+      listedImage = null;
+    }
+    const share = shareImageFields(listedImage, landing.metadataTitle);
 
     return {
       title: landing.metadataTitle,
@@ -30,13 +40,13 @@ export function createIntentLandingPageExports(path) {
         url: canonical,
         siteName: 'TrailVerse',
         type: 'website',
-        images: [{ url: '/og/guides.jpg', width: 1200, height: 630, alt: landing.metadataTitle }],
+        images: share.openGraphImages,
       },
       twitter: {
         card: 'summary_large_image',
         title: landing.metadataTitle,
         description: landing.metaDescription,
-        images: ['/og/guides.jpg'],
+        images: share.twitterImages,
       },
       ...canonicalPageMetadata(path),
     };

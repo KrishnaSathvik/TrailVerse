@@ -50,14 +50,16 @@ All must be reachable without authentication.
 
 Don't submit until these all work smoothly in developer mode:
 
-- [ ] "Plan a 3-day trip to Zion for a beginner" → itinerary widget renders
-- [ ] "Tell me about Bryce Canyon" → park details widget renders with weather
-- [ ] "Compare Zion and Bryce Canyon" → compare widget renders
-- [ ] "Find parks in Utah" → park list widget renders
-- [ ] "What ranger programs are coming up?" → events widget renders
-- [ ] Deep links in each widget actually open on TrailVerse
-- [ ] Dark mode and light mode both look right
-- [ ] Widgets render correctly on mobile ChatGPT
+Production runs with `MCP_MARKDOWN_ONLY=true` (the default): every tool returns
+markdown text, no HTML widgets. Test the text responses:
+
+- [ ] "Plan a 3-day trip to Zion for a beginner" → itinerary text with session_id
+- [ ] "Tell me about Bryce Canyon" → park details text with alerts + weather
+- [ ] "Compare Zion and Bryce Canyon" → comparison table
+- [ ] "Find parks in Utah" → ranked list that includes Zion, Arches, Bryce, Canyonlands, Capitol Reef
+- [ ] "What ranger programs are coming up at Yellowstone?" → events list (or a clear "none listed")
+- [ ] Links in each response open on TrailVerse
+- [ ] Run the full golden set in [GOLDEN_EVAL_SET.md](GOLDEN_EVAL_SET.md) (manual rows)
 
 ---
 
@@ -82,62 +84,48 @@ Live NPS data and AI trip planning for 470+ sites — plus any US destination.
 ### Full description
 
 ```
-TrailVerse brings your universe of national parks exploration into ChatGPT.
+TrailVerse brings National Park Service data and the Trailie trip planner into
+ChatGPT.
 
-Deep live data for 470+ US national parks, monuments, and historic sites —
-plus day-by-day trip planning for any US destination, including state parks,
-cities, beaches, and road trips. Tell Trailie you're a beginner with kids
-visiting Zion in July and it can steer you toward family-friendly trails, flag
-timed-entry and permit requirements, and build a pace-matched plan grounded in
-live NPS alerts and weather. Always confirm safety-critical details on NPS.gov
+Look up about 470 US National Park Service sites — national parks, monuments,
+seashores, and historic sites — and plan day-by-day trips to US destinations,
+including state parks, cities, and road trips. Tell Trailie you're visiting
+Zion with kids in July and it builds a day-by-day plan using NPS alerts,
+weather, and place data. Always confirm safety-critical details on NPS.gov
 before you go.
 
-Five focused capabilities:
+Five tools:
 
-• Plan a trip — Constraint-aware day-by-day itineraries with confidence
-  scoring. Post-validates plans for fitness level, family pacing, and
-  feasibility. Works for NPS sites and beyond (state parks, cities, mixed road
-  trips). Powered by **Trailie** on Claude Sonnet 5.
+• Plan a trip — Day-by-day itineraries and revisions from Trailie, TrailVerse's
+  planner (runs on an OpenAI model through the TrailVerse backend). Works for
+  NPS sites and other US destinations. Each plan is kept in a temporary
+  anonymous TrailVerse session (48 hours) so you can revise it.
 
-• Park details — Rich live info for NPS sites: current weather, 5-day forecast
-  when available, active alerts, entrance fees, and top activities.
+• Park details — Alerts and closures, current weather and forecast, entrance
+  fees, hours, activities, campgrounds, and permits for an NPS site. Data is
+  cached (alerts and weather refresh about every 30 minutes).
 
-• Compare parks — Side-by-side 2–4 NPS parks with auto-computed highlights:
-  best overall, warmest right now, and lower-crowd option.
+• Compare parks — 2–4 NPS sites side by side: temperature, estimated crowd
+  level, entrance fee, activities, and a Google Maps route link.
 
-• Search parks — Find NPS sites by state, activity, or free-text query across
-  the full catalog.
+• Search parks — Find NPS sites by state, activity, or trip style.
 
-• Find events — Upcoming ranger programs, guided tours, and park-hosted events
-  at NPS sites.
+• Find events — Upcoming ranger programs, guided tours, and park events from
+  the NPS events feed.
 
-Read tools pull from the official National Park Service API and live weather;
-itineraries run through TrailVerse's constraint validation pipeline. Free to
-use in ChatGPT with generous limits on park lookup tools. For saved trips,
-PDF export, the visual Plan Workspace, and your full Trailie history, continue
-free at nationalparksexplorerusa.com/plan-ai.
+Park data comes from the National Park Service API and OpenWeather via the
+TrailVerse backend. The app does not book or reserve anything.
 ```
-
-(~1,450 characters — within typical store limits)
 
 ### Full description (short variant)
 
-Use if the submission form has a tighter character cap:
-
 ```
-TrailVerse puts 470+ NPS parks and sites inside ChatGPT with live data — not
-stale training answers. Plan a trip works for any US destination (national
-parks, state parks, cities, road trips); the other four tools are NPS-focused
-for live weather, alerts, compare, search, and events.
-
-Ask for a Zion trip with kids in July and get family-paced itineraries, permit
-warnings, and plans grounded in live alerts and weather. Five tools: Plan a
-trip (constraint-aware, confidence-scored; Trailie on Claude Sonnet 5), Park
-details, Compare (2–4 parks), Search, and Find events.
-
-Data comes from the NPS API, live weather, and TrailVerse's validation
-pipeline. Free in ChatGPT. Save trips, export PDFs, and use the full Plan
-Workspace at nationalparksexplorerusa.com/plan-ai.
+TrailVerse puts National Park Service data and the Trailie trip planner in
+ChatGPT. Plan a trip works for US destinations (national parks, state parks,
+cities, road trips); the other four tools cover about 470 NPS sites: park
+details (alerts, weather, fees, campgrounds, permits), compare 2–4 parks,
+search by state or activity, and upcoming ranger events. Trailie runs on an
+OpenAI model through the TrailVerse backend. No bookings or reservations.
 ```
 
 ### Category
@@ -164,13 +152,16 @@ United States
 ### Screenshots (required)
 
 OpenAI requires screenshots that **accurately represent functionality**.
-Mocked or idealized screenshots are a rejection reason. Take real ones:
+Mocked or idealized screenshots are a rejection reason. Production is
+markdown-only (no widgets), so screenshots must show the text responses:
 
-- [ ] **Screenshot 1 — Itinerary in action**: user asks "Plan 3 days in Zion for beginner with kids", show the itinerary widget rendered in ChatGPT
-- [ ] **Screenshot 2 — Park details**: user asks "Tell me about Yellowstone", show park details widget with weather + alerts
-- [ ] **Screenshot 3 — Compare**: user asks "Zion vs Bryce Canyon", show compare widget
-- [ ] **Screenshot 4 — Search**: user asks "Parks in Utah", show park list widget
-- [ ] **Screenshot 5 — Events**: user asks "Upcoming ranger programs at Yellowstone", show events widget
+- [ ] **Screenshot 1 — Itinerary**: "Plan 3 days in Zion for a beginner with kids" — Trailie's text itinerary in ChatGPT
+- [ ] **Screenshot 2 — Park details**: "Tell me about Yellowstone" — alerts + weather text
+- [ ] **Screenshot 3 — Compare**: "Zion vs Bryce Canyon" — comparison table
+- [ ] **Screenshot 4 — Search**: "Parks in Utah" — ranked list
+- [ ] **Screenshot 5 — Events**: "Upcoming ranger programs at Grand Canyon" — events list
+
+Do not reuse old widget screenshots.
 
 Resolution: match OpenAI's current requirements (they change; check the
 submission form for the exact dimensions). Capture on both desktop and
@@ -197,7 +188,7 @@ cause of rejection**. Each tool in `server/main.py` has:
 
 | Tool | readOnlyHint | openWorldHint | idempotentHint | destructiveHint |
 |---|---|---|---|---|
-| `plan_trip` | ✓ true | ✓ true | false | ✓ false |
+| `plan_trip` | **false** | ✓ true | false | ✓ false |
 | `get_park_details` | ✓ true | ✓ true | ✓ true | ✓ false |
 | `compare_parks` | ✓ true | ✓ true | ✓ true | ✓ false |
 | `search_parks` | ✓ true | ✓ true | ✓ true | ✓ false |
@@ -208,13 +199,17 @@ cause of rejection**. Each tool in `server/main.py` has:
 See per-tool blocks below. All five tools set **`destructiveHint: false`** — none delete
 data, cancel bookings, or overwrite user-owned records.
 
+> **Changed 2026-10-26:** `plan_trip` `readOnlyHint` went from `true` to `false`.
+> Changing annotations on a published app will likely require re-review; ChatGPT
+> may also start asking the user to confirm `plan_trip` calls.
+
 ### `plan_trip`
 
 | Annotation | Value | Justification |
 |---|---|---|
-| **readOnlyHint** | `true` | Returns a generated itinerary only. Does not create or modify user accounts, saved trips, NPS records, reservations, or any third-party system. The backend may append messages to an ephemeral anonymous session (TTL ~48h) for multi-turn follow-ups like “add day 4”; that is internal session state, not a user-visible write or booking action. |
-| **openWorldHint** | `true` | Calls the TrailVerse Express API, which fetches live NPS facts, weather (OpenWeatherMap), and optionally web search for non-NPS destinations. Also stores short-lived conversation context in MCP memory. All inputs/outputs depend on external live data outside ChatGPT. |
-| **destructiveHint** | `false` | Does not delete, overwrite, or irreversibly change any user data, park data, or external resource. Cannot cancel reservations, remove saved trips, or mutate NPS content — it only returns planning text. |
+| **readOnlyHint** | `false` | Each call creates or updates an anonymous TrailVerse guest session (MongoDB, expires 48 h after last activity) holding the conversation messages and the canonical itinerary, and revisions update that saved plan. OpenAI's guidelines say to use `false` for "persisting artifacts" and "external-state changes". It does not touch user accounts, reservations, NPS data, or third-party systems. |
+| **openWorldHint** | `true` | Arbitrary US destinations; the backend fetches NPS facts, weather, and other evidence sources for them. |
+| **destructiveHint** | `false` | Additive only: it writes to a guest session created for this conversation and never deletes or overwrites user-owned data, bookings, or external records. A revision replaces the previous plan only inside that same guest session. |
 | **idempotentHint** | `false` | Same inputs can yield different AI-generated itineraries (creative LLM output, live weather/alerts may change between calls). |
 
 ### `get_park_details`
@@ -275,29 +270,53 @@ on the live MCP URL without any account setup.
 
 ## 4. Privacy & data handling disclosure
 
-The submission form will ask what data the app accesses. Answer honestly:
+The submission form will ask what data the app accesses. Verified against
+code on 2026-10-26 (`mcp-server/server/main.py`, `client.py`,
+`conversations.py`; `server/src/routes/ai.js`, `modelFirstTrailie.js`,
+`trailieSimpleRuntime.js`, `models/AnonymousSession.js`):
 
 ```
-Data accessed from the user:
-- The natural-language prompt the user types in ChatGPT
-- No personal information, no location, no ChatGPT account data
+Data received from ChatGPT/Claude:
+- Tool arguments the model fills in (park names/codes, dates, trip length,
+  traveler counts, preferences, revision text).
+- MCP client name (used only to label the client as chatgpt / claude / unknown).
+- For plan_trip only: the IANA time zone from ChatGPT's coarse
+  openai/userLocation hint (e.g. "America/Denver"). No other location field
+  (city, region, coordinates) is read. The zone is forwarded to the TrailVerse
+  backend, which uses it only to tell the planner today's date in the
+  traveler's zone (falls back to America/New_York). The MCP server does not log
+  or store it.
 
 Data sent to third parties:
-- User prompts are sent to the TrailVerse backend
-  (trailverse.onrender.com) for AI trip planning
-- TrailVerse forwards prompts to Anthropic (**Claude Sonnet 5**) for AI trip planning
-- No data is stored server-side for anonymous users beyond ephemeral session state
+- All tool calls go to the TrailVerse backend (trailverse.onrender.com).
+- plan_trip: the trip request and conversation history are sent by the
+  backend to OpenAI (Trailie's production runtime is model_first:
+  OpenAI gpt-6.1-sol, low reasoning). Park lookups call the NPS API and
+  OpenWeather; trip planning may also query the backend's evidence
+  providers (NPS, Recreation.gov/RIDB, maps/geocoding, weather, astronomy, and
+  web search via Brave/Serper/Tavily when configured). Search queries are
+  derived from the trip request.
+- Usage analytics (only when POSTHOG_PROJECT_TOKEN is configured): one PostHog
+  event "mcp_tool_completed" per tool call with tool name, client
+  (chatgpt/claude/unknown), outcome (success/failed), and duration in ms.
+  distinct_id is the shared label "mcp-<client>", not a per-user id. No prompt
+  text, park codes, arguments, or location are sent.
 
 Data retained:
-- Backend logs retain request metadata (IP, timestamp, park code) for
-  48-hour rate limiting
-- No message content is retained beyond the response
-- No user profiles are created
-- No tracking, no analytics forwarded from ChatGPT
+- MCP server memory: plan_trip conversation messages (up to 20 per session,
+  up to 1,000 sessions) for 2 hours; lost on restart.
+- TrailVerse backend: an anonymous guest session (messages, latest itinerary,
+  the connecting IP — which is the MCP server's, not the end user's — and user
+  agent) that expires 48 hours after last activity.
+- Hosting logs (Render): tool errors and validation warnings, which can include
+  the rejected argument values. Request URLs/search terms are not logged at the
+  default log level.
+- No user accounts or profiles are created; no cross-session tracking.
 ```
 
 Link the existing TrailVerse privacy policy at
-`https://www.nationalparksexplorerusa.com/privacy`.
+`https://www.nationalparksexplorerusa.com/privacy` — confirm it covers the
+OpenAI processing, PostHog usage analytics, and 48-hour guest sessions above.
 
 ---
 
@@ -323,9 +342,11 @@ subscriptions cannot be sold through ChatGPT apps**.
 Age-appropriate: Yes, all audiences.
 Content generation: AI generates trip plans from structured backend data.
 Moderation: TrailVerse backend has content filtering on AI output.
-Hallucination mitigation: All park data is grounded in the NPS API. AI
-itineraries are post-validated against constraint rules and live data —
-see article-ai-architecture.md for full detail.
+Hallucination mitigation: Park facts come from the NPS API. Trailie's
+canonical TripPlan persistence, evidence-grounded places and routes, and trip
+mutation guards are enforced in code; answer quality still depends on the
+model following policy (docs/TRAILIE-CAPABILITIES-ACCURACY.md). Park tools
+refuse to guess when a park name is unknown or ambiguous.
 ```
 
 ---
@@ -361,7 +382,7 @@ Per OpenAI (current as of Dec 2025):
 Common rejection reasons to double-check one more time:
 
 - [ ] App name is not overly generic ✓ ("TrailVerse" is fine)
-- [ ] Tool annotations are correct ✓ (all readOnlyHint: true)
+- [ ] Tool annotations are correct (plan_trip readOnlyHint: false; the four read tools true)
 - [ ] Reviewer can connect to MCP server without auth ✓ (anonymous)
 - [ ] Screenshots match actual functionality (verify before uploading)
 - [ ] Privacy policy link is reachable ✓
@@ -401,8 +422,8 @@ authenticated tools. That's deliberate:
 3. **Top-of-funnel for TrailVerse.** ChatGPT users who want saved trips,
    PDF export, or the visual Plan Workspace continue at
    nationalparksexplorerusa.com — acquisition channel, not a replacement.
-4. **The moat is still visible.** The constraint engine, plan scoring, and
-   post-validation all work via the anonymous endpoint.
+4. **The planner is the same.** MCP uses the same Trailie runtime as the
+   website via the anonymous endpoint.
    Production MCP uses `MCP_BYPASS_KEY` (skips the website 5-msg/48h cap and
    enables web search for `plan_trip`). What's still *website-only* is
    **trip persistence, share links, PDF export, and the Plan Workspace**.

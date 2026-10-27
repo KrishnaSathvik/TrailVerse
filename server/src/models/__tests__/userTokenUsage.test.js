@@ -13,8 +13,6 @@ test('concurrent turns reset yesterday once and retain both increments and lifet
     return result;
   });
   try {
-    expect(first.hasExceededTokenLimit(300)).toBe(false);
-    expect(second.hasExceededTokenLimit(300)).toBe(false);
     await Promise.all([first.addTokenUsage(10, 20), second.addTokenUsage(30, 40)]);
     expect(resets.sort()).toEqual([0, 1]);
     const saved = await User.findById(user._id);

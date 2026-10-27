@@ -7,12 +7,14 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { fetchDiscoverDetail } from '@/lib/discoverApi';
 import { BROWSE_HUB_PAGE_SUFFIX } from '@/lib/browseHub';
 import { canonicalPageMetadata, siteCanonical } from '@/lib/seo';
+import { pickDiscoverShareImage, shareImageFields } from '@/lib/shareParkImage';
 
 export async function generateMetadata({ params, searchParams }) {
   const { slug } = await params;
   const sp = searchParams ? await searchParams : undefined;
   const detail = await fetchDiscoverDetail('type', slug).catch(() => null);
   if (!detail) return { title: `Park Type | ${BROWSE_HUB_PAGE_SUFFIX}` };
+  const share = shareImageFields(pickDiscoverShareImage(detail), detail.title);
   return {
     title: `${detail.title} | ${BROWSE_HUB_PAGE_SUFFIX}`,
     description: detail.intro?.slice(0, 160),
@@ -23,13 +25,13 @@ export async function generateMetadata({ params, searchParams }) {
       url: siteCanonical(`/discover/type/${slug}`),
       siteName: 'TrailVerse',
       type: 'website',
-      images: [{ url: '/og/discover.jpg', width: 1200, height: 630, alt: detail.title }],
+      images: share.openGraphImages,
     },
     twitter: {
       card: 'summary_large_image',
       title: `${detail.title} | ${BROWSE_HUB_PAGE_SUFFIX}`,
       description: detail.intro?.slice(0, 160),
-      images: ['/og/discover.jpg'],
+      images: share.twitterImages,
     },
   };
 }

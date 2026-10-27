@@ -139,7 +139,8 @@ exports.trackView = async (req, res, next) => {
     const post = await BlogPost.findOneAndUpdate(
       { slug: req.params.slug },
       { $inc: { views: 1 } },
-      { new: true, select: 'views slug' }
+      // Views are operational: never advance updatedAt (or contentUpdatedAt).
+      { new: true, select: 'views slug', timestamps: false }
     );
 
     if (!post) {
@@ -304,25 +305,34 @@ exports.updatePost = async (req, res, next) => {
     // Handle scheduling logic for updates
     const { scheduledAt, status } = req.body;
 
-    // Always apply field updates from req.body first
+    // Always apply field updates from req.body first.
+    // Lifecycle timestamps (publishedAt, contentUpdatedAt, …) are server-owned and
+    // never client-settable: publishedAt is set once, on first publication.
+    const SERVER_OWNED_KEYS = new Set([
+      'scheduledAt', 'status', 'slug', 'publishedAt',
+      '_id', '__v', 'createdAt', 'updatedAt', 'contentUpdatedAt', 'lastPublicEditorialHash'
+    ]);
     Object.keys(req.body).forEach(key => {
-      if (key === 'scheduledAt' || key === 'status' || key === 'slug') {
+      if (SERVER_OWNED_KEYS.has(key)) {
         return;
       }
       post[key] = req.body[key];
     });
 
-    // Then handle status/scheduling logic
+    // Then handle status/scheduling logic. A request without `status` and
+    // `scheduledAt` (e.g. an autosave) leaves the lifecycle untouched.
+    // publishedAt is the date of FIRST publication: scheduling, unpublishing and
+    // re-publishing all keep an existing value (public queries filter on status).
     if (scheduledAt && new Date(scheduledAt) > new Date()) {
       post.status = 'scheduled';
       post.scheduledAt = new Date(scheduledAt);
-      post.publishedAt = null;
     } else if (status === 'published' && post.status !== 'published') {
       post.status = 'published';
-      post.publishedAt = new Date();
+      post.publishedAt = post.publishedAt || new Date();
       post.scheduledAt = null;
     } else if (status) {
       post.status = status;
+      if (status !== 'scheduled') post.scheduledAt = null;
     }
     
     await post.save();
@@ -431,7 +441,7 @@ exports.publishScheduledPosts = async (req, res, next) => {
     
     for (const post of scheduledPosts) {
       post.status = 'published';
-      post.publishedAt = new Date();
+      post.publishedAt = post.publishedAt || new Date();
       post.scheduledAt = null;
       await post.save();
       
@@ -510,7 +520,9 @@ async function sendBlogNotifications(post) {
     // Mark notification as sent atomically to prevent duplicate sends
     const result = await BlogPost.updateOne(
       { _id: post._id, notificationSentAt: null },
-      { notificationSentAt: new Date() }
+      { notificationSentAt: new Date() },
+      // Notification bookkeeping is operational, not a content modification.
+      { timestamps: false }
     );
     if (result.modifiedCount === 0) {
       console.log('⚠️ Blog notification already sent for this post, skipping');
@@ -597,7 +609,8 @@ exports.toggleLike = async (req, res, next) => {
       post.likes.push(identifier);
     }
     
-    await post.save();
+    // Reactions are operational: keep updatedAt/contentUpdatedAt untouched.
+    await post.save({ timestamps: false });
     
     res.status(200).json({
       success: true,
@@ -637,7 +650,8 @@ exports.toggleFavorite = async (req, res, next) => {
       post.favorites.push(identifier);
     }
     
-    await post.save();
+    // Reactions are operational: keep updatedAt/contentUpdatedAt untouched.
+    await post.save({ timestamps: false });
     
     // Notify via WebSocket (only for authenticated users)
     if (req.user) {

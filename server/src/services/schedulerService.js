@@ -36,7 +36,8 @@ const publishScheduledPosts = async () => {
       try {
         // Update post status
         post.status = 'published';
-        post.publishedAt = new Date();
+        // Keep the original date if this post was published before (re-publish).
+        post.publishedAt = post.publishedAt || new Date();
         post.scheduledAt = null;
         await post.save();
         

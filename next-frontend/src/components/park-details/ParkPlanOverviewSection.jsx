@@ -12,6 +12,7 @@ export default function ParkPlanOverviewSection({
   parkCode,
   snapshot,
   planCta,
+  planHref,
   onPlan,
   compareHref,
 }) {
@@ -113,6 +114,7 @@ export default function ParkPlanOverviewSection({
           style={{ borderTopWidth: '1px', borderColor: 'var(--border)' }}
         >
           <Button
+            href={planHref}
             onClick={onPlan}
             variant="success"
             size="md"

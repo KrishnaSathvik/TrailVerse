@@ -10,7 +10,7 @@ router.use(trailieTurnTelemetryScope);
 // remain live for the current product.
 router.use(require('./modelFirstTrailie').createModelFirstRouter());
 const { protect, optionalAuth } = require('../middleware/auth');
-const { checkTokenLimit, trackTokenUsage, getTokenUsage } = require('../middleware/tokenLimits');
+const { trackTokenUsage, getTokenUsage } = require('../middleware/tokenLimits');
 const { extractUserCity, shouldAppendAnonymousWebSearchUpsell, isTravelRelated } = require('../services/factsService');
 const { CANONICAL_FACT_STATUS } = require('../utils/canonicalFacts');
 const {

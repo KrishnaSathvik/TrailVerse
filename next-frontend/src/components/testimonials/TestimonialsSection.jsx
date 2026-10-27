@@ -285,7 +285,7 @@ const TestimonialsSection = ({
               </p>
             </div>
           )}
-          <div className="hidden md:grid md:grid-cols-3 gap-8">
+          <div className="hidden md:grid md:grid-cols-2 md:gap-5 lg:grid-cols-3 lg:gap-8">
             {[...Array(DESKTOP_BATCH_SIZE)].map((_, index) => (
               <div
                 key={index}
@@ -372,15 +372,19 @@ const TestimonialsSection = ({
           </div>
         )}
 
-        {/* Desktop — 3-card grid; carousel when more than 3 */}
+        {/* Tablet — 2 columns (odd last card spans the row); desktop — 3-card grid; carousel when more than 3 */}
         <div className="hidden md:block">
-          <div className="grid grid-cols-3 items-stretch gap-8">
-            {desktopBatch.map((testimonial) => (
+          <div className="grid grid-cols-2 items-stretch gap-5 lg:grid-cols-3 lg:gap-8">
+            {desktopBatch.map((testimonial, index) => (
               <TestimonialCard
                 key={testimonial._id}
                 testimonial={testimonial}
                 renderStars={renderStars}
-                className="h-full"
+                className={`h-full ${
+                  desktopBatch.length % 2 === 1 && index === desktopBatch.length - 1
+                    ? 'max-lg:col-span-2'
+                    : ''
+                }`}
               />
             ))}
           </div>

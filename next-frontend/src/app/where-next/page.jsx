@@ -19,7 +19,7 @@ export const metadata = {
     url: siteCanonical('/where-next'),
     siteName: 'TrailVerse',
     type: 'website',
-    images: [{ url: '/og/explore.jpg', width: 1200, height: 630, alt: 'TrailVerse' }],
+    images: [{ url: '/og-image-trailverse.jpg', width: 1200, height: 630, alt: 'TrailVerse' }],
   },
 };
 

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const BlogPost = require('../models/BlogPost');
+const { blogDateModified } = require('../utils/blogDates');
 const { getNpsService } = require('../services/npsService');
 
 /**
@@ -74,7 +75,7 @@ const getMetaTags = async (req, res, next) => {
               url: url,
               type: 'article',
               published: post.publishedAt?.toISOString(),
-              modified: post.updatedAt?.toISOString(),
+              modified: blogDateModified(post)?.toISOString(),
               author: post.author?.name || 'Krishna',
               og: {
                 type: 'article',
@@ -84,7 +85,7 @@ const getMetaTags = async (req, res, next) => {
                 image: imageUrl,
                 site_name: 'TrailVerse',
                 published_time: post.publishedAt?.toISOString(),
-                modified_time: post.updatedAt?.toISOString(),
+                modified_time: blogDateModified(post)?.toISOString(),
                 author: post.author?.name || 'Krishna',
                 section: 'Travel'
               },

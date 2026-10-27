@@ -423,7 +423,7 @@ export const INTENT_LANDINGS = [
       },
       {
         parkCode: 'chir',
-        fullName: 'Chiricahua National Monument',
+        fullName: 'Chiricahua National Park',
         label: 'Chiricahua, Arizona',
         description:
           'Hoodoos and sky islands in southeast Arizona — a landscape that feels borrowed from Utah, with far fewer people. The Echo Canyon loop winds through rock spires; Bonita Canyon Drive pulls you up into cooler forest. Summer heat is serious; spring and fall are the comfortable seasons. Remote by design; that is the point.',

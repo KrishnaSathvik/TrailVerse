@@ -1,4 +1,61 @@
+const crypto = require('crypto');
 const mongoose = require('mongoose');
+const { normalizeBlogCategory } = require('../utils/blogCategories');
+
+/**
+ * Fields whose change is a genuine editorial modification of a published post.
+ * Only these advance `contentUpdatedAt` (the public "dateModified" / sitemap lastmod).
+ *
+ * Deliberately NOT editorial (operational / lifecycle / derived):
+ *   views, likes, favorites, featured, notificationSentAt, status, publishedAt,
+ *   scheduledAt, slug/previousSlugs (URL plumbing), seoNoindex (indexing directive),
+ *   author (admin form always sends a placeholder), readTime (derived from content).
+ */
+const EDITORIAL_FIELDS = Object.freeze([
+  'title',
+  'excerpt',
+  'content',
+  'featuredImage',
+  'category',
+  'tags',
+  'metaDescription',
+  'seoSchema',
+]);
+
+function normalizeEditorialValue(field, value) {
+  if (field === 'tags') {
+    return (Array.isArray(value) ? value : [])
+      .map((tag) => String(tag ?? '').trim())
+      .filter(Boolean);
+  }
+  if (field === 'category') {
+    return normalizeBlogCategory(value);
+  }
+  if (value === null || value === undefined) return '';
+  return String(value).replace(/\r\n/g, '\n').trim();
+}
+
+function editorialSnapshot(doc) {
+  const snapshot = {};
+  for (const field of EDITORIAL_FIELDS) {
+    const raw = doc.get(field);
+    snapshot[field] = normalizeEditorialValue(field, Array.isArray(raw) ? [...raw] : raw);
+  }
+  return snapshot;
+}
+
+/** Names of editorial fields whose normalized value differs between two snapshots. */
+function changedEditorialFields(before, after) {
+  if (!before || !after) return [];
+  return EDITORIAL_FIELDS.filter(
+    (field) => JSON.stringify(before[field]) !== JSON.stringify(after[field])
+  );
+}
+
+/** Stable fingerprint of a normalized editorial snapshot. */
+function editorialHash(snapshot) {
+  return crypto.createHash('sha1').update(JSON.stringify(snapshot)).digest('hex');
+}
 
 const blogPostSchema = new mongoose.Schema({
   title: {
@@ -114,6 +171,23 @@ const blogPostSchema = new mongoose.Schema({
   notificationSentAt: {
     type: Date,
     default: null
+  },
+  // Last genuine editorial change made AFTER publication (see EDITORIAL_FIELDS).
+  // Null means "unchanged since publishedAt". Never set by views, likes,
+  // favorites, featured toggles, notification bookkeeping, or publish itself.
+  // Historical posts stay null (no reliable edit record; `updatedAt` was
+  // polluted by view increments), so consumers fall back to publishedAt.
+  contentUpdatedAt: {
+    type: Date,
+    default: null
+  },
+  // Fingerprint of the editorial fields as they were last visible to the
+  // public. Lets a re-publish (after an intentional unpublish) detect whether
+  // the revision going live differs from what readers saw before. Null for
+  // never-published posts and for legacy posts until their next save.
+  lastPublicEditorialHash: {
+    type: String,
+    default: null
   }
 }, {
   timestamps: true
@@ -167,7 +241,16 @@ blogPostSchema.pre('save', function(next) {
   next();
 });
 
-// Set publishedAt when status changes to published
+// Remember the editorial state as loaded, so saves can detect real changes
+// (and ignore no-op saves that re-send identical/trimmed/legacy-category values).
+blogPostSchema.post('init', function() {
+  this.$locals.editorialSnapshot = editorialSnapshot(this);
+  this.$locals.wasPublished = this.status === 'published' && Boolean(this.publishedAt);
+});
+
+// Set publishedAt the first time a post goes live. Runs before the freshness
+// hook so a publish via the model alone still records the public baseline.
+// An existing publishedAt is never overwritten (re-publish keeps the original).
 blogPostSchema.pre('save', function(next) {
   if (this.isModified('status') && this.status === 'published' && !this.publishedAt) {
     this.publishedAt = new Date();
@@ -175,4 +258,45 @@ blogPostSchema.pre('save', function(next) {
   next();
 });
 
-module.exports = mongoose.model('BlogPost', blogPostSchema);
+// Advance contentUpdatedAt only when a genuine editorial revision becomes
+// public: saving changes to a live post, or re-publishing a previously
+// published post whose editorial fields differ from what readers last saw.
+// Edits made while drafting/scheduling a never-published post are part of the
+// original publication; draft saves of an unpublished post never touch it.
+blogPostSchema.pre('save', function(next) {
+  const loadedSnapshot = this.$locals.editorialSnapshot;
+
+  // Legacy posts (no stored fingerprint): the version loaded while live is
+  // the last public one.
+  if (!this.lastPublicEditorialHash && this.$locals.wasPublished && loadedSnapshot) {
+    this.lastPublicEditorialHash = editorialHash(loadedSnapshot);
+  }
+
+  const isLive = this.status === 'published' && this.publishedAt;
+  if (!isLive) return next();
+
+  const currentHash = editorialHash(editorialSnapshot(this));
+  const baseline = this.lastPublicEditorialHash;
+  if (!this.isNew && baseline && baseline !== currentHash) {
+    const now = new Date();
+    if (now >= this.publishedAt) this.contentUpdatedAt = now;
+  }
+  if (baseline !== currentHash) this.lastPublicEditorialHash = currentHash;
+  next();
+});
+
+// Refresh the snapshot after a successful save so a reused document compares
+// against what is now persisted.
+blogPostSchema.post('save', function() {
+  this.$locals.editorialSnapshot = editorialSnapshot(this);
+  this.$locals.wasPublished = this.status === 'published' && Boolean(this.publishedAt);
+});
+
+
+const BlogPost = mongoose.model('BlogPost', blogPostSchema);
+
+module.exports = BlogPost;
+module.exports.EDITORIAL_FIELDS = EDITORIAL_FIELDS;
+module.exports.changedEditorialFields = changedEditorialFields;
+module.exports.editorialSnapshot = editorialSnapshot;
+module.exports.editorialHash = editorialHash;

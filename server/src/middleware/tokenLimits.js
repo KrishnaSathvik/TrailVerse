@@ -1,63 +1,15 @@
-const User = require('../models/User');
-
-// Daily token limits
-const DAILY_TOKEN_LIMITS = {
-  user: 5000,    // 5,000 tokens per day for regular users
-  admin: 50000   // 50,000 tokens per day for admin users
-};
-
-// Explicit local demo allowance; never changes deployed product policy.
-function dailyTokenLimitFor(user, env = process.env) {
-  const standard = DAILY_TOKEN_LIMITS[user?.role] || DAILY_TOKEN_LIMITS.user;
-  if (env.NODE_ENV !== 'development' || !env.TRAILIE_DAILY_TOKEN_LIMIT_EMAIL ||
-      user?.email?.toLowerCase() !== env.TRAILIE_DAILY_TOKEN_LIMIT_EMAIL.toLowerCase()) return standard;
-  try {
-    const target = new URL(env.MONGODB_URI);
-    if (!['localhost', '127.0.0.1', '[::1]'].includes(target.hostname)) return standard;
-  } catch { return standard; }
-  const override = Number(env.TRAILIE_DAILY_TOKEN_LIMIT);
-  return Number.isSafeInteger(override) && override > 0 ? override : standard;
-}
+// Token usage accounting for authenticated Trailie users.
+//
+// Product decision (2026-10-06, reaffirmed 2026-10-26): signed-in travelers
+// have no daily token cap. A single legitimate planning turn can exceed the
+// old 5,000-token allowance, so usage is recorded for observability only and
+// is never used to refuse a request. Guest limits live in
+// config/anonymousChatLimits.js + utils/guestTurnQuota.js; request-rate
+// protection lives in app.js (express-rate-limit).
 
 /**
- * Middleware to check if user has exceeded their daily token limit
- */
-exports.checkTokenLimit = async (req, res, next) => {
-  try {
-    // Skip token limit check for admin users
-    if (req.user && req.user.role === 'admin') {
-      return next();
-    }
-
-    // Get user's token limit based on role
-    const dailyLimit = dailyTokenLimitFor(req.user);
-
-    // Check if user has exceeded their daily limit
-    if (req.user && await req.user.hasExceededTokenLimit(dailyLimit)) {
-      const remainingTokens = await req.user.getRemainingDailyTokens(dailyLimit);
-      
-      return res.status(429).json({
-        success: false,
-        error: 'Daily token limit exceeded',
-        details: {
-          dailyLimit,
-          tokensUsed: req.user.tokenUsage.dailyTokensUsed,
-          remainingTokens,
-          resetTime: 'Daily limits reset at midnight'
-        }
-      });
-    }
-
-    next();
-  } catch (error) {
-    console.error('Token limit check error:', error);
-    // Don't block the request if there's an error checking limits
-    next();
-  }
-};
-
-/**
- * Middleware to track token usage after successful API calls
+ * Middleware to record token usage after successful legacy AI responses.
+ * Accounting only — never blocks or alters the response.
  */
 exports.trackTokenUsage = async (req, res, next) => {
   // Store original json method
@@ -66,12 +18,12 @@ exports.trackTokenUsage = async (req, res, next) => {
   // Override json method to capture token usage
   res.json = function(data) {
     // Only track usage for successful AI responses with token data
-    if (res.statusCode === 200 && 
-        data && 
-        data.success !== false && 
-        data.usage && 
+    if (res.statusCode === 200 &&
+        data &&
+        data.success !== false &&
+        data.usage &&
         req.user) {
-      
+
       // Track token usage asynchronously (don't block response)
       req.user.addTokenUsage(
         data.usage.inputTokens || 0,
@@ -89,24 +41,19 @@ exports.trackTokenUsage = async (req, res, next) => {
 };
 
 /**
- * Get token usage information for a user
+ * Recorded token usage for the signed-in user (observability; no allowance).
  */
 exports.getTokenUsage = async (req, res) => {
   try {
-    const user = req.user;
-    const dailyLimit = dailyTokenLimitFor(user);
-    
-    const remainingTokens = await user.getRemainingDailyTokens(dailyLimit);
-    
+    const usage = req.user?.tokenUsage || {};
+    const sameDay = usage.lastResetDate
+      && new Date(usage.lastResetDate).toDateString() === new Date().toDateString();
     res.json({
       success: true,
       tokenUsage: {
-        dailyLimit,
-        dailyTokensUsed: user.tokenUsage.dailyTokensUsed,
-        remainingTokens,
-        totalTokensUsed: user.tokenUsage.totalTokensUsed,
-        lastResetDate: user.tokenUsage.lastResetDate,
-        resetTime: 'Daily limits reset at midnight'
+        dailyTokensUsed: sameDay ? Number(usage.dailyTokensUsed || 0) : 0,
+        totalTokensUsed: Number(usage.totalTokensUsed || 0),
+        lastResetDate: usage.lastResetDate || null,
       }
     });
   } catch (error) {
@@ -119,9 +66,6 @@ exports.getTokenUsage = async (req, res) => {
 };
 
 module.exports = {
-  checkTokenLimit: exports.checkTokenLimit,
   trackTokenUsage: exports.trackTokenUsage,
   getTokenUsage: exports.getTokenUsage,
-  DAILY_TOKEN_LIMITS,
-  dailyTokenLimitFor
 };

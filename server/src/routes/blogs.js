@@ -83,6 +83,11 @@ const { cacheMiddleware } = require('../middleware/cache');
  *           type: string
  *           format: date-time
  *           description: Publication date
+ *         contentUpdatedAt:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
+ *           description: Last editorial change after publication (null = unchanged since publishedAt). Public dateModified = contentUpdatedAt || publishedAt.
  *         createdAt:
  *           type: string
  *           format: date-time
@@ -90,7 +95,7 @@ const { cacheMiddleware } = require('../middleware/cache');
  *         updatedAt:
  *           type: string
  *           format: date-time
- *           description: Last update date
+ *           description: Record timestamp (operational; NOT an editorial freshness signal)
  */
 
 // Middleware for blog creation/update routes to handle larger payloads

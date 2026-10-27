@@ -11,7 +11,8 @@ PARK_CODE = (
 )
 
 PARK_NAME = (
-    "Full park name when code is unknown (e.g. Shenandoah National Park). "
+    "Destination name when there is no NPS code: an NPS site (e.g. Shenandoah National "
+    "Park) or any US destination (e.g. Valley of Fire State Park, San Diego). "
     "Required for new itineraries unless park_code is provided."
 )
 
@@ -26,34 +27,36 @@ TRAVEL_MONTH = (
 )
 
 NUMBER_OF_DAYS = (
-    "Trip length in destination days (1–14). Required for new itineraries."
+    "Trip length in destination days, integer 1–14 (e.g. 3). Required for new "
+    "itineraries; trips longer than 14 days are rejected — suggest splitting them."
 )
 
-ADULTS = "Number of adult travelers (default 1)."
+ADULTS = "Number of adult travelers, 1–20 (default 1)."
 
-CHILDREN = "Number of child travelers (default 0)."
+CHILDREN = "Number of child travelers, 0–20 (default 0). Use 1 or more when kids are coming."
 
 INTERESTS = (
     "Trip interests such as photography, wildlife, scenic-drives, history. "
     "Pass as an array of strings."
 )
 
-MAX_HIKE_MILES = "Maximum hike distance in miles for any single hike."
+MAX_HIKE_MILES = "Maximum hike distance in miles for any single hike, 0.1–30 (e.g. 4)."
 
 DIFFICULTY = (
-    'Array containing one or more of: easy, moderate, challenging. '
-    'Example: ["easy", "moderate"]. Do not pass hyphenated strings like "easy-to-moderate".'
+    'Allowed hike difficulties. Array containing one or more of: easy, moderate, challenging. '
+    'Example: ["easy", "moderate"]. Synonyms beginner→easy, intermediate→moderate, '
+    'strenuous/hard→challenging are accepted. Do not pass hyphenated strings like "easy-to-moderate".'
 )
 
 LODGING_AREA = (
     "Preferred lodging town or park entrance (e.g. Luray, Virginia or Thornton Gap)."
 )
 
-SUNRISE = "Include sunrise photography or viewing when practical."
+SUNRISE = "true to include sunrise photography or viewing when practical."
 
-SUNSET = "Include sunset photography or viewing when practical."
+SUNSET = "true to include sunset photography or viewing when practical."
 
-RELAXED_AFTERNOON = "Keep at least one afternoon lighter with fewer stops."
+RELAXED_AFTERNOON = "true to keep at least one afternoon lighter with fewer stops."
 
 SESSION_ID = (
     "Session identifier returned by a previous successful plan_trip response "

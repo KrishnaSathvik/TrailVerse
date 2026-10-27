@@ -410,6 +410,7 @@ def format_park_details(
                     "name": p.get("name"),
                     "type": p.get("type"),
                     "reservationUrl": p.get("reservationUrl"),
+                    "lottery": "lottery" in str(p.get("description") or "").lower(),
                 })
 
     # Normalize weather — backend nests current conditions inside data.current
@@ -630,18 +631,19 @@ def format_park_details(
         )
         text_lines.append(f"\n## Permits & Reservations")
         if has_timed:
-            text_lines.append("⚠️ IMPORTANT: Timed-entry listings below are from Recreation.gov but do NOT confirm the requirement is currently active. Many parks (Yosemite, Arches, Glacier, Mt Rainier) dropped timed entry for 2026. Do NOT state timed entry is required — say \"check Recreation.gov to see if timed entry is currently needed\" and link the URL.")
-            text_lines.append("If timed entry is NOT required: warn users this means NO crowd control — expect heavier traffic, packed trailheads and parking lots, arrive before 7am for popular spots, and consider weekdays over weekends.")
+            text_lines.append("⚠️ Timed-entry listings below come from Recreation.gov and do NOT confirm the requirement is active for your dates. Do not state timed entry is required — say \"check Recreation.gov to see if timed entry is currently needed\" and link the URL.")
         for p in permit_list:
             pname = p.get("name") or "Permit"
             ptype = p.get("type") or ""
             url = p.get("reservationUrl") or ""
             is_timed = ptype.lower() in ("timed entry", "timed-entry")
+            # Surface the allocation method only when the Recreation.gov text states it.
+            method = " — Recreation.gov lists this as a lottery permit" if p.get("lottery") else ""
             if url:
                 if is_timed:
                     text_lines.append(f"- **{pname}** [Timed Entry — STATUS UNKNOWN]: [Check if needed on Recreation.gov]({url})")
                 else:
-                    text_lines.append(f"- **{pname}** [Permit]: [Book on Recreation.gov]({url})")
+                    text_lines.append(f"- **{pname}** [Permit]{method}: [Details on Recreation.gov]({url})")
             else:
                 text_lines.append(f"- **{pname}** [{ptype}]")
     else:
@@ -709,11 +711,67 @@ def _pick_activities(park: dict[str, Any]) -> list[str]:
 
 # ---------- compare_parks ----------
 
+_CROWD_ORDER = {"very low": 1, "low": 2, "moderate": 3, "high": 4, "very high": 5}
+
+
+def _join_names(names: list[str]) -> str:
+    names = [n for n in names if n]
+    if len(names) <= 1:
+        return "".join(names)
+    if len(names) == 2:
+        return f"{names[0]} and {names[1]}"
+    return ", ".join(names[:-1]) + f", and {names[-1]}"
+
+
+def _numeric_temp(value: Any) -> float | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    try:
+        return float(str(value).replace("°F", "").strip())
+    except (TypeError, ValueError):
+        return None
+
+
+def _unique_extreme(parks: list[dict[str, Any]], key, *, lowest: bool) -> dict[str, Any] | None:
+    """Return the single park strictly better than every other on ``key``.
+
+    None when any value is missing or the best value is shared (a tie) — the
+    old formatter crowned the first park on ties ("less crowded than …" when
+    every park was Moderate).
+    """
+    values = [(key(p), p) for p in parks]
+    if len(values) < 2 or any(v is None for v, _ in values):
+        return None
+    best = min(v for v, _ in values) if lowest else max(v for v, _ in values)
+    winners = [p for v, p in values if v == best]
+    return winners[0] if len(winners) == 1 else None
+
+
+def _crowd_rank(p: dict[str, Any]) -> int | None:
+    return _CROWD_ORDER.get(str(p.get("crowdLevel") or "").strip().lower())
+
+
+def _shared_names(shared: Any) -> list[str]:
+    out: list[str] = []
+    for item in shared if isinstance(shared, list) else []:
+        name = item.get("name") if isinstance(item, dict) else item
+        if name:
+            out.append(str(name))
+    return out
+
+
 def format_compare(
     compare: dict[str, Any],
     summary: dict[str, Any] | None = None,
+    unresolved: list[dict[str, Any]] | None = None,
 ) -> tuple[dict[str, Any], str]:
-    """Format the compare response into a table-ready widget payload."""
+    """Format the compare response into a table-ready widget payload.
+
+    ``unresolved`` lists requested parks that could not be matched; they are
+    reported at the top so a partial comparison is never presented as complete.
+    """
     parks_raw = compare.get("data") or compare.get("parks") or []
     if isinstance(parks_raw, dict) and "parks" in parks_raw:
         parks_raw = parks_raw["parks"]
@@ -776,47 +834,33 @@ def format_compare(
             "link": f"{WEB_BASE}/parks/{code}" if code else None,
         })
 
-    highlights = {}
+    shared: list[str] = []
     if summary:
-        s = summary.get("data") or summary
+        s_data = summary.get("data") or summary
+        shared = _shared_names(s_data.get("sharedHighlights") or s_data.get("commonActivities") or [])
 
-        # bestOverall may be an object — flatten to park name
-        best = s.get("bestOverall")
-        if isinstance(best, dict):
-            best = best.get("parkName") or best.get("name")
-
-        # warmest: may be nested in weatherComparison
-        warmest = s.get("warmest")
-        if not warmest:
-            wx_cmp = s.get("weatherComparison") or {}
-            w_obj = wx_cmp.get("warmest")
-            if isinstance(w_obj, dict):
-                warmest = w_obj.get("parkName")
-
-        # lowerCrowd: may be nested in crowdComparison
-        lower_crowd = s.get("lowerCrowd")
-        if not lower_crowd:
-            crowd_cmp = s.get("crowdComparison") or {}
-            lc_obj = crowd_cmp.get("leastCrowded")
-            if isinstance(lc_obj, dict):
-                lower_crowd = lc_obj.get("parkName")
-
-        # sharedHighlights: may be in commonActivities
-        shared = s.get("sharedHighlights") or s.get("commonActivities") or []
-
-        highlights = {
-            "bestOverall": best,
-            "warmest": warmest,
-            "lowerCrowd": lower_crowd,
-            "sharedHighlights": shared if isinstance(shared, list) else [],
-        }
+    # Leads are computed here from the per-park values in the table, and only
+    # when one park is strictly ahead. The backend summary's bestOverall /
+    # leastCrowded pick the first park on ties, so they are not used for text.
+    least_crowded = _unique_extreme(parks, _crowd_rank, lowest=True)
+    warmest = _unique_extreme(parks, lambda p: _numeric_temp(p.get("currentTempF")), lowest=False)
+    highlights = {
+        "bestOverall": None,
+        "lowerCrowd": least_crowded.get("name") if least_crowded else None,
+        "warmest": warmest.get("name") if warmest else None,
+        "crowdTie": least_crowded is None,
+        "sharedHighlights": shared,
+    }
 
     codes = [p["parkCode"] for p in parks if p.get("parkCode")]
     directions_url = _google_maps_directions_url(parks)
+    unresolved = [u for u in (unresolved or []) if u]
     structured = {
         "kind": "compare",
         "parks": parks,
         "highlights": highlights,
+        "unresolved": unresolved,
+        "complete": not unresolved,
         "links": {
             "continueOnWebsite": f"{WEB_BASE}/compare?parks={','.join(codes)}" if codes else f"{WEB_BASE}/compare",
             "planRoadTrip": f"{WEB_BASE}/plan-ai?parks={','.join(codes)}" if codes else None,
@@ -824,81 +868,76 @@ def format_compare(
         },
     }
 
-    # Build a COMPLETE pre-formatted comparison response in Trailie voice.
     names = [p["name"] for p in parks if p.get("name")]
-    text_lines = []
+    text_lines: list[str] = []
 
-    # Decision lead — pick a winner
-    if highlights and highlights.get("bestOverall"):
-        winner = highlights["bestOverall"]
-        loser_names = [n for n in names if n != winner]
-        text_lines.append(f"**Go with {winner}.**")
-        if highlights.get("lowerCrowd") and highlights["lowerCrowd"] == winner:
-            text_lines.append(f"It's less crowded right now than {', '.join(loser_names)}.")
-        elif highlights.get("warmest") and highlights["warmest"] == winner:
-            text_lines.append(f"Warmer weather right now than {', '.join(loser_names)}.")
-    else:
-        text_lines.append(f"Here's how {' and '.join(names)} stack up right now:")
+    if unresolved:
+        missing = "; ".join(
+            f"'{u.get('input')}' — {u.get('reason')}" for u in unresolved
+        )
+        text_lines.append(
+            f"⚠️ **Partial comparison:** {len(unresolved)} requested park(s) could not be "
+            f"matched and are NOT included: {missing}"
+        )
+        text_lines.append("")
+
+    text_lines.append(f"Here's how {_join_names(names)} compare right now:")
+    leads: list[str] = []
+    if least_crowded:
+        others = [p for p in parks if p is not least_crowded]
+        detail = ", ".join(f"{p['name']}: {p.get('crowdLevel')}" for p in others)
+        leads.append(
+            f"**Lightest crowds right now: {least_crowded['name']}** "
+            f"({least_crowded.get('crowdLevel')}; {detail})."
+        )
+    elif all(_crowd_rank(p) is not None for p in parks) and len({_crowd_rank(p) for p in parks}) == 1:
+        leads.append(f"Crowd levels are the same right now ({parks[0].get('crowdLevel')} at every park).")
+    if warmest:
+        leads.append(f"Warmest right now: {warmest['name']} ({warmest.get('currentTempF')}°F).")
+    text_lines.extend(leads)
 
     # Comparison table
     text_lines.append("\n## Side-by-Side")
-    # Build markdown table
-    header = "| | " + " | ".join(p.get("name", "?") for p in parks) + " |"
+    header = "| | " + " | ".join(p.get("name") or "?" for p in parks) + " |"
     sep = "|---|" + "|".join(["---"] * len(parks)) + "|"
     text_lines.append(header)
     text_lines.append(sep)
-
-    # Temperature row
-    temp_row = "| **Temp** | " + " | ".join(
-        f"{p['currentTempF']}°F" if p.get("currentTempF") is not None else "—"
-        for p in parks
-    ) + " |"
-    text_lines.append(temp_row)
-
-    # Crowds row
-    crowd_row = "| **Crowds** | " + " | ".join(
+    text_lines.append("| **Temp** | " + " | ".join(
+        f"{p['currentTempF']}°F" if p.get("currentTempF") is not None else "—" for p in parks
+    ) + " |")
+    text_lines.append("| **Crowds** | " + " | ".join(
         str(p.get("crowdLevel") or "—") for p in parks
-    ) + " |"
-    text_lines.append(crowd_row)
-
-    # Fees row
-    fee_row = "| **Entry fee** | " + " | ".join(
+    ) + " |")
+    text_lines.append("| **Entry fee** | " + " | ".join(
         str(p.get("entranceFee") or "—") for p in parks
-    ) + " |"
-    text_lines.append(fee_row)
-
-    # Activities row
-    act_row = "| **Top activities** | " + " | ".join(
+    ) + " |")
+    text_lines.append("| **Top activities** | " + " | ".join(
         ", ".join(p.get("topActivities", [])[:3]) or "—" for p in parks
-    ) + " |"
-    text_lines.append(act_row)
-
-    # State row
-    state_row = "| **Location** | " + " | ".join(
+    ) + " |")
+    text_lines.append("| **Location** | " + " | ".join(
         p.get("states") or "—" for p in parks
-    ) + " |"
-    text_lines.append(state_row)
+    ) + " |")
 
-    # Driving directions between parks
-    directions_url = _google_maps_directions_url(parks)
     if directions_url:
-        text_lines.append(f"\n## Getting Between Them")
-        text_lines.append(f"[Driving directions on Google Maps]({directions_url})")
+        text_lines.append("\n## Getting Between Them")
+        text_lines.append(
+            f"[Route on Google Maps]({directions_url}) — open for drive times; TrailVerse does not compute them here."
+        )
 
-    # When to choose each
-    text_lines.append("\n## The Verdict")
+    text_lines.append("\n## Strengths")
     for p in parks:
-        pname = p.get("name", "Unknown")
+        pname = p.get("name") or "Unknown"
         acts = ", ".join(p.get("topActivities", [])[:3])
-        text_lines.append(f"- **{pname}**: Best if you want {acts.lower() if acts else 'a classic park experience'}.")
+        text_lines.append(f"- **{pname}**: {('Known for ' + acts.lower()) if acts else 'No activity data returned'}.")
 
-    if highlights and highlights.get("sharedHighlights"):
-        text_lines.append(f"\nBoth share: {', '.join(highlights['sharedHighlights'])}")
+    if shared:
+        lead = "Both offer" if len(parks) == 2 else f"All {len(parks)} offer"
+        text_lines.append(f"\n{lead}: {', '.join(shared)}")
 
-    # Links
+    both = "both" if len(parks) == 2 else "these parks"
     text_lines.append(f"\n---\nFull comparison on [TrailVerse]({structured['links']['continueOnWebsite']})")
     if structured["links"].get("planRoadTrip"):
-        text_lines.append(f" | [Plan a road trip hitting both]({structured['links']['planRoadTrip']})")
+        text_lines.append(f" | [Plan a trip covering {both}]({structured['links']['planRoadTrip']})")
 
     text = "\n".join(text_lines)
     return structured, text
@@ -1048,7 +1087,12 @@ def format_search(
     text_lines: list[str] = []
 
     if not parks:
-        text_lines.append("No parks matched that search. Try broadening your criteria — different state, activity, or keyword.")
+        label = f" for '{query.strip()}'" if query and query.strip() else ""
+        text_lines.append(
+            f"No National Park Service sites matched{label}. TrailVerse search covers US NPS "
+            "sites only (not cities abroad, state parks, or private venues). Try a different "
+            "keyword, a state, or an activity."
+        )
         return structured, "\n".join(text_lines)
 
     headline = _search_headline(query)
@@ -1094,7 +1138,7 @@ def format_search(
 
 # ---------- find_events ----------
 
-def format_events(resp: dict[str, Any]) -> tuple[dict[str, Any], str]:
+def format_events(resp: dict[str, Any], park_name: str | None = None) -> tuple[dict[str, Any], str]:
     events_raw = resp.get("data") or resp.get("events") or []
     if isinstance(events_raw, dict) and "events" in events_raw:
         events_raw = events_raw["events"]
@@ -1142,7 +1186,11 @@ def format_events(resp: dict[str, Any]) -> tuple[dict[str, Any], str]:
     text_lines = []
 
     if not events:
-        text_lines.append("No upcoming events found for that search. Try a different park or broader time window.")
+        where = f" at {park_name}" if park_name else " for that search"
+        text_lines.append(
+            f"No upcoming scheduled events are listed{where} in the NPS events feed right now. "
+            "That does not mean the park is closed — check the park page for regular programs."
+        )
         return structured, "\n".join(text_lines)
 
     unique_parks = {e.get("parkName") for e in events if e.get("parkName")}

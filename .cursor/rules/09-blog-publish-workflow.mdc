@@ -47,6 +47,16 @@ node scripts/bump-recent-blog-views.js --apply
 
 After publish, bump **both** the park guide and astro guide for that park.
 
+## Freshness dates (dateModified / sitemap lastmod)
+
+- Public modified date = **`contentUpdatedAt || publishedAt`** — never `updatedAt` (record timestamp; moved on every view before Oct 2026).
+- `contentUpdatedAt` is set automatically (model pre-save) only when an **already-published** post's editorial fields change: `title`, `excerpt`, `content`, `featuredImage`, `category`, `tags`, `metaDescription`, `seoSchema`. No-op saves, drafts, publish itself, `featured`, `seoNoindex`, `author`, `slug` do not set it.
+- Operational writes (views, bump scripts, likes/favorites, `notificationSentAt`) use `timestamps: false`. Any new script that `$set`s views/flags must do the same.
+- Never backfill `contentUpdatedAt` from `updatedAt`.
+- **`publishedAt` = first publication only.** Server-owned on `PUT /api/blogs/:id` (client value ignored). Unpublish, schedule, re-publish and the scheduler keep an existing value; it is set only when a post goes live for the first time.
+- **Re-publish of a previously published post** sets `contentUpdatedAt` only if its editorial fields differ from what was last public (`lastPublicEditorialHash` fingerprint, maintained by the model). Unchanged re-publish → no bump. `notificationSentAt` is never cleared, so re-publish never re-emails.
+- **Admin editor autosave never changes lifecycle:** drafts/scheduled posts autosave to the server without `status`/`scheduledAt`; **published** posts autosave only to the browser (`blog_draft_edit_<id>`) and go live on explicit **Update**. On a live post the secondary button is "Unpublish" (with confirm); turning on a future schedule also takes it offline until the scheduled time. Policy: `next-frontend/src/lib/blogAutosave.js`.
+
 ## Category enum (server)
 
 Admin sends slugs from `next-frontend/src/lib/blogCategories.js`. **`national-parks` must exist** in `server/src/models/BlogPost.js` category enum or POST returns 500.

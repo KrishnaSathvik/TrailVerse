@@ -70,13 +70,15 @@ export default function VoiceButton() {
   })();
 
   // Show hint once for first-time visitors; persist dismiss in localStorage.
+  // Not on the landing page — it already leads with Trailie and the hint covers search.
+  const suppressHint = hiddenOnChat || pathname === '/';
   useEffect(() => {
     if (hintTimerRef.current) {
       clearTimeout(hintTimerRef.current);
       hintTimerRef.current = null;
     }
 
-    if (hiddenOnChat || isVoiceHintDismissed()) {
+    if (suppressHint || isVoiceHintDismissed()) {
       setShowHint(false);
       return undefined;
     }
@@ -94,7 +96,7 @@ export default function VoiceButton() {
         hintTimerRef.current = null;
       }
     };
-  }, [hiddenOnChat]);
+  }, [suppressHint]);
 
   useEffect(() => {
     setFabVisible(true);

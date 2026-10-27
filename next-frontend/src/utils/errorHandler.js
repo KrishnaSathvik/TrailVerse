@@ -105,7 +105,7 @@ export const fallbackData = {
     users: 1250,
     trips: 3420,
     reviews: 890,
-    parks: 63
+    parks: 64
   },
   
   testimonials: [], // No fake testimonials - only real user feedback

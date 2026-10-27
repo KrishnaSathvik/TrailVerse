@@ -1,13 +1,12 @@
-import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { parkToSlug } from '@/utils/parkSlug';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
 import StateParkPageClient from './StateParkPageClient';
-import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { fetchNpsGuide } from '@/lib/discoverApi';
 import { canonicalPageMetadata } from '@/lib/seo';
 import { fetchParksForState, getStateHub } from '@/lib/stateHubs';
+import { pickStateParkImage, shareImageFields } from '@/lib/shareParkImage';
 
 export const revalidate = 86400;
 
@@ -25,6 +24,10 @@ export async function generateMetadata({ params }) {
   const parkCount = ok ? parks.length : null;
   const canonicalPath = `/parks/state/${stateCode}`;
   const countLabel = parkCount == null ? 'NPS Sites' : `All ${parkCount} NPS Sites`;
+  const share = shareImageFields(
+    pickStateParkImage(ok ? parks : [], state.code, state.name),
+    `${state.name} national parks`
+  );
 
   return {
     title: `${state.name} National Parks & Sites — ${countLabel} | TrailVerse`,
@@ -36,6 +39,13 @@ export async function generateMetadata({ params }) {
       url: `https://www.nationalparksexplorerusa.com${canonicalPath}`,
       siteName: 'TrailVerse',
       type: 'website',
+      images: share.openGraphImages,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${state.name} National Parks & Sites — ${countLabel}`,
+      description: `Explore National Park Service sites in ${state.name}.`,
+      images: share.twitterImages,
     },
   };
 }
@@ -103,21 +113,15 @@ export default async function StateParkPage({ params }) {
       <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <Header />
         <main>
-          <Suspense
-            fallback={
-              <div className="flex min-h-[40vh] items-center justify-center">
-                <LoadingSpinner size="lg" text="Loading parks…" />
-              </div>
-            }
-          >
-            <StateParkPageClient
-              stateName={state.name}
-              parks={parks}
-              intro={intro}
-              npsGuide={npsGuide}
-              loadError={loadError}
-            />
-          </Suspense>
+          {/* No Suspense boundary: the client tree no longer reads search params
+              during prerender, so the directory renders straight into the HTML. */}
+          <StateParkPageClient
+            stateName={state.name}
+            parks={parks}
+            intro={intro}
+            npsGuide={npsGuide}
+            loadError={loadError}
+          />
         </main>
         <Footer />
       </div>

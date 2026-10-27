@@ -238,14 +238,8 @@ userSchema.methods.getVisitedParksCount = function() {
   return this.savedParks.filter(p => p.visited).length;
 };
 
-// Quota checks are read-only. Reset on the accounting write so a delayed
-// fire-and-forget reset cannot erase tokens recorded by another turn.
-userSchema.methods.hasExceededTokenLimit = function(dailyLimit = 5000) {
-  const lastReset = this.tokenUsage?.lastResetDate;
-  if (!lastReset || new Date(lastReset).toDateString() !== new Date().toDateString()) return false;
-  return Number(this.tokenUsage?.dailyTokensUsed || 0) >= dailyLimit;
-};
-
+// Token usage is accounting only (no daily cap). Reset on the accounting
+// write so a delayed reset cannot erase tokens recorded by another turn.
 userSchema.methods.addTokenUsage = async function addTokenUsage(inputTokens, outputTokens) {
   const totalTokens = Number(inputTokens || 0) + Number(outputTokens || 0);
   if (!Number.isFinite(totalTokens) || totalTokens <= 0) return this;
@@ -266,19 +260,6 @@ userSchema.methods.addTokenUsage = async function addTokenUsage(inputTokens, out
   }, { new: true }).select('tokenUsage');
   if (updated) this.tokenUsage = updated.tokenUsage;
   return this;
-};
-
-// Method to get remaining daily tokens
-userSchema.methods.getRemainingDailyTokens = function(dailyLimit = 5000) {
-  // Check if we need to reset daily usage (new day)
-  const today = new Date().toDateString();
-  const lastReset = this.tokenUsage.lastResetDate.toDateString();
-  
-  if (today !== lastReset) {
-    return dailyLimit; // New day, full limit available
-  }
-  
-  return Math.max(0, dailyLimit - this.tokenUsage.dailyTokensUsed);
 };
 
 // Method to generate reset password token

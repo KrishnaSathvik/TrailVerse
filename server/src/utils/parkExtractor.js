@@ -3,7 +3,7 @@
  * to NPS park codes and coordinates for RAG live data injection.
  *
  * Two-tier lookup:
- *   1. Hardcoded PARK_NAME_TO_CODE — 63 National Parks + landmark aliases (sync, always available)
+ *   1. Hardcoded PARK_NAME_TO_CODE — 64 National Parks + landmark aliases (sync, always available)
  *   2. Dynamic _dynamicMap — all ~470 NPS sites, built lazily from getNpsService().getAllParks() (async, populated at startup)
  */
 
@@ -65,9 +65,15 @@ const PARK_NAME_TO_CODE = new Map([
   ['olympic national park',                     { code: 'olym', lat: 47.802, lon: -123.604 }],
   ['sequoia national park',                     { code: 'sequ', lat: 36.491, lon: -118.565 }],
   // Missing from the catalog entirely, which silently dropped it from every
-  // sentence that named it (one of the 63 national parks).
+  // sentence that named it (one of the 64 national parks).
   ['kings canyon national park',                { code: 'kica', lat: 36.887, lon: -118.555 }],
   ['saguaro national park',                     { code: 'sagu', lat: 32.253, lon: -110.500 }],
+  // Redesignated from Chiricahua National Monument on Oct 20, 2026 (64th
+  // national park; NPS code unchanged). Only the current name is keyed: the
+  // derived 'chiricahua' alias still resolves the former monument name, and a
+  // longer 'national monument' key would win getParkIdentityByCode's
+  // longest-key display name.
+  ['chiricahua national park',                  { code: 'chir', lat: 32.012, lon: -109.342 }],
   ['redwood national park',                     { code: 'redw', lat: 41.213, lon: -124.004 }],
   ['glacier national park',                     { code: 'glac', lat: 48.696, lon: -113.718 }],
   ['arches national park',                      { code: 'arch', lat: 38.733, lon: -109.592 }],

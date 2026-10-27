@@ -8,9 +8,10 @@ Exposes 5 tools that wrap the TrailVerse Express backend:
   4. search_parks        — Search/filter all 470+ NPS sites
   5. find_events         — Ranger programs and events at NPS sites
 
-All tools are read-only and do not require authentication. The AI planner
-uses the anonymous endpoint (5 msg/48h per IP) which keeps reviewer setup
-trivial while still demonstrating the constraint-aware planning moat.
+No tool requires authentication. Four tools are read-only. plan_trip is not:
+it persists the itinerary in an anonymous TrailVerse guest session (48 h TTL)
+so revisions can build on it. Trusted MCP traffic (X-TrailVerse-MCP-Key) is
+not subject to the website's 5-message guest cap.
 
 By default all tools return full Trailie markdown in text blocks (widgets
 disabled — ChatGPT HTML cards are unreliable). Set MCP_ENABLE_WIDGETS=true to
@@ -76,8 +77,25 @@ from .plan_trip_service import (
     validate_plan_trip_business_rules,
 )
 from .rate_limit import plan_trip_limiter, read_tool_limiter
+from .tool_metadata import (
+    ACTIVITY_FILTER,
+    COMPARE_PARK_CODES,
+    COMPARE_PARKS_DESCRIPTION,
+    EVENTS_CATEGORY,
+    EVENTS_LIMIT,
+    EVENTS_PARK_CODE,
+    FIND_EVENTS_DESCRIPTION,
+    GET_PARK_DETAILS_DESCRIPTION,
+    GET_PARK_DETAILS_PARK_CODE,
+    PLAN_TRIP_DESCRIPTION,
+    SEARCH_LIMIT,
+    SEARCH_PARKS_DESCRIPTION,
+    SEARCH_QUERY,
+    STATE_FILTER,
+)
 from .search_query import count_search_results, expand_search_query
-from .search_ranking import rerank_search_results
+from .park_resolution import ParkResolution, resolve_park
+from .search_ranking import normalize_state, rank_catalog_results, rerank_search_results
 from .types import (
     CompareParksInput,
     FindEventsInput,
@@ -97,6 +115,9 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 logger = logging.getLogger("trailverse-mcp")
+# httpx logs every request URL (search terms, park codes) at INFO. Keep user
+# query text out of the hosting logs; errors are still logged by our handlers.
+logging.getLogger("httpx").setLevel(os.getenv("HTTPX_LOG_LEVEL", "WARNING"))
 
 # ---------- Optional widget resources (disabled by default) ----------
 # ChatGPT Apps SDK widgets are unreliable in production (blank iframes, null
@@ -205,16 +226,17 @@ from mcp.server.fastmcp.prompts.base import UserMessage, AssistantMessage
 @mcp.prompt(
     name="welcome",
     title="What is TrailVerse?",
-    description="Learn what Trailie can do — covers 470+ NPS sites with live data",
+    description="What the TrailVerse tools cover: US trip planning and about 470 NPS sites",
 )
 def welcome() -> list[AssistantMessage]:
     return [
         AssistantMessage(
             content=(
-                "Hey — I'm Trailie, your insider guide to every National Park Service "
-                "site in the US. That's 470+ places: the big national parks, plus monuments, "
-                "seashores, battlefields, historic sites, and more.\n\n"
-                "Here's what I can do with **live data** (real-time alerts, weather, fees, events):\n\n"
+                "TrailVerse covers US travel planning and about 470 National Park Service "
+                "sites: national parks, monuments, seashores, battlefields, historic sites, "
+                "and more.\n\n"
+                "With current NPS data (alerts, weather, fees, events — cached, refreshed "
+                "regularly), the tools can:\n\n"
                 "1. **Plan a trip** — day-by-day itineraries for any US destination\n"
                 "2. **Explore a park** — current weather, alerts, campgrounds, permits, fees, hours\n"
                 "3. **Compare parks** — side-by-side on weather, crowds, fees, activities\n"
@@ -224,8 +246,8 @@ def welcome() -> list[AssistantMessage]:
                 '- "Plan 3 days at Zion"\n'
                 '- "Tell me about Glacier National Park"\n'
                 '- "Compare Yellowstone and Grand Teton"\n\n'
-                "Plan on [TrailVerse](https://www.nationalparksexplorerusa.com/plan-ai) "
-                "or browse [ranked park picks by vibe](https://www.nationalparksexplorerusa.com/guides)."
+                "More on the website: [TrailVerse planner](https://www.nationalparksexplorerusa.com/plan-ai) "
+                "and [planning guides](https://www.nationalparksexplorerusa.com/guides)."
             )
         ),
     ]
@@ -274,36 +296,33 @@ def compare_prompt(
 
 @mcp.prompt(
     name="whats_happening",
-    title="What's happening at a park?",
-    description="Find ranger programs, tours, and events at an NPS site",
+    title="Ranger programs & events at a park",
+    description="Find upcoming ranger programs, tours, and scheduled events at an NPS site",
 )
 def whats_happening(
     park_name: Annotated[str, Field(description="e.g. Yellowstone, Grand Canyon, Gettysburg")],
 ) -> list[UserMessage]:
     return [
-        UserMessage(content=f"What events and ranger programs are at {park_name} right now?"),
+        UserMessage(content=f"What upcoming ranger programs and scheduled events are at {park_name}?"),
     ]
 
 
 # ---------- Park code resolution ----------
-
-# Tokens stripped from website-style slugs (yellowstone-national-park → yellowstone).
-_PARK_SLUG_DROP = frozenset({
-    "national", "park", "monument", "preserve", "recreation", "area",
-    "historic", "site", "memorial", "battlefield", "parkway", "trail",
-    "and", "of", "the", "river", "lakeshore", "seashore", "recreation",
-})
+# Matching rules live in park_resolution.py. Unmatched, ambiguous, and non-NPS
+# inputs are reported to the caller — never replaced with a "closest" park.
 
 
-def _park_search_query(name_or_code: str) -> str:
-    """Turn a slug or long name into a short search string for the parks API."""
-    raw = name_or_code.strip()
-    if "-" not in raw or len(raw) <= 4:
-        return raw
-    tokens = [t for t in raw.lower().split("-") if t and t not in _PARK_SLUG_DROP]
-    if not tokens:
-        return raw
-    return " ".join(tokens)
+def _parks_from_search(resp: dict[str, Any]) -> list[dict[str, Any]]:
+    parks = resp.get("data", resp) if isinstance(resp, dict) else resp
+    if isinstance(parks, dict) and "parks" in parks:
+        parks = parks["parks"]
+    return parks if isinstance(parks, list) else []
+
+
+async def _search_for_resolution(query: str) -> list[dict[str, Any]]:
+    async with TrailVerseClient() as client:
+        resp = await client.search_parks(q=query, limit=10, fields="parkCode,fullName,name,designation")
+    return _parks_from_search(resp)
 
 
 async def _park_display_name(park_code: str) -> str:
@@ -321,58 +340,57 @@ async def _park_display_name(park_code: str) -> str:
         return ""
 
 
-async def _resolve_park_code(name_or_code: str) -> str:
-    """Resolve a park name or code to an NPS park code.
+async def _resolve_park(name_or_code: str) -> ParkResolution:
+    """Resolve a park name or code with confidence gating (see park_resolution)."""
+    return await resolve_park(name_or_code, _search_for_resolution)
 
-    If the input looks like a short alphanumeric code (<=4 chars, all lowercase,
-    and not a common word), assume it's already a park code. Otherwise, search
-    the backend to find the best match.
-    Returns the resolved code (lowercase) or the original input if no match.
-    """
-    cleaned = name_or_code.strip().lower()
-    search_q = _park_search_query(name_or_code)
-    # NPS codes are typically 4 chars (e.g. yell, grca, zion). Treat very
-    # short alphanumeric strings as codes directly — UNLESS they look like
-    # common English words/state names that users might type.
-    _NOT_CODES = {"utah", "mesa", "bend", "park", "lake", "cave", "reef", "arch"}
-    if (
-        len(cleaned) <= 4
-        and cleaned.isalnum()
-        and cleaned not in _NOT_CODES
-        and "-" not in cleaned
-    ):
-        return cleaned
-    # Search by name (use normalized query for slugs like yellowstone-national-park)
-    try:
-        async with TrailVerseClient() as client:
-            resp = await client.search_parks(q=search_q, limit=8)
-        parks = resp.get("data", resp)
-        if isinstance(parks, dict) and "parks" in parks:
-            parks = parks["parks"]
-        if isinstance(parks, list) and parks:
-            query_lower = search_q.strip().lower()
-            query_tokens = query_lower.split()
-            candidates: list[tuple[int, int, str]] = []
-            for p in parks:
-                pname = (p.get("fullName") or p.get("name") or "").lower()
-                code = (p.get("parkCode") or "").lower()
-                if not code:
-                    continue
-                if pname.startswith(query_lower):
-                    candidates.append((0, len(pname), code))
-                elif query_tokens and pname.startswith(query_tokens[0]):
-                    candidates.append((1, len(pname), code))
-                elif query_lower in pname:
-                    candidates.append((2, len(pname), code))
-                elif all(tok in pname for tok in query_tokens):
-                    candidates.append((3, len(pname), code))
-            if candidates:
-                candidates.sort()
-                return candidates[0][2] or cleaned
-            return (parks[0].get("parkCode") or cleaned).lower()
-    except TrailVerseAPIError:
-        pass
-    return cleaned
+
+async def _resolve_park_code(name_or_code: str) -> str:
+    """Resolved NPS code, or "" when the input did not confidently match one park."""
+    return (await _resolve_park(name_or_code)).code or ""
+
+
+def _resolution_error(res: ParkResolution, field: str) -> CallToolResult:
+    return validation_error_result(
+        validation_error(
+            code=res.error_code(),
+            message=res.explain(),
+            field=field,
+            received=res.input,
+            expected="NPS park code (e.g. zion) or an unambiguous NPS site name",
+        )
+        | {"candidates": res.candidates[:5]}
+    )
+
+
+def _unknown_code_error(code: str, field: str) -> CallToolResult:
+    return validation_error_result(
+        validation_error(
+            code="UNKNOWN_PARK_CODE",
+            message=(
+                f"No NPS site uses the code '{code}'. Use search_parks to find the right "
+                "site, or pass the full park name (e.g. 'Bryce Canyon')."
+            ),
+            field=field,
+            received=code,
+            expected="known 4-letter NPS park code (e.g. brca, zion, yose)",
+        )
+    )
+
+
+def _state_error(value: str, field: str = "state") -> CallToolResult:
+    return validation_error_result(
+        validation_error(
+            code="INVALID_STATE",
+            message=(
+                f"'{value}' is not a recognized US state. Pass a two-letter code "
+                "(e.g. UT, CA, AZ) or a full state name (e.g. Utah)."
+            ),
+            field=field,
+            received=value,
+            expected="two-letter US state/territory code or full name",
+        )
+    )
 
 
 # ---------- Tool helpers ----------
@@ -539,21 +557,19 @@ def _send_analytics(event: dict[str, Any]) -> None:
 
 # ---------- Tools ----------
 
+# readOnlyHint is False: every call persists the itinerary and messages in an
+# anonymous TrailVerse guest session (MongoDB, 48 h TTL) and revisions update
+# that saved plan. Per the Apps SDK definitions, persisting artifacts is not
+# read-only. destructiveHint stays False: it never deletes or overwrites
+# user-owned data, bookings, or third-party records — only the guest plan this
+# conversation created.
 @mcp.tool(
     name="plan_trip",
-    description=(
-        "Ask Trailie to build or revise a day-by-day US trip itinerary. "
-        "Use for trip planning with park/destination, duration, travelers, hike "
-        "constraints, and preferences (sunrise, sunset, relaxed afternoon, lodging area). "
-        "For revisions, pass session_id from the prior response plus revision_request. "
-        "Returns Trailie's narrative plus the canonical TripPlan (dayparts, stops, "
-        "road transfers, and save/mutation state). Present that plan faithfully — "
-        "do not invent clocks, drive times, meals, budgets, or extra stops. "
-        "New trips require park_code or park_name and number_of_days."
-    ),
+    title="Plan a US trip with Trailie",
+    description=PLAN_TRIP_DESCRIPTION,
     annotations={
-        "title": "Plan a US trip",
-        "readOnlyHint": True,
+        "title": "Plan a US trip with Trailie",
+        "readOnlyHint": False,
         "openWorldHint": True,
         "destructiveHint": False,
         "idempotentHint": False,
@@ -565,11 +581,11 @@ async def plan_trip(
     park_name: Annotated[str | None, Field(description=PARK_NAME)] = None,
     start_date: Annotated[str | None, Field(description=START_DATE)] = None,
     travel_month: Annotated[str | None, Field(description=TRAVEL_MONTH)] = None,
-    number_of_days: Annotated[int | None, Field(description=NUMBER_OF_DAYS)] = None,
-    adults: Annotated[int, Field(description=ADULTS)] = 1,
-    children: Annotated[int, Field(description=CHILDREN)] = 0,
+    number_of_days: Annotated[int | None, Field(description=NUMBER_OF_DAYS, json_schema_extra={"minimum": 1, "maximum": 14})] = None,
+    adults: Annotated[int, Field(description=ADULTS, json_schema_extra={"minimum": 1, "maximum": 20})] = 1,
+    children: Annotated[int, Field(description=CHILDREN, json_schema_extra={"minimum": 0, "maximum": 20})] = 0,
     interests: Annotated[list[str] | None, Field(description=INTERESTS)] = None,
-    max_hike_miles: Annotated[float | None, Field(description=MAX_HIKE_MILES)] = None,
+    max_hike_miles: Annotated[float | None, Field(description=MAX_HIKE_MILES, json_schema_extra={"minimum": 0.1, "maximum": 30})] = None,
     difficulty: Annotated[list[str] | None, Field(description=DIFFICULTY)] = None,
     lodging_area: Annotated[str | None, Field(description=LODGING_AREA)] = None,
     sunrise: Annotated[bool | None, Field(description=SUNRISE)] = None,
@@ -578,7 +594,7 @@ async def plan_trip(
     session_id: Annotated[str | None, Field(description=SESSION_ID)] = None,
     revision_request: Annotated[str | None, Field(description=REVISION_REQUEST)] = None,
     message: Annotated[str | None, Field(description=MESSAGE)] = None,
-    days: Annotated[int | None, Field(description=DAYS)] = None,
+    days: Annotated[int | None, Field(description=DAYS, json_schema_extra={"minimum": 1, "maximum": 14})] = None,
     group_size: Annotated[int | None, Field(description=GROUP_SIZE)] = None,
     fitness_level: Annotated[str | None, Field(description=FITNESS_LEVEL)] = None,
     has_kids: Annotated[bool | None, Field(description=HAS_KIDS)] = None,
@@ -806,24 +822,10 @@ async def plan_trip(
 
 @mcp.tool(
     name="get_park_details",
-    description=(
-        "ALWAYS call this tool when a user mentions ANY NPS site by name — "
-        "for ANY reason, including general questions. Returns REAL-TIME data "
-        "from live APIs on every call: current weather, NPS alerts, road "
-        "closures, campground reservations, permits, fees, hours, activities. "
-        "Use for: 'tell me about Glacier', 'tell me more about Yosemite', "
-        "'what is Zion like', 'info on Grand Canyon', 'what's happening at "
-        "Yellowstone right now', 'is Glacier open', 'weather at Acadia', "
-        "'camping at Grand Canyon', 'do I need a permit for Half Dome', "
-        "'entrance fee for Rocky Mountain', 'best time to visit Bryce', "
-        "'road conditions at Glacier', 'can you tell me about Denali'. "
-        "Covers all 470+ NPS sites (parks, monuments, seashores, historic "
-        "sites, recreation areas). This tool has better, more current NPS "
-        "data than web search or training knowledge — ALWAYS prefer it over "
-        "answering from memory when any park is mentioned by name."
-    ),
+    title="Get NPS site details",
+    description=GET_PARK_DETAILS_DESCRIPTION,
     annotations={
-        "title": "Get park details",
+        "title": "Get NPS site details",
         "readOnlyHint": True,
         "openWorldHint": True,
         "destructiveHint": False,
@@ -831,7 +833,10 @@ async def plan_trip(
     },
     meta=_tool_meta(invoking="Looking up park details…", invoked="Park details ready", widget="park-details"),
 )
-async def get_park_details(park_code: str, ctx: Context | None = None) -> CallToolResult:
+async def get_park_details(
+    park_code: Annotated[str, Field(description=GET_PARK_DETAILS_PARK_CODE, json_schema_extra={"minLength": 2, "maxLength": 100})],
+    ctx: Context | None = None,
+) -> CallToolResult:
     _start = time.monotonic()
     _success = True
     _error_msg: str | None = None
@@ -842,7 +847,10 @@ async def get_park_details(park_code: str, ctx: Context | None = None) -> CallTo
         if (limited := await _check_rate_limit("read")):
             return limited
 
-        code = await _resolve_park_code(park_code)
+        resolution = await _resolve_park(park_code)
+        if not resolution.ok:
+            return _resolution_error(resolution, "park_code")
+        code = resolution.code
         _park_codes = [code]
         try:
             async with TrailVerseClient() as client:
@@ -887,6 +895,8 @@ async def get_park_details(park_code: str, ctx: Context | None = None) -> CallTo
                     _safe_feed(),
                 )
         except TrailVerseAPIError as e:
+            if getattr(e, "status", None) in (400, 404):
+                return _unknown_code_error(code, "park_code")
             logger.exception("get_park_details backend call failed")
             return _error_result(str(e))
 
@@ -921,18 +931,41 @@ async def get_park_details(park_code: str, ctx: Context | None = None) -> CallTo
         })
 
 
+def _compare_park_codes(resp: dict[str, Any]) -> list[str]:
+    data = resp.get("data") or resp.get("parks") or []
+    if isinstance(data, dict):
+        data = data.get("parks") or []
+    out = []
+    for p in data if isinstance(data, list) else []:
+        code = (p.get("parkCode") or p.get("code") or "").lower() if isinstance(p, dict) else ""
+        if code:
+            out.append(code)
+    return out
+
+
+def _compare_needs_two(unresolved: list[dict[str, Any]], matched: list[str]) -> CallToolResult:
+    details = "; ".join(f"'{u['input']}' — {u['reason']}" for u in unresolved)
+    matched_text = f" Matched: {', '.join(matched)}." if matched else ""
+    error = validation_error(
+        code="COMPARE_NEEDS_TWO_PARKS",
+        message=(
+            f"Need at least 2 recognized NPS sites to compare; only {len(matched)} matched."
+            f"{matched_text} Not matched: {details}. No comparison was produced — ask the "
+            "user which park they meant, or use search_parks to find the correct site."
+        ),
+        field="park_codes",
+        received=[u["input"] for u in unresolved],
+        expected="2–4 NPS park codes or unambiguous NPS site names",
+    )
+    error["unresolved"] = unresolved
+    error["matched"] = matched
+    return validation_error_result(error)
+
+
 @mcp.tool(
     name="compare_parks",
-    description=(
-        "Use when a user is choosing between or comparing NPS sites — 'Zion or "
-        "Grand Canyon?', 'should I go to Glacier or Yellowstone?', 'which is "
-        "better for families, Acadia or Shenandoah?', 'difference between Bryce "
-        "and Zion', 'pros and cons of Utah parks', 'Glacier vs Olympic for "
-        "summer'. Compares 2–4 NPS sites side-by-side on current weather, crowd "
-        "levels, entrance fees, top activities, and driving distance. Works with "
-        "any of the 470+ NPS sites. Returns a decision recommendation plus a "
-        "comparison table with live data."
-    ),
+    title="Compare NPS sites",
+    description=COMPARE_PARKS_DESCRIPTION,
     annotations={
         "title": "Compare NPS sites",
         "readOnlyHint": True,
@@ -942,7 +975,13 @@ async def get_park_details(park_code: str, ctx: Context | None = None) -> CallTo
     },
     meta=_tool_meta(invoking="Comparing parks…", invoked="Comparison ready"),
 )
-async def compare_parks(park_codes: list[str], ctx: Context | None = None) -> CallToolResult:
+async def compare_parks(
+    park_codes: Annotated[
+        list[str],
+        Field(description=COMPARE_PARK_CODES, json_schema_extra={"minItems": 2, "maxItems": 4}),
+    ],
+    ctx: Context | None = None,
+) -> CallToolResult:
     _start = time.monotonic()
     _success = True
     _error_msg: str | None = None
@@ -953,17 +992,68 @@ async def compare_parks(park_codes: list[str], ctx: Context | None = None) -> Ca
         if (limited := await _check_rate_limit("read")):
             return limited
 
-        # Resolve names to codes in parallel
-        resolved = await asyncio.gather(*(_resolve_park_code(c) for c in park_codes))
-        codes = list(resolved)
+        try:
+            CompareParksInput(park_codes=park_codes)
+        except ValidationError:
+            return validation_error_result(
+                validation_error(
+                    code="INVALID_PARK_COUNT",
+                    message=(
+                        f"compare_parks needs 2 to 4 parks; received {len(park_codes or [])}. "
+                        "For a single park use get_park_details."
+                    ),
+                    field="park_codes",
+                    received=park_codes,
+                    expected="list of 2–4 park codes or names",
+                )
+            )
+
+        resolutions = await asyncio.gather(*(_resolve_park(c) for c in park_codes))
+        codes: list[str] = []
+        code_inputs: dict[str, str] = {}
+        unresolved: list[dict[str, Any]] = []
+        for res in resolutions:
+            if res.ok:
+                if res.code not in codes:
+                    codes.append(res.code)
+                    code_inputs[res.code] = res.input
+            else:
+                unresolved.append({
+                    "input": res.input,
+                    "status": res.status,
+                    "reason": res.explain(),
+                    "candidates": res.candidates[:5],
+                })
         _park_codes = codes
 
         if len(codes) < 2:
-            return _error_result("Provide at least 2 parks to compare.")
+            return _compare_needs_two(unresolved, codes)
 
         try:
             async with TrailVerseClient() as client:
-                compare = await client.compare_parks(codes)
+                try:
+                    compare = await client.compare_parks(codes)
+                except TrailVerseAPIError as e:
+                    if getattr(e, "status", None) != 404:
+                        raise
+                    compare = {"data": {"parks": []}}
+                found = _compare_park_codes(compare)
+                missing = [c for c in codes if c not in found]
+                for c in missing:
+                    unresolved.append({
+                        "input": code_inputs.get(c, c),
+                        "status": "unknown_code",
+                        "reason": f"no NPS site uses the code '{c}'",
+                        "candidates": [],
+                    })
+                if missing:
+                    codes = [c for c in codes if c in found]
+                    _park_codes = codes
+                    if len(codes) < 2:
+                        return _compare_needs_two(unresolved, codes)
+                    # Re-request with only valid codes so per-park fields
+                    # (e.g. review stats) stay aligned with the right park.
+                    compare = await client.compare_parks(codes)
                 try:
                     summary = await client.compare_summary(codes)
                 except TrailVerseAPIError:
@@ -972,7 +1062,7 @@ async def compare_parks(park_codes: list[str], ctx: Context | None = None) -> Ca
             logger.exception("compare_parks backend call failed")
             return _error_result(str(e))
 
-        structured, text = format_compare(compare, summary)
+        structured, text = format_compare(compare, summary, unresolved=unresolved)
 
         parks_data = structured.get("parks", [])
         compare_images = [
@@ -1011,24 +1101,18 @@ async def compare_parks(park_codes: list[str], ctx: Context | None = None) -> Ca
         })
 
 
+# Fields format_search needs; used for filter-only searches that pull the whole
+# state/activity set so it can be ranked before truncation.
+_SEARCH_FIELDS = (
+    "parkCode,fullName,name,designation,states,description,latitude,longitude,"
+    "images,matchReason,matchedTraits,rating"
+)
+
+
 @mcp.tool(
     name="search_parks",
-    description=(
-        "Find and discover NPS sites — use for any 'where should I go', "
-        "'suggest parks', 'recommend', or 'best parks for' question. Also use "
-        "for location queries: 'parks near Denver', 'national parks in "
-        "California', 'parks close to Chicago', 'parks in the Southwest'. "
-        "Covers trait-based discovery: 'least crowded parks', 'dog-friendly "
-        "parks', 'free national parks', 'best parks for stargazing', 'parks "
-        "with waterfalls', 'underrated parks', 'kid-friendly parks'. Works "
-        "for seasonal and holiday queries: 'best park for fall foliage', "
-        "'4th of July parks', 'winter parks', 'spring break destinations'. "
-        "Searches all 470+ NPS sites (parks, monuments, seashores, lakeshores, "
-        "recreation areas, historic sites). Accepts park names, keywords, "
-        "activities, or natural-language travel intent (e.g. 'relaxing ocean "
-        "parks', 'quiet parks for beginners'). Combine with state or activity "
-        "filters when useful. Returns a complete ranked answer ready to show the user."
-    ),
+    title="Search NPS sites",
+    description=SEARCH_PARKS_DESCRIPTION,
     annotations={
         "title": "Search NPS sites",
         "readOnlyHint": True,
@@ -1039,10 +1123,10 @@ async def compare_parks(park_codes: list[str], ctx: Context | None = None) -> Ca
     meta=_tool_meta(invoking="Searching NPS sites…", invoked="Results ready", widget="park-list"),
 )
 async def search_parks(
-    query: str | None = None,
-    state: str | None = None,
-    activity: str | None = None,
-    limit: int = 20,
+    query: Annotated[str | None, Field(description=SEARCH_QUERY, json_schema_extra={"maxLength": 100})] = None,
+    state: Annotated[str | None, Field(description=STATE_FILTER, json_schema_extra={"maxLength": 30})] = None,
+    activity: Annotated[str | None, Field(description=ACTIVITY_FILTER, json_schema_extra={"maxLength": 40})] = None,
+    limit: Annotated[int, Field(description=SEARCH_LIMIT, json_schema_extra={"minimum": 1, "maximum": 50})] = 20,
     ctx: Context | None = None,
 ) -> CallToolResult:
     _start = time.monotonic()
@@ -1053,20 +1137,27 @@ async def search_parks(
     try:
         if (limited := await _check_rate_limit("read")):
             return limited
+        state_code, state_ok = normalize_state(state)
+        if not state_ok:
+            return _state_error(str(state))
         try:
             payload = SearchParksInput(
-                query=query,
-                state=state.upper() if state else None,
-                activity=activity,
+                query=query.strip() if isinstance(query, str) and query.strip() else None,
+                state=state_code,
+                activity=activity.strip() if isinstance(activity, str) and activity.strip() else None,
                 limit=limit,
             )
-        except Exception as e:
+        except ValidationError as e:
             logger.warning("Validation failed: %s", e)
-            return _error_result("Invalid input — please check your parameters and try again.")
+            return validation_error_result(validation_error_from_pydantic(e))
 
         if not any([payload.query, payload.state, payload.activity]):
-            return _error_result(
-                "Provide at least one of: query, state, or activity."
+            return validation_error_result(
+                validation_error(
+                    code="MISSING_SEARCH_CRITERIA",
+                    message="Provide at least one of: query, state, or activity.",
+                    field="query",
+                )
             )
 
         try:
@@ -1076,21 +1167,33 @@ async def search_parks(
                 expanded_count = 0
                 used_expanded = False
 
-                resp = await client.search_parks(
-                    q=raw_query,
-                    state=payload.state,
-                    activity=payload.activity,
-                    limit=payload.limit,
-                )
+                if raw_query:
+                    resp = await client.search_parks(
+                        q=raw_query,
+                        state=payload.state,
+                        activity=payload.activity,
+                        limit=payload.limit,
+                    )
+                else:
+                    # Filter-only: fetch the whole filtered set (catalog order is
+                    # alphabetical) and rank it before applying the limit.
+                    resp = await client.search_parks(
+                        state=payload.state,
+                        activity=payload.activity,
+                        limit=500,
+                        fields=_SEARCH_FIELDS,
+                    )
+                    resp = rank_catalog_results(resp, payload.limit)
                 raw_count = count_search_results(resp)
 
                 if raw_query:
                     expanded_query = expand_search_query(raw_query)
-                    if (
-                        raw_count < 3
-                        and expanded_query
-                        and expanded_query != raw_query.strip().lower()
-                    ):
+                    # Only retry when expansion added intent synonyms. Re-ordering
+                    # the user's own words ("Paris France" → "france paris") is
+                    # not a better query and produced false matches.
+                    raw_tokens = set(re.findall(r"[a-z0-9]+", raw_query.lower()))
+                    added = set((expanded_query or "").split()) - raw_tokens
+                    if raw_count < 3 and expanded_query and added:
                         retry = await client.search_parks(
                             q=expanded_query,
                             state=payload.state,
@@ -1103,11 +1206,9 @@ async def search_parks(
                             used_expanded = True
 
                     logger.info(
-                        "search_parks query expansion | raw_query=%r "
-                        "expanded_query=%r raw_count=%s expanded_count=%s "
-                        "used_expanded=%s",
-                        raw_query,
-                        expanded_query,
+                        "search_parks query expansion | expanded=%s raw_count=%s "
+                        "expanded_count=%s used_expanded=%s",
+                        bool(added) if raw_query else False,
                         raw_count,
                         expanded_count,
                         used_expanded,
@@ -1159,19 +1260,8 @@ async def search_parks(
 
 @mcp.tool(
     name="find_events",
-    description=(
-        "Use when the user asks about scheduled programs, tours, ranger talks, "
-        "or organized events at NPS sites — 'ranger talks at Yellowstone this "
-        "weekend', 'guided tours at Mesa Verde', 'star parties at Bryce "
-        "Canyon', 'junior ranger programs at Acadia', 'events at Gettysburg', "
-        "'festivals at Shenandoah', 'volunteer opportunities'. Returns "
-        "upcoming ranger-led programs, guided tours, astronomy nights, junior "
-        "ranger activities, and special events with live dates, times, and "
-        "locations. Works with any of the 470+ NPS sites. Filter by park, "
-        "state, or category. NOTE: For general 'what's happening at [park]', "
-        "'tell me about [park]', or current conditions, use get_park_details "
-        "instead — this tool is only for scheduled events and programs."
-    ),
+    title="Find NPS events",
+    description=FIND_EVENTS_DESCRIPTION,
     annotations={
         "title": "Find NPS events",
         "readOnlyHint": True,
@@ -1182,10 +1272,10 @@ async def search_parks(
     meta=_tool_meta(invoking="Fetching park events…", invoked="Events ready"),
 )
 async def find_events(
-    park_code: str | None = None,
-    state: str | None = None,
-    category: str | None = None,
-    limit: int = 10,
+    park_code: Annotated[str | None, Field(description=EVENTS_PARK_CODE, json_schema_extra={"maxLength": 100})] = None,
+    state: Annotated[str | None, Field(description=STATE_FILTER, json_schema_extra={"maxLength": 30})] = None,
+    category: Annotated[str | None, Field(description=EVENTS_CATEGORY, json_schema_extra={"maxLength": 60})] = None,
+    limit: Annotated[int, Field(description=EVENTS_LIMIT, json_schema_extra={"minimum": 1, "maximum": 20})] = 10,
     ctx: Context | None = None,
 ) -> CallToolResult:
     _start = time.monotonic()
@@ -1198,23 +1288,48 @@ async def find_events(
         if (limited := await _check_rate_limit("read")):
             return limited
 
-        resolved_code = (await _resolve_park_code(park_code)) if park_code else None
-        if resolved_code:
+        state_code, state_ok = normalize_state(state)
+        if not state_ok:
+            return _state_error(str(state))
+        try:
+            FindEventsInput(park_code=park_code, state=state_code, category=category, limit=limit)
+        except ValidationError as e:
+            return validation_error_result(validation_error_from_pydantic(e))
+
+        resolved_code: str | None = None
+        resolution: ParkResolution | None = None
+        if park_code and park_code.strip():
+            resolution = await _resolve_park(park_code)
+            if not resolution.ok:
+                return _resolution_error(resolution, "park_code")
+            resolved_code = resolution.code
             _park_codes = [resolved_code]
 
+        park_label = resolution.name if resolution and resolution.name else None
         try:
             async with TrailVerseClient() as client:
                 resp = await client.list_events(
                     park_code=resolved_code,
-                    state=state.upper() if state else None,
+                    state=state_code,
                     category=category,
                     limit=limit,
                 )
+                if resolved_code and not _events_list(resp):
+                    # An empty feed for an unverified code may mean the code is
+                    # wrong; confirm the park exists before saying "no events".
+                    try:
+                        details = await client.get_park_details(resolved_code)
+                        outer = details.get("data") or details
+                        park = outer.get("park") or outer
+                        park_label = park_label or park.get("fullName") or park.get("name")
+                    except TrailVerseAPIError as e:
+                        if getattr(e, "status", None) in (400, 404):
+                            return _unknown_code_error(resolved_code, "park_code")
         except TrailVerseAPIError as e:
             logger.exception("find_events backend call failed")
             return _error_result(str(e))
 
-        structured, text = format_events(resp)
+        structured, text = format_events(resp, park_name=park_label)
 
         content_blocks = _text_content(text)
 
@@ -1243,6 +1358,13 @@ async def find_events(
             "parkCode": _park_codes[0] if _park_codes else None,
             "sessionId": f"mcp-{_mcp_client}",
         })
+
+
+def _events_list(resp: dict[str, Any]) -> list[Any]:
+    events = resp.get("data") or resp.get("events") or [] if isinstance(resp, dict) else []
+    if isinstance(events, dict):
+        events = events.get("events") or []
+    return events if isinstance(events, list) else []
 
 
 # ---------- Health / root routes (so Render and connector wizards don't 502) ----------

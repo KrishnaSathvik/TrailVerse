@@ -82,7 +82,8 @@ export default function AdminContentPage() {
 
   const handlePublishNow = async (postId) => {
     try {
-      await blogService.updatePost(postId, { status: 'published', publishedAt: new Date(), scheduledAt: null });
+      // publishedAt is server-owned (first publication only); don't send it.
+      await blogService.updatePost(postId, { status: 'published', scheduledAt: null });
       showToast('Published', 'success');
       fetchData();
     } catch {

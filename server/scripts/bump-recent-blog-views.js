@@ -11,7 +11,6 @@
  *   node scripts/bump-recent-blog-views.js --slug=my-post-slug # one post
  */
 
-require('dotenv').config();
 const mongoose = require('mongoose');
 const BlogPost = require('../src/models/BlogPost');
 
@@ -78,6 +77,23 @@ function gradualTarget(post) {
   return { target: Math.max(current, Math.round(target)), tier, age };
 }
 
+/**
+ * Write view targets. Views are operational, so `timestamps: false` keeps
+ * updatedAt (and the editorial contentUpdatedAt) untouched.
+ * @param {{ _id: unknown, target: number }[]} rows
+ */
+async function applyViewTargets(rows) {
+  return BlogPost.bulkWrite(
+    rows.map((row) => ({
+      updateOne: {
+        filter: { _id: row._id },
+        update: { $set: { views: row.target } },
+        timestamps: false,
+      },
+    }))
+  );
+}
+
 async function main() {
   await mongoose.connect(process.env.MONGODB_URI);
   console.log('✅ MongoDB connected\n');
@@ -129,20 +145,18 @@ async function main() {
     return;
   }
 
-  const result = await BlogPost.bulkWrite(
-    toWrite.map((row) => ({
-      updateOne: {
-        filter: { _id: row._id },
-        update: { $set: { views: row.target } },
-      },
-    }))
-  );
+  const result = await applyViewTargets(toWrite);
 
   console.log(`\n✅ Updated ${result.modifiedCount} post(s)`);
   await mongoose.disconnect();
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+if (require.main === module) {
+  require('dotenv').config();
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
+
+module.exports = { applyViewTargets, gradualTarget };

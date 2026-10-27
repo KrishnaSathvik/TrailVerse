@@ -87,7 +87,7 @@ Legacy Luna/Sol/Astra routing and intent classifiers remain in-repo for **rollba
 
 | Capability | Guest (anonymous) | Logged in |
 |------------|-------------------|-----------|
-| Chat with Trailie | Yes (**5** completed turns / **48h**) | Unlimited (token-limit middleware) |
+| Chat with Trailie | Yes (**5** completed turns / **48h**) | Yes — no daily token or message cap. Fair use: 30 turns / 15 min burst window, one active reply per trip and two per account ([trailie-fair-use-safeguards.md](trailie-fair-use-safeguards.md)); app-level request rate limit and per-request guards still apply; spend/token alerts are observability only |
 | NPS + weather / research topics | Yes (model-first `read_travel`) | Yes |
 | Save durable TripPlan | Guest ledger / session — limited | Yes — Mongo `TripPlan` |
 | Share / PDF / map workspace | Limited / gated | Yes after save |

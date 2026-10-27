@@ -34,9 +34,11 @@ const { drivingVerificationInstruction } = require('./drivingVerificationCoverag
  * Last reviewed: April 2026
  * Next review: January 2027 — pull fresh stats from IRMA and re-normalize
  *
- * Coverage: 60 of the 63 National Parks. Missing: Gateway Arch, Hot Springs
- * (urban), and National Park of American Samoa (insufficient data). Does NOT
- * include Lakeshores, Seashores, Monuments, or Recreation Areas.
+ * Coverage: 60 of the 64 National Parks (Sequoia and Kings Canyon scored
+ * separately). Missing: Gateway Arch (urban), Denali, National Park of American
+ * Samoa (insufficient data), and Chiricahua (redesignated from a National
+ * Monument Oct 20, 2026; not yet scored). Does NOT include Lakeshores,
+ * Seashores, Monuments, or Recreation Areas.
  */
 const CROWD_SCORES = {
   acad: [0,0,0,1,4,8,10,10,8,7,1,0],

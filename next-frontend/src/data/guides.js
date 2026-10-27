@@ -312,7 +312,7 @@ export const GUIDES = [
         bullets: [
           'There is no TrailVerse charge for the integration — usage follows your normal ChatGPT (or Claude) plan',
           'AI output is a starting point, not a permit — confirm permits on Recreation.gov and critical safety info on NPS.gov before you travel',
-          'For unlimited saved planning, create a free account and continue at /plan-ai',
+          'To save your trips and keep planning with Trailie, create a free account and continue at /plan-ai',
         ],
       },
     ],
@@ -762,7 +762,7 @@ export const GUIDES = [
       },
       {
         q: 'Can I compare a national park with a monument or historic site?',
-        a: 'Yes. The catalog includes all NPS designations in the 470+ site list, not only the 63 namesake national parks.',
+        a: 'Yes. The catalog includes all NPS designations in the 470+ site list, not only the 64 namesake national parks.',
       },
       {
         q: 'Does Compare show live alerts?',

@@ -103,6 +103,11 @@ const nextConfig = {
       { source: '/reports/national-parks-2025', destination: '/reports/national-parks-2025.html', permanent: true },
       { source: '/reports/national-parks-2025/', destination: '/reports/national-parks-2025.html', permanent: true },
 
+      // Redesignated parks — park-slugs.json regenerates from the live NPS name at
+      // build time, so the pre-redesignation slug would otherwise 404.
+      { source: '/parks/chiricahua-national-monument', destination: '/parks/chiricahua-national-park', permanent: true },
+      { source: '/parks/chiricahua', destination: '/parks/chiricahua-national-park', permanent: true },
+
       // Partial park name redirects (common searches Google indexed without full slug)
       { source: '/parks/yellowstone', destination: '/parks/yellowstone-national-park', permanent: true },
       { source: '/parks/yosemite', destination: '/parks/yosemite-national-park', permanent: true },

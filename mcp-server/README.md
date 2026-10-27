@@ -15,18 +15,19 @@ planner into ChatGPT and Claude conversations. Built for the
 TrailVerse already has:
 
 - 470+ NPS sites (parks, monuments, historic sites) with live NPS API data
-- A unified **Trailie** trip planner on **Claude Sonnet 5**, with constraint engine, intent detection, conflict
-  detection, post-generation validation, smart replacement, plan scoring, and
-  regeneration — documented in `article-ai-architecture.md` in the main repo.
+- A unified **Trailie** trip planner. Production runtime is `model_first`: OpenAI
+  `gpt-6.1-sol` (low reasoning) with code-enforced canonical TripPlan
+  persistence, evidence-grounded places/routes, and mutation guards — see
+  `docs/TRAILIE-CAPABILITIES-ACCURACY.md` and `docs/trailie-architecture.md`.
 - Side-by-side park comparison, events, daily nature feed, reviews, blog.
 - A **voice assistant** ("Trailie Voice") — talk to Trailie hands-free and
   get answers with live park data. Built with OpenAI Realtime API over
   WebRTC with function calling for real-time NPS data.
 
 This MCP server is a **thin adapter** that exposes five of those capabilities
-as tools ChatGPT can call during a conversation, and renders the results
-inline using custom HTML widgets styled in TrailVerse's editorial magazine
-aesthetic.
+as tools ChatGPT and Claude can call during a conversation. Production returns
+markdown text only (`MCP_MARKDOWN_ONLY=true` default); the HTML widgets in
+`widgets/` are opt-in (`MCP_MARKDOWN_ONLY=false` + `MCP_ENABLE_WIDGETS=true`).
 
 **Zero changes to the main TrailVerse backend.** This server sits alongside
 it and calls public endpoints.
@@ -55,21 +56,23 @@ ChatGPT user
 └──────────────┬──────────────┘
                │
                ▼
-   MongoDB · NPS API · Claude Sonnet 5 · OpenWeatherMap
+   MongoDB · NPS API · OpenAI (Trailie) · OpenWeatherMap
 ```
 
 ## The five tools
 
 | Tool | Purpose | Backend endpoint |
 |---|---|---|
-| `plan_trip` | Structured constraint-aware itinerary for national parks (MCP) | `POST /api/ai/plan-itinerary` |
+| `plan_trip` | Day-by-day itinerary for US destinations via Trailie | `POST /api/ai/plan-itinerary` |
 | `get_park_details` | Rich **NPS site** info with live alerts, weather, campgrounds, permits | `GET /api/parks/:code/details` + `/alerts` + `/weather` + `/campgrounds` + `/permits` + `/api/feed/park-of-day` |
-| `compare_parks` | Side-by-side **2–4 NPS parks** with auto-computed highlights | `POST /api/parks/compare` + `/compare/summary` |
+| `compare_parks` | Side-by-side **2–4 NPS parks**; errors if fewer than 2 resolve, reports unmatched names | `POST /api/parks/compare` + `/compare/summary` |
 | `search_parks` | Search/filter **NPS catalog** by name, state, activity | `GET /api/parks/search` |
 | `find_events` | Ranger programs and **NPS** park events | `GET /api/events/` |
 
-All tools are **read-only** (`readOnlyHint: true`) and use the **anonymous AI
-endpoint** (no auth required). Production MCP traffic sends
+No tool requires auth. `get_park_details`, `compare_parks`, `search_parks`,
+and `find_events` are read-only (`readOnlyHint: true`). `plan_trip` is
+`readOnlyHint: false` because it persists the itinerary in an anonymous guest
+session (48 h TTL) on the backend. Production MCP traffic sends
 `X-TrailVerse-MCP-Key` so the backend skips the website guest cap (5 msg/48h)
 and enables web search for `plan_trip`. Website upsell is for **saved trips,
 PDF export, and the Plan Workspace** — see `/mcp` and `/chatgpt` landing pages.
@@ -100,6 +103,20 @@ responses still include slim structured output with `session_id`, `planner_mode`
 
 `plan_trip` uses a **180s** bounded HTTP timeout (`PLAN_TRIP_TIMEOUT`) to accommodate model-first planning. Ordinary reads retain the separate 30s `BACKEND_TIMEOUT`. Timeout failures return `UPSTREAM_TIMEOUT` with optional `partial` context; hosting and client deadlines must also allow the planning budget.
 
+### Park resolution and errors
+
+Park names are resolved by `server/park_resolution.py` and only accepted on an
+exact full-name match, an exact core-name match ("Glacier" → `glac`, not Glacier
+Bay), or when every query word appears in exactly one NPS name. Otherwise tools
+return `isError: true` with a machine-readable code instead of guessing:
+`UNKNOWN_PARK`, `AMBIGUOUS_PARK` (with `candidates`), `NOT_AN_NPS_SITE` (state
+parks etc. — use `plan_trip` with `park_name`), `UNKNOWN_PARK_CODE` (backend
+404), `INVALID_STATE`, `INVALID_PARK_COUNT`, and `COMPARE_NEEDS_TWO_PARKS`.
+`compare_parks` lists unmatched parks in a partial result and refuses to
+"compare" fewer than 2. Filter-only `search_parks` (state/activity, no query)
+fetches the whole filtered set and lists national parks first before applying
+`limit`. `find_events` requests upcoming events only.
+
 ### Canonical tool surface (no duplicates)
 
 The MCP server registers **exactly five tools** in `server/main.py`. MCP **prompts**
@@ -117,11 +134,14 @@ mcp-server/
 │   ├── main.py              # FastMCP server, tool registration, widget resources
 │   ├── client.py            # Async httpx client for the TrailVerse backend + image fetching
 │   ├── types.py             # Pydantic input schemas
+│   ├── tool_metadata.py     # Model-readable tool descriptions/param docs
+│   ├── park_resolution.py   # Confidence-gated park name → NPS code
+│   ├── search_ranking.py    # Name rerank, state normalization, filter-only ranking
 │   ├── formatters.py        # Backend response → widget structuredContent + LLM text
 │   ├── conversations.py     # In-memory multi-turn session management
 │   └── rate_limit.py        # Global rate limiting (defense-in-depth)
 ├── widgets/                 # Self-contained HTML for ChatGPT inline rendering
-│   ├── itinerary.html       # Trip plan with confidence + score pills
+│   ├── itinerary.html       # Trip plan widget (opt-in, unused in production)
 │   ├── park-details.html    # Hero + weather + alerts + activities
 │   ├── compare.html         # Side-by-side table
 │   ├── park-list.html       # Search results grid
@@ -298,16 +318,17 @@ complete submission walkthrough.
 
 Key reviewer notes (critical for approval):
 
-- All tools are **read-only** and **unauthenticated** — reviewers can test
-  without creating an account, which is the #1 cause of rejections per
-  OpenAI's submission guidelines.
-- Tools are clearly described and correctly annotated with `readOnlyHint:
-  true` and `openWorldHint: true`.
+- All tools are **unauthenticated** — reviewers can test without creating an
+  account. Four are read-only; `plan_trip` writes a temporary anonymous guest
+  session and is annotated `readOnlyHint: false`.
+- Tool descriptions follow "Use this when… / Do not use for…" and every
+  parameter is documented (guarded by `tests/test_tool_metadata.py`).
 - The app does **not** sell digital goods — free in ChatGPT/Claude. Saved trips
   and the Plan Workspace require a free TrailVerse.com account, which is
   external and compliant.
-- No write/destructive operations, no user data collection, no personal
-  info accessed.
+- No destructive operations or bookings. Data handling (time zone hint,
+  PostHog usage counts, 48 h guest sessions, OpenAI processing) is documented
+  in `docs/SUBMISSION_CHECKLIST.md` §4.
 
 ---
 
@@ -489,4 +510,4 @@ Built on top of:
 - [FastMCP](https://github.com/modelcontextprotocol/python-sdk) Python SDK
 
 Park data from the [National Park Service API](https://www.nps.gov/subjects/developer/).
-Weather from OpenWeatherMap. AI trip planning from Trailie on Anthropic Claude Sonnet 5.
+Weather from OpenWeatherMap. AI trip planning from Trailie (OpenAI model via the TrailVerse backend).

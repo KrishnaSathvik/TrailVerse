@@ -79,7 +79,7 @@ ChatGPT App Directory          Claude Desktop / claude.ai
 
 ## The 5 MCP tools
 
-All **read-only** (`readOnlyHint: true`). Registered in `mcp-server/server/main.py`.
+Four read-only tools (`readOnlyHint: true`); `plan_trip` is `readOnlyHint: false` (persists a 48 h anonymous guest session). Registered in `mcp-server/server/main.py`; descriptions in `server/tool_metadata.py`, guarded by `tests/test_tool_metadata.py`.
 
 | Tool | Purpose | Primary backend calls |
 |------|---------|------------------------|

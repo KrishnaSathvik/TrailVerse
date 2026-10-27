@@ -6,6 +6,44 @@ export function isPostHogStarted() {
   return started;
 }
 
+// Path segments after these prefixes are secrets (auth tokens, private share links).
+const SECRET_PATH_PREFIXES = ['/reset-password/', '/verify-email/', '/plan-ai/shared/'];
+
+/** Drop query strings, hashes, and secret path segments from a URL or path. */
+export function scrubUrl(value) {
+  // PostHog sentinels such as "$direct" (no referrer) are not URLs.
+  if (typeof value !== 'string' || !value || value.startsWith('$')) return value;
+  let url;
+  try {
+    url = new URL(value, 'https://placeholder.invalid');
+  } catch {
+    return undefined;
+  }
+  let path = url.pathname;
+  for (const prefix of SECRET_PATH_PREFIXES) {
+    if (path.startsWith(prefix) && path.length > prefix.length) {
+      path = `${prefix}[redacted]`;
+      break;
+    }
+  }
+  const isAbsolute = /^[a-z][a-z\d+.-]*:/i.test(value);
+  return isAbsolute ? `${url.origin}${path}` : path;
+}
+
+const URL_PROPERTIES = ['$current_url', '$pathname', '$referrer', '$initial_current_url', '$initial_pathname', '$initial_referrer'];
+
+/** posthog-js adds full URLs to every event; keep them free of queries and tokens. */
+export function scrubEvent(event) {
+  if (!event) return event;
+  for (const bag of [event.properties, event.$set, event.$set_once]) {
+    if (!bag) continue;
+    for (const key of URL_PROPERTIES) {
+      if (key in bag) bag[key] = scrubUrl(bag[key]);
+    }
+  }
+  return event;
+}
+
 function trackingEnabled() {
   const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
   if (!key) return false;
@@ -29,6 +67,7 @@ export function initPostHog() {
       opt_out_capturing_by_default: optedOut,
       advanced_disable_feature_flags: true,
       persistence: 'localStorage+cookie',
+      before_send: scrubEvent,
     });
     posthog.stopSessionRecording?.();
     started = true;
@@ -37,8 +76,17 @@ export function initPostHog() {
   }
 }
 
+/**
+ * Start on first use: the page tracker's effect runs before Providers' init
+ * effect (child effects fire first), so the landing pageview arrives early.
+ */
+function ensureStarted() {
+  if (!started) initPostHog();
+  return started;
+}
+
 export function capturePostHog(eventName, properties) {
-  if (!started || typeof window === 'undefined') return;
+  if (typeof window === 'undefined' || !ensureStarted()) return;
   try {
     if (window.localStorage.getItem('analytics_opt_out') === 'true') return;
     posthog.capture(eventName, properties);
@@ -48,7 +96,7 @@ export function capturePostHog(eventName, properties) {
 }
 
 export function identifyPostHog(userId) {
-  if (!started || !userId) return;
+  if (!userId || !ensureStarted()) return;
   try {
     if (typeof window !== 'undefined' && window.localStorage.getItem('analytics_opt_out') === 'true') return;
     posthog.identify(String(userId));

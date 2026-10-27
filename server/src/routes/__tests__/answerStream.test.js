@@ -33,7 +33,7 @@ function appFor(model) {
     dependencies: () => ({ model, travelTools: { definitions: [], execute: jest.fn() } }),
     TripPlan: {}, AnonymousSession: { findOrCreateSession: async () => ({}) },
     authenticate: (req, res, next) => { req.user = { _id: 'fixture-owner' }; next(); },
-    authenticateOptional: (req, res, next) => next(), tokenAdmission: (req, res, next) => next(),
+    authenticateOptional: (req, res, next) => next(),
     observe: () => {}, recordTurn: async () => {}, recordMutationOutcome: async () => {},
   }));
   return app;

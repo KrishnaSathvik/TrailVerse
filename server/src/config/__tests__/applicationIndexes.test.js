@@ -21,7 +21,7 @@ test('actual local startup provisions all model indexes with autoIndex disabled;
     expect(mongoose.connection.config.autoCreate).toBe(false);
     expect(await inspectApplicationIndexes(models)).toEqual([]);
     expect(models.map((model) => model.modelName)).not.toEqual(expect.arrayContaining(['Analytics', 'AnalyticsSnapshot']));
-    expect(indexInventory(models)).toHaveLength(33);
+    expect(indexInventory(models)).toHaveLength(36);
     const guestIndexes = await Guest.collection.indexes();
     expect(guestIndexes).toEqual(expect.arrayContaining([
       expect.objectContaining({ key: { anonymousId: 1 }, unique: true }),

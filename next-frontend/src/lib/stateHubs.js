@@ -68,10 +68,12 @@ export function getStateHub(slug) {
 }
 
 /**
- * Fetch a cacheable compact directory and filter by exact NPS state code. Never throws.
+ * Fetch a cacheable compact directory. Never throws.
  * `ok: false` means the API failed — callers must not treat that as a 404.
+ * The production API ignores the state query parameter, so one shared request
+ * stays under Next's cache limit and callers filter locally.
  */
-export async function fetchParksForState(stateAbbr) {
+export async function fetchParkDirectory() {
   try {
     const res = await fetch(
       `${getApiBaseUrl()}/parks?all=true&fields=${STATE_FIELDS}`,
@@ -80,14 +82,23 @@ export async function fetchParksForState(stateAbbr) {
     if (!res.ok) return { ok: false, parks: [] };
     const json = await res.json();
     if (!Array.isArray(json?.data)) return { ok: false, parks: [] };
-    // The production API ignores the state query parameter. Share one cache entry
-    // below Next's 2 MB limit, then filter locally (including multi-state sites).
-    const code = String(stateAbbr).trim().toUpperCase();
-    const parks = json.data.filter(park =>
-      String(park.states || '').split(',').some(state => state.trim().toUpperCase() === code)
-    );
-    return { ok: true, parks };
+    return { ok: true, parks: json.data };
   } catch {
     return { ok: false, parks: [] };
   }
+}
+
+/**
+ * Parks whose states field includes this NPS code, including multi-state sites.
+ */
+export async function fetchParksForState(stateAbbr) {
+  const { ok, parks } = await fetchParkDirectory();
+  if (!ok) return { ok: false, parks: [] };
+  const code = String(stateAbbr).trim().toUpperCase();
+  return {
+    ok: true,
+    parks: parks.filter(park =>
+      String(park.states || '').split(',').some(state => state.trim().toUpperCase() === code)
+    ),
+  };
 }

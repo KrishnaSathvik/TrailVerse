@@ -10,6 +10,7 @@ import TableOfContents from '@components/blog/TableOfContents';
 import AdminShell from '@components/admin/AdminShell';
 import { AdminLoading, AdminSection, AdminBadge } from '@components/admin/AdminUI';
 import { BLOG_CATEGORIES, normalizeBlogCategory } from '@/lib/blogCategories';
+import { AUTOSAVE_TARGET, resolveAutosaveTarget, toAutosavePayload } from '@/lib/blogAutosave';
 import OptimizedImage from '@components/common/OptimizedImage';
 import {
   Save,
@@ -218,6 +219,7 @@ const BlogPostForm = ({ mode, postId }) => {
   const [savingImage, setSavingImage] = useState(false);
   const [autoSaving, setAutoSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
+  const [lastSavedTarget, setLastSavedTarget] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
   const [initialLoading, setInitialLoading] = useState(isEditMode);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -255,8 +257,27 @@ const BlogPostForm = ({ mode, postId }) => {
           seoNoindex: Boolean(post.seoNoindex)
         };
 
-        setFormData(nextValue);
-        setImagePreview(post.featuredImage || null);
+        // Published posts autosave to a browser slot (never to the live article);
+        // offer to restore unsaved edits from a previous session.
+        let restored = null;
+        if (nextValue.status === 'published' && typeof window !== 'undefined') {
+          const saved = window.localStorage.getItem(draftStorageKey);
+          if (saved) {
+            try {
+              const draft = JSON.parse(saved);
+              if (window.confirm('Found unsaved edits for this published post. Restore them?')) {
+                restored = { ...nextValue, ...draft, status: nextValue.status };
+              } else {
+                window.localStorage.removeItem(draftStorageKey);
+              }
+            } catch {
+              window.localStorage.removeItem(draftStorageKey);
+            }
+          }
+        }
+
+        setFormData(restored || nextValue);
+        setImagePreview((restored || nextValue).featuredImage || null);
       } catch (error) {
         showToast('Failed to load post', 'error');
         router.push('/admin/content');
@@ -272,7 +293,7 @@ const BlogPostForm = ({ mode, postId }) => {
     return () => {
       cancelled = true;
     };
-  }, [isEditMode, postId, router, showToast]);
+  }, [draftStorageKey, isEditMode, postId, router, showToast]);
 
   useEffect(() => {
     if (isEditMode || typeof window === 'undefined') {
@@ -362,11 +383,14 @@ const BlogPostForm = ({ mode, postId }) => {
   const handleAutoSave = useCallback(async () => {
     setAutoSaving(true);
     try {
-      if (isEditMode && postId) {
-        await blogService.updatePost(postId, buildPayload('draft'));
+      // Autosave never changes status/schedule/publish date (see lib/blogAutosave).
+      const target = resolveAutosaveTarget({ isEditMode, postId, serverStatus: formData.status });
+      if (target === AUTOSAVE_TARGET.SERVER) {
+        await blogService.updatePost(postId, toAutosavePayload(buildPayload(formData.status)));
       } else if (typeof window !== 'undefined') {
         window.localStorage.setItem(draftStorageKey, JSON.stringify(formData));
       }
+      setLastSavedTarget(target);
       setLastSaved(new Date());
     } catch (error) {
       console.error('Auto-save failed:', error);
@@ -527,7 +551,15 @@ const BlogPostForm = ({ mode, postId }) => {
     return Object.keys(errors).length === 0;
   };
 
+  const isLivePost = isEditMode && formData.status === 'published';
+
   const handleSubmit = async (requestedStatus) => {
+    // On a live post the secondary action takes the article offline.
+    if (isLivePost && requestedStatus === 'draft' && typeof window !== 'undefined'
+      && !window.confirm('Unpublish this post? It will be removed from the site until you publish it again.')) {
+      return;
+    }
+
     // Check for unresolved affiliate placeholders before publishing
     if (requestedStatus === 'published') {
       const affiliatePlaceholders = [
@@ -579,8 +611,8 @@ const BlogPostForm = ({ mode, postId }) => {
       const successMessage = payload.status === 'scheduled'
         ? `Post scheduled for ${new Date(payload.scheduledAt).toLocaleString()}`
         : payload.status === 'published'
-        ? isEditMode ? 'Post updated and published' : 'Post published successfully'
-        : isEditMode ? 'Draft updated' : 'Draft saved';
+        ? isLivePost ? 'Post updated' : isEditMode ? 'Post published' : 'Post published successfully'
+        : isLivePost ? 'Post unpublished (saved as draft)' : isEditMode ? 'Draft updated' : 'Draft saved';
 
       showToast(successMessage, 'success');
       router.push('/admin/content');
@@ -681,7 +713,7 @@ const BlogPostForm = ({ mode, postId }) => {
           ) : (
             <>
               <Check className="h-3.5 w-3.5" style={{ color: 'var(--accent-green)' }} />
-              Saved {lastSaved.toLocaleTimeString()}
+              {lastSavedTarget === AUTOSAVE_TARGET.LOCAL && isEditMode ? 'Saved locally' : 'Saved'} {lastSaved.toLocaleTimeString()}
             </>
           )}
         </span>
@@ -721,7 +753,7 @@ const BlogPostForm = ({ mode, postId }) => {
         disabled={loading || uploadingImage || savingImage}
       >
         <Save className="h-4 w-4" />
-        <span className="hidden sm:inline">Draft</span>
+        <span className="hidden sm:inline">{isLivePost ? 'Unpublish' : 'Draft'}</span>
       </button>
 
       <button
@@ -732,7 +764,7 @@ const BlogPostForm = ({ mode, postId }) => {
         disabled={loading || uploadingImage || savingImage}
       >
         {loading ? <span className="spinner-small" /> : <Send className="h-4 w-4" />}
-        <span>{loading ? 'Saving…' : 'Publish'}</span>
+        <span>{loading ? 'Saving…' : isLivePost ? 'Update' : 'Publish'}</span>
       </button>
     </>
   );

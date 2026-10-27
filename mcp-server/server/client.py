@@ -27,7 +27,15 @@ MCP_BYPASS_KEY = os.getenv("MCP_BYPASS_KEY", "")
 
 
 class TrailVerseAPIError(Exception):
-    """Raised when the TrailVerse backend returns an error or is unreachable."""
+    """Raised when the TrailVerse backend returns an error or is unreachable.
+
+    ``status`` carries the upstream HTTP status when there was one, so tools can
+    turn a 404 into "unknown park code" instead of a bare status number.
+    """
+
+    def __init__(self, message: str, status: int | None = None) -> None:
+        super().__init__(message)
+        self.status = status
 
 
 class TrailVerseClient:
@@ -81,11 +89,14 @@ class TrailVerseClient:
         except httpx.HTTPStatusError as e:
             logger.error("GET %s returned %s", path, e.response.status_code)
             if e.response.status_code >= 500:
-                raise TrailVerseAPIError("Backend service temporarily unavailable") from e
+                raise TrailVerseAPIError("Backend service temporarily unavailable", status=e.response.status_code) from e
             elif e.response.status_code == 429:
-                raise TrailVerseAPIError("Rate limit exceeded, please try again later") from e
+                raise TrailVerseAPIError("Rate limit exceeded, please try again later", status=429) from e
             else:
-                raise TrailVerseAPIError(f"Request failed (status {e.response.status_code})") from e
+                raise TrailVerseAPIError(
+                    f"Request failed (status {e.response.status_code})",
+                    status=e.response.status_code,
+                ) from e
         except httpx.HTTPError as e:
             logger.error("GET %s failed: %s", path, e)
             raise TrailVerseAPIError("Backend service unreachable") from e
@@ -99,11 +110,14 @@ class TrailVerseClient:
         except httpx.HTTPStatusError as e:
             logger.error("POST %s returned %s", path, e.response.status_code)
             if e.response.status_code >= 500:
-                raise TrailVerseAPIError("Backend service temporarily unavailable") from e
+                raise TrailVerseAPIError("Backend service temporarily unavailable", status=e.response.status_code) from e
             elif e.response.status_code == 429:
-                raise TrailVerseAPIError("Rate limit exceeded, please try again later") from e
+                raise TrailVerseAPIError("Rate limit exceeded, please try again later", status=429) from e
             else:
-                raise TrailVerseAPIError(f"Request failed (status {e.response.status_code})") from e
+                raise TrailVerseAPIError(
+                    f"Request failed (status {e.response.status_code})",
+                    status=e.response.status_code,
+                ) from e
         except httpx.HTTPError as e:
             logger.error("POST %s failed: %s", path, e)
             raise TrailVerseAPIError("Backend service unreachable") from e
@@ -126,11 +140,14 @@ class TrailVerseClient:
         except httpx.HTTPStatusError as e:
             logger.error("POST %s returned %s", path, e.response.status_code)
             if e.response.status_code >= 500:
-                raise TrailVerseAPIError("Backend service temporarily unavailable") from e
+                raise TrailVerseAPIError("Backend service temporarily unavailable", status=e.response.status_code) from e
             elif e.response.status_code == 429:
-                raise TrailVerseAPIError("Rate limit exceeded, please try again later") from e
+                raise TrailVerseAPIError("Rate limit exceeded, please try again later", status=429) from e
             else:
-                raise TrailVerseAPIError(f"Request failed (status {e.response.status_code})") from e
+                raise TrailVerseAPIError(
+                    f"Request failed (status {e.response.status_code})",
+                    status=e.response.status_code,
+                ) from e
         except httpx.HTTPError as e:
             logger.error("POST %s failed: %s", path, e)
             raise TrailVerseAPIError("Backend service unreachable") from e
@@ -144,6 +161,7 @@ class TrailVerseClient:
         state: str | None = None,
         activity: str | None = None,
         limit: int = 12,
+        fields: str | None = None,
     ) -> dict[str, Any]:
         return await self._get(
             "/api/parks/search",
@@ -151,6 +169,7 @@ class TrailVerseClient:
             state=state,
             activity=activity,
             limit=limit,
+            fields=fields,
         )
 
     async def get_park_details(self, park_code: str) -> dict[str, Any]:
@@ -214,6 +233,9 @@ class TrailVerseClient:
             stateCode=state,
             category=category,
             limit=limit,
+            # Without this the backend includes past NPS events, which the
+            # tool then presented as "what's happening".
+            upcoming="true",
         )
 
     # ---------- Analytics ----------

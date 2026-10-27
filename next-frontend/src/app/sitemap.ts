@@ -5,6 +5,7 @@ import { INTENT_LANDINGS } from '@/data/intentLandings';
 import { COMPARE_LANDINGS } from '@/data/compareLandings';
 
 import { PUBLIC_ITINERARIES } from '@/data/publicItineraries';
+import { blogSitemapEntries, latestBlogDateModified } from '@/lib/blogDates';
 
 const BASE_URL = 'https://www.nationalparksexplorerusa.com';
 const API_URL =
@@ -14,20 +15,28 @@ const API_URL =
     : 'http://localhost:5001/api');
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // Static routes — group by change frequency for appropriate lastModified
+  // Static routes. Dynamic hubs (/, /events, /explore, /where-next, /discover/*)
+  // omit lastModified: they have no editorial modification record, and a
+  // request-time `new Date()` would falsely claim they changed on every crawl.
+  // /blog gets the newest blog post date once posts are fetched below.
+  const blogHubRoute: MetadataRoute.Sitemap[number] = {
+    url: `${BASE_URL}/blog`,
+    changeFrequency: 'weekly',
+    priority: 0.8,
+  };
   const staticRoutes: MetadataRoute.Sitemap = [
     // Daily-changing content
-    { url: BASE_URL, lastModified: new Date(), changeFrequency: 'daily', priority: 1.0 },
-    { url: `${BASE_URL}/events`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.8 },
+    { url: BASE_URL, changeFrequency: 'daily', priority: 1.0 },
+    { url: `${BASE_URL}/events`, changeFrequency: 'daily', priority: 0.8 },
     // Weekly-changing content
-    { url: `${BASE_URL}/explore`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 },
-    { url: `${BASE_URL}/where-next`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
-    { url: `${BASE_URL}/discover`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 },
-    { url: `${BASE_URL}/discover/activities`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.85 },
-    { url: `${BASE_URL}/discover/topics`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.85 },
-    { url: `${BASE_URL}/discover/types`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.85 },
-    { url: `${BASE_URL}/discover/states`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.85 },
-    { url: `${BASE_URL}/blog`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${BASE_URL}/explore`, changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${BASE_URL}/where-next`, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${BASE_URL}/discover`, changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${BASE_URL}/discover/activities`, changeFrequency: 'weekly', priority: 0.85 },
+    { url: `${BASE_URL}/discover/topics`, changeFrequency: 'weekly', priority: 0.85 },
+    { url: `${BASE_URL}/discover/types`, changeFrequency: 'weekly', priority: 0.85 },
+    { url: `${BASE_URL}/discover/states`, changeFrequency: 'weekly', priority: 0.85 },
+    blogHubRoute,
     { url: `${BASE_URL}/plan-ai`, lastModified: new Date('2026-05-01'), changeFrequency: 'weekly', priority: 0.8 },
     { url: `${BASE_URL}/trailie-demo`, lastModified: new Date('2026-06-11'), changeFrequency: 'weekly', priority: 0.75 },
     { url: `${BASE_URL}/testimonials`, lastModified: new Date('2026-05-01'), changeFrequency: 'weekly', priority: 0.5 },
@@ -67,22 +76,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error('Sitemap: Failed to fetch park slugs', e);
   }
 
-  // Blog routes — use post's updatedAt if available, otherwise fixed date
+  // Blog routes — editorial date (contentUpdatedAt || publishedAt), never updatedAt
   let blogRoutes: MetadataRoute.Sitemap = [];
   try {
     const res = await fetch(`${API_URL}/blogs?status=published&limit=200`, { next: { revalidate: 3600 } });
     if (res.ok) {
       const json = await res.json();
       const posts = json.data || json.blogs || json || [];
-      const blogFallbackDate = new Date('2026-05-01');
-      blogRoutes = Array.isArray(posts)
-        ? posts.map((post: { slug: string; updatedAt?: string; updated_at?: string }) => ({
-          url: `${BASE_URL}/blog/${post.slug}`,
-          lastModified: post.updatedAt ? new Date(post.updatedAt) : post.updated_at ? new Date(post.updated_at) : blogFallbackDate,
-          changeFrequency: 'weekly' as const,
-          priority: 0.7,
-        }))
-        : [];
+      blogRoutes = blogSitemapEntries(posts, BASE_URL);
+      const latest = latestBlogDateModified(posts);
+      if (latest) blogHubRoute.lastModified = latest;
     }
   } catch (e) {
     console.error('Sitemap: Failed to fetch blog posts', e);

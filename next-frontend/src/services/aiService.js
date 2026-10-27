@@ -194,7 +194,10 @@ class AIService {
     conversationId = null,
     stream = false,
     signal,                 // AbortController.signal (optional)
-    metadata                // optional: { parkFacts, userPrefs, aiContext, ... }
+    metadata,               // optional: { parkFacts, userPrefs, aiContext, ... }
+    // Same id the stream attempt used: the server counts a stream -> non-stream
+    // fallback or a transport retry as one fair-use turn, not two.
+    clientTurnId
   }) {
     const resolved = resolveChatPayload(messages, systemPrompt);
     const body = {
@@ -207,7 +210,8 @@ class AIService {
       max_tokens,
       conversationId,
       stream,
-      metadata
+      metadata,
+      clientTurnId
     };
 
     const response = await enhancedApi.post(
@@ -299,6 +303,8 @@ class AIService {
     // display folds here too, split out of the overloaded `thinking` event.
     onDisplayContext,
     onDraftEvent,
+    // Stable per-submission id (fair-use turn identity; see chat()).
+    clientTurnId,
   }) {
     const resolved = resolveChatPayload(messages, systemPrompt);
     const token = typeof window !== 'undefined' ? getAuthBearerToken() : null;
@@ -324,6 +330,7 @@ class AIService {
         maxTokens: max_tokens,
         conversationId,
         metadata,
+        clientTurnId,
       }),
       signal,
     });

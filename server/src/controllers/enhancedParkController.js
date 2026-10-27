@@ -94,9 +94,11 @@ exports.getParkComparison = async (req, res, next) => {
 
     const enhancedParks = await Promise.all(enhancedDataPromises);
 
-    // Get review statistics for all parks
-    const reviewStatsPromises = parkCodes.map(parkCode => 
-      ParkReview.getParkStats(parkCode)
+    // Get review statistics for the parks that were found. Indexing by the
+    // requested parkCodes misaligned stats whenever an unknown code was mixed in
+    // (e.g. ['brch', 'zion'] gave Zion the stats for 'brch').
+    const reviewStatsPromises = validParks.map(park =>
+      ParkReview.getParkStats(park.parkCode)
     );
 
     const reviewStats = await Promise.all(reviewStatsPromises);

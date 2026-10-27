@@ -195,7 +195,9 @@ async function eraseAccountData({ userId, actor = { type: 'system' }, overrides 
     await record('blog_reactions', 'anonymize_reference', () =>
       BlogPost.updateMany(
         { $or: [{ likes: userId }, { favorites: userId }] },
-        { $pull: { likes: userId, favorites: userId } }
+        { $pull: { likes: userId, favorites: userId } },
+        // Reaction cleanup is operational; it must not refresh blog freshness dates.
+        { timestamps: false }
       )
     );
     await record('event_registrations', 'anonymize_reference', () =>

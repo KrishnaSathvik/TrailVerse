@@ -145,7 +145,7 @@ export const logPageView = () => {
   if (typeof window === 'undefined') return;
   const pathname = window.location.pathname || '/';
   sendGaPageView(pathname);
-  capture('page_viewed', {
+  capture('$pageview', {
     page_category: pageCategory(pathname),
     content_key: contentKey(pathname),
     signed_in: isSignedIn(),
@@ -156,7 +156,7 @@ export const trackPageView = (path) => {
   if (typeof window === 'undefined') return;
   const pathname = String(path || '/').split('?')[0];
   sendGaPageView(pathname);
-  capture('page_viewed', {
+  capture('$pageview', {
     page_category: pageCategory(pathname),
     content_key: contentKey(pathname),
     signed_in: isSignedIn(),

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { getNpsService } = require('../services/npsService');
 const BlogPost = require('../models/BlogPost');
+const { blogDateModified } = require('../utils/blogDates');
 
 // @desc    Generate dynamic sitemap
 // @route   GET /sitemap.xml
@@ -9,7 +10,11 @@ const BlogPost = require('../models/BlogPost');
 router.get('/sitemap.xml', async (req, res) => {
   try {
     const baseUrl = 'https://www.nationalparksexplorerusa.com';
-    const today = new Date().toISOString().split('T')[0];
+    // No request-time lastmod: static hubs and park pages omit <lastmod> rather
+    // than claiming they changed today. /blog uses its newest post's date.
+    const toDay = (date) => date.toISOString().split('T')[0];
+    let blogEntries = '';
+    let blogHubLastmod = null;
 
     // Static pages
     let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -18,49 +23,42 @@ router.get('/sitemap.xml', async (req, res) => {
   
   <url>
     <loc>${baseUrl}/</loc>
-    <lastmod>${today}</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
 
   <url>
     <loc>${baseUrl}/explore</loc>
-    <lastmod>${today}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
 
   <url>
     <loc>${baseUrl}/map</loc>
-    <lastmod>${today}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
     <loc>${baseUrl}/compare</loc>
-    <lastmod>${today}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
 
   <url>
     <loc>${baseUrl}/plan-ai</loc>
-    <lastmod>${today}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
     <loc>${baseUrl}/events</loc>
-    <lastmod>${today}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
 
   <url>
-    <loc>${baseUrl}/blog</loc>
-    <lastmod>${today}</lastmod>
+    <loc>${baseUrl}/blog</loc>__BLOG_HUB_LASTMOD__
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
@@ -75,7 +73,6 @@ router.get('/sitemap.xml', async (req, res) => {
         sitemap += `
   <url>
     <loc>${baseUrl}/parks/${park.parkCode}</loc>
-    <lastmod>${today}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     ${park.images?.[0]?.url ? `
@@ -97,7 +94,10 @@ router.get('/sitemap.xml', async (req, res) => {
         .limit(100);
       
       blogPosts.forEach(post => {
-        const lastmod = post.updatedAt.toISOString().split('T')[0];
+        const modified = blogDateModified(post);
+        if (modified && (!blogHubLastmod || modified > blogHubLastmod)) blogHubLastmod = modified;
+        const lastmodTag = modified ? `
+    <lastmod>${toDay(modified)}</lastmod>` : '';
         
         // Ensure featured image URL is absolute
         let imageUrl = '';
@@ -111,10 +111,9 @@ router.get('/sitemap.xml', async (req, res) => {
           }
         }
         
-        sitemap += `
+        blogEntries += `
   <url>
-    <loc>${baseUrl}/blog/${post.slug}</loc>
-    <lastmod>${lastmod}</lastmod>
+    <loc>${baseUrl}/blog/${post.slug}</loc>${lastmodTag}
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     ${imageUrl ? `
@@ -129,6 +128,12 @@ router.get('/sitemap.xml', async (req, res) => {
       // Continue without blog posts if there's an error
     }
 
+    sitemap += blogEntries;
+    sitemap = sitemap.replace(
+      '__BLOG_HUB_LASTMOD__',
+      blogHubLastmod ? `
+    <lastmod>${toDay(blogHubLastmod)}</lastmod>` : ''
+    );
     sitemap += '\n</urlset>';
 
     res.header('Content-Type', 'application/xml');

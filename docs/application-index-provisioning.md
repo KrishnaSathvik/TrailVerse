@@ -26,7 +26,7 @@ The inventory removes one conflicting redundant plain `AnonymousSession.anonymou
 
 ## Inventory
 
-This snapshot has **35 models and 161 declared indexes**, excluding implicit `_id` indexes. Run `indexes:inventory` for exact ordered keys and all options; the executable inventory is generated from the schemas rather than a separately maintained index allowlist. New model files are included automatically.
+This snapshot has **38 models and 164 declared indexes**, excluding implicit `_id` indexes. Run `indexes:inventory` for exact ordered keys and all options; the executable inventory is generated from the schemas rather than a separately maintained index allowlist. New model files are included automatically.
 
 | Model | Index count | Unique constraints | TTL constraints (seconds) |
 | --- | ---: | --- | --- |
@@ -57,9 +57,12 @@ This snapshot has **35 models and 161 declared indexes**, excluding implicit `_i
 | TrailieEvidenceRaw | 3 | `rawId` | `deleteAfter`: 0 |
 | TrailieEvidenceRefreshEvent | 3 | `refreshEventId` | — |
 | TrailieEvidenceRefreshLease | 2 | `leaseKey` | `expiresAt`: 0 |
+| TrailieGenerationLease | 1 | — (`_id` key) | `expiresAt`: 0 |
 | TrailieProseRecoveryLease | 2 | `userId, responseId` | `expiresAt`: 0 |
 | TrailieReviewJob | 7 | `jobId`; `idempotencyKey` | `payloadExpiresAt`: 0 |
+| TrailieSpendDaily | 1 | — (`_id` key) | `expiresAt`: 0 |
 | TrailieReviewTelemetry | 3 | `responseId, contentHash, itineraryHash, reviewerVersion` | — |
+| TrailieTurnBurst | 1 | — (`_id` key) | `expiresAt`: 0 |
 | TrailieTurnPersistence | 2 | `responseId` | `observedAt`: 2592000 |
 | TripPlan | 5 | `shareId` (sparse) | — |
 | User | 5 | `email` | — |

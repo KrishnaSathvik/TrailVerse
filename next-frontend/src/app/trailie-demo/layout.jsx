@@ -17,7 +17,7 @@ export const metadata = {
     url: CANONICAL,
     siteName: 'TrailVerse',
     type: 'website',
-    images: [{ url: '/og/trailie.jpg', width: 1200, height: 630, alt: 'Trailie — Your national park trip planner on TrailVerse' }],
+    images: [{ url: '/og/trailie.jpg', width: 1200, height: 630, alt: "Meet Trailie, TrailVerse's park trip planner." }],
   },
   twitter: {
     card: 'summary_large_image',

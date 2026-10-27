@@ -38,7 +38,7 @@ export default function TestimonialsSectionSkeleton({ showTitle = true }) {
             </p>
           </div>
         ) : null}
-        <div className="hidden md:grid md:grid-cols-3 gap-8">{cardSkeleton}</div>
+        <div className="hidden md:grid md:grid-cols-2 md:gap-5 lg:grid-cols-3 lg:gap-8">{cardSkeleton}</div>
         <div className="md:hidden flex flex-col gap-4">{cardSkeleton}</div>
       </div>
     </div>

@@ -140,6 +140,7 @@ class ParkSizeService {
       'acad': '49,075 acres',    // Acadia
       'sagu': '91,716 acres',    // Saguaro
       'pefo': '221,390 acres',   // Petrified Forest
+      'chir': '12,000 acres',    // Chiricahua (NPS: "about 12,000 acres")
       'grsa': '107,342 acres',   // Great Sand Dunes
       'blca': '30,750 acres',    // Black Canyon
       'meve': '52,485 acres',    // Mesa Verde

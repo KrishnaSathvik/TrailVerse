@@ -110,6 +110,8 @@ async function main() {
     updateOne: {
       filter: { _id: row._id },
       update: { $set: { views: row.target } },
+      // View bumps are operational: never advance updatedAt/contentUpdatedAt.
+      timestamps: false,
     },
   }));
 

@@ -10,7 +10,7 @@ export const SIGNUP_PROMPT_REASONS = {
 };
 
 const DEFAULT_BENEFITS = [
-  'Unlimited Trailie planning',
+  'Keep planning with Trailie',
   'Save trips and chat history',
   'Share plans with travel companions',
   'Export itineraries as PDF',
@@ -49,7 +49,7 @@ const PROMPTS = {
     title: "You've Used Your 5 Free Messages",
     subtitle: 'Create a free account to keep the conversation going:',
     benefits: [
-      'Unlimited Trailie — no message cap',
+      'Keep chatting with Trailie beyond the free guest messages',
       'Save this chat and continue where you left off',
       'Share your plan with travel companions',
       'Export itineraries as PDF',
@@ -67,13 +67,13 @@ const PROMPTS = {
       'Export your itinerary as PDF',
       'Save this trip permanently',
       'Edit days in the drag-and-drop plan builder',
-      'Unlimited Trailie planning for future trips',
+      'Keep planning future trips with Trailie',
     ],
     primaryCta: 'Create Free Account',
     secondaryCta: 'Sign In',
     inlineTitle: 'Love this plan? Save it to your account.',
     inlineSubtitle:
-      'Sign up free to share this plan with your group, export a PDF, and keep unlimited planning.',
+      'Sign up free to share this plan with your group, export a PDF, and keep planning with Trailie.',
     inlineCta: 'Save Trip Free',
   },
   [SIGNUP_PROMPT_REASONS.SAVE_CHAT]: {
@@ -82,7 +82,7 @@ const PROMPTS = {
     subtitle: 'Create a free account so you never lose this planning session:',
     benefits: [
       'Save this chat permanently',
-      'Unlimited Trailie planning',
+      'Keep planning with Trailie',
       'Build structured itineraries over multiple sessions',
       'Share and export when your plan is ready',
       'Save parks, track visits & write reviews',
@@ -90,7 +90,7 @@ const PROMPTS = {
     primaryCta: 'Create Free Account',
     secondaryCta: 'Sign In',
     inlineTitle: 'Want to keep this chat?',
-    inlineSubtitle: 'Sign up free to save this conversation and plan without message limits.',
+    inlineSubtitle: 'Sign up free to save this conversation and keep planning with Trailie.',
     inlineCta: 'Save Chat Free',
   },
 };

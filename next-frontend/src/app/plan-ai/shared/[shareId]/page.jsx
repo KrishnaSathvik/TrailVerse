@@ -32,7 +32,7 @@ export async function generateMetadata({ params }) {
 
   const sample = getSampleItineraryByShareId(shareId);
   const ogImage = sample
-    ? '/og/itineraries.jpg'
+    ? '/og-image-trailverse.jpg'
     : '/og-image-trailverse.jpg';
 
   return {
