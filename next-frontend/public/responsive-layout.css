@@ -22,6 +22,9 @@
   min-width: 0;
   margin-inline: auto;
 }
+/* Text measure: caps line length but starts on the shell edge, under its heading.
+   Use .public-rich when a 1120px column should be centered instead. */
+.public-content { margin-inline: 0; }
 .public-reading { max-width: var(--public-reading-width); }
 .public-rich,
 .public-content { max-width: var(--public-rich-width); }

@@ -1345,8 +1345,7 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
               </p>
               <Link
                 href={`/plan-ai?suggest=${encodeURIComponent(selectedParks.map((p) => p.fullName).join(' and '))}`}
-                className="inline-flex w-full sm:w-auto lg:mx-auto items-center justify-center gap-2 flex-nowrap px-5 py-3 rounded-full text-sm font-semibold transition hover:brightness-110"
-                style={{ backgroundColor: 'var(--accent-green-dark)', color: '#fff' }}
+                className="public-action public-action-primary w-full sm:w-auto lg:mx-auto gap-2 flex-nowrap px-6 text-sm font-semibold"
               >
                 <Sparkles className="h-4 w-4 shrink-0" aria-hidden />
                 <span className="text-center leading-snug">

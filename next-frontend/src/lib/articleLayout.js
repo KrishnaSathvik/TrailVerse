@@ -15,7 +15,7 @@ export const ARTICLE_HERO_WIDE =
   'article-hero mb-8 pb-8 public-content border-b';
 
 export const ARTICLE_TITLE =
-  'text-3xl sm:text-4xl lg:text-[2.75rem] font-bold mb-4 leading-[1.12] tracking-tight';
+  'font-display text-3xl sm:text-4xl lg:text-[2.75rem] font-semibold mb-4 leading-[1.12] tracking-tight';
 
 export const ARTICLE_DECK =
   'text-lg sm:text-xl leading-relaxed';
@@ -37,4 +37,4 @@ export const ARTICLE_SECTION =
   'article-section scroll-mt-28 py-10 first:pt-0 last:pb-0';
 
 export const ARTICLE_H2 =
-  'text-2xl sm:text-[1.75rem] font-bold tracking-tight mb-4';
+  'text-2xl sm:text-[1.75rem] font-semibold tracking-tight mb-4';

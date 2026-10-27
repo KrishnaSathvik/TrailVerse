@@ -1,3 +1,4 @@
+import { blogCategoryLabel } from '../blogCategories';
 import { sanitizePdfText, sanitizeInlinePdfText, stripHtml, stripInlineHtml, toAbsoluteAssetUrl } from './pdfUtils';
 
 function normalizePdfHref(href = '') {
@@ -305,7 +306,7 @@ export function normalizeBlogPostForPdf(post = {}) {
     title: sanitizePdfText(post.title || 'TrailVerse Blog'),
     excerpt: sanitizePdfText(post.excerpt || ''),
     author: sanitizePdfText(author),
-    category: sanitizePdfText(post.category || 'Blog'),
+    category: sanitizePdfText(post.category ? blogCategoryLabel(post.category) : 'Blog'),
     publishedAt: post.publishedAt,
     readTime: post.readTime,
     featuredImage: post.featuredImage,

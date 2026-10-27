@@ -86,8 +86,8 @@
   --color-sky-900: #0c4a6e;
 
   /* Font Families */
-  --font-sans: Geist, Inter, system-ui, sans-serif;
-  --font-display: Bricolage Grotesque, sans-serif;
+  --font-sans: var(--font-geist), Geist, Inter, system-ui, sans-serif;
+  --font-display: var(--font-bricolage), 'Bricolage Grotesque', var(--font-geist), Geist, system-ui, sans-serif;
 
   /* Font Sizes */
   --font-size-7xl: 4.5rem;
@@ -626,9 +626,7 @@ svg {
 /* Base body styles with theme support */
 body {
   margin: 0;
-  font-family: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--bg-primary);
@@ -656,8 +654,11 @@ section {
   width: 100%;
 }
 
-*:where(:not(svg):not(svg *)) {
-  font-family: 'Geist', 'Inter', system-ui, sans-serif;
+/* Layered so Tailwind font utilities (font-display, font-mono) can override it. */
+@layer base {
+  *:where(:not(svg):not(svg *)) {
+    font-family: var(--font-sans);
+  }
 }
 
 /* Line clamp utilities */
@@ -1128,12 +1129,21 @@ section {
   color: var(--text-primary);
 }
 .public-action-secondary:hover { border-color: var(--text-secondary); }
+/* Standard filled CTA — pair with .public-action (48px, 12px radius); size text/padding with utilities. */
+.public-action-primary {
+  border: 1px solid var(--accent-green);
+  background: var(--accent-green);
+  color: #fff;
+  transition: background-color .15s ease, border-color .15s ease;
+}
+.public-action-primary:hover { background: var(--accent-green-dark); border-color: var(--accent-green-dark); color: #fff; }
 .public-search {
   min-height: 3rem;
   border-radius: .75rem;
   background: var(--bg-secondary);
 }
 .public-action:focus-visible,
+.ui-button:focus-visible,
 .public-search:focus-visible,
 .public-discovery-link:focus-visible,
 .public-footer a:focus-visible {
@@ -1223,8 +1233,8 @@ section {
 .info-page .public-action { white-space: normal; text-align: center; }
 
 
-.info-legal-content > div { max-width: var(--public-reading-width); margin-inline: auto; }
-.info-legal .info-introduction { max-width: var(--public-reading-width); margin-inline: auto; }
+.info-legal-content > div { max-width: var(--public-reading-width); margin-inline: 0; }
+.info-legal .info-introduction { max-width: var(--public-reading-width); margin-inline: 0; }
 
 
 /* One content canvas for live, restored, and public recorded responses. */
@@ -1256,14 +1266,14 @@ section {
 .article-reading .blog-prose > :is(figure, pre, .blog-table-wrap),
 .article-reading .blog-prose > p:has(> img) {
   max-width: var(--public-rich-width);
-  margin-inline: auto;
+  margin-inline: 0;
 }
 .article-reading .blog-prose pre, .article-reading .blog-prose .blog-table-wrap { overflow-x: auto; overscroll-behavior-x: contain; }
 .article-reading .blog-prose :is(td, th) { font-size: 14px; }
 .article-wide > .article-hero { margin-inline: 0; }
 
 /* Public controls keep usable targets at every viewport; prose links are exempt. */
-:where(.public-shell, .public-container, .info-page, .plan-ai-shell, .auth-shell, .public-state) :is(button, [role="button"]) {
+:where(.public-shell, .public-container, .info-page, .plan-ai-shell, .auth-shell, .public-state) :is(button, [role="button"]):not(.public-action) {
   min-height: var(--public-control-height);
 }
 :where(.public-shell, .public-container, .info-page, .auth-shell) :is(input[type="text"], input[type="email"], input[type="password"], input[type="search"], select) {
@@ -1295,13 +1305,10 @@ button.theme-segment {
 :where(.public-account-page, [role="dialog"]) button { min-height: var(--public-control-height); }
 
 /* Keep legal summaries, notices, and body copy on one reading column. */
-.info-legal .info-section { max-width: calc(var(--public-reading-width) + 2 * var(--public-gutter)); }
+.info-legal .info-section > * { max-width: var(--public-reading-width); }
 
 /* Where Next keeps the picker and newsletter in one compact reading space. */
-.where-next-page { max-width: 1120px; margin-inline: auto; padding: 48px 32px 64px; }
-.where-next-heading { max-width: 640px; margin-bottom: 36px; }
-.where-next-heading h1 { font-size: clamp(2rem, 4vw, 2.75rem); font-weight: 650; letter-spacing: -.035em; line-height: 1.15; margin-bottom: 12px; }
-.where-next-heading > p { color: var(--text-secondary); font-size: 17px; line-height: 1.65; max-width: 54ch; }
+.where-next-page { max-width: var(--public-shell-width); margin-inline: auto; padding: 48px var(--public-gutter) 64px; }
 .where-next-layout { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 48px; align-items: start; }
 .where-next-picker { min-width: 0; padding-top: 12px; }
 .info-page .where-next-search input:focus-visible { outline: none !important; box-shadow: none !important; }
@@ -1320,9 +1327,7 @@ button.theme-segment {
 .where-next-picker .where-next-result { width: 100%; display: flex; flex-direction: column; text-align: left; }
 .where-next-picker .where-next-result > section { border-left: 0; padding-left: 0; border-top: 1px solid var(--border); padding-top: 20px; }
 @media (max-width: 767px) {
-  .where-next-page { padding: 28px 20px 40px; }
-  .where-next-heading { margin-bottom: 28px; }
-  .where-next-heading > p { font-size: 16px; }
+  .where-next-page { padding: 28px var(--public-gutter) 40px; }
   .where-next-layout { grid-template-columns: minmax(0, 1fr); gap: 28px; }
   .where-next-picker { padding-top: 0; }
   .where-next-newsletter { padding: 22px; }
@@ -1345,8 +1350,9 @@ button.theme-segment {
 .where-next-skip { margin-top: 8px; }
 .where-next-window { margin-top: 12px; color: var(--text-secondary); font-size: 15px; }
 .where-next-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; margin-bottom: 8px; }
-.where-next-action { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 16px; border: 1px solid var(--border); border-radius: 10px; color: var(--text-primary); font-size: 14px; font-weight: 600; text-align: center; }
+.where-next-action { display: inline-flex; align-items: center; justify-content: center; min-height: 3rem; padding: 10px 20px; border: 1px solid var(--border); border-radius: .75rem; color: var(--text-primary); font-size: 14px; font-weight: 600; text-align: center; }
 .where-next-action-primary { background: var(--accent-green); border-color: var(--accent-green); color: white; }
+.where-next-action-primary:hover { background: var(--accent-green-dark); border-color: var(--accent-green-dark); }
 .where-next-picker .where-next-result { gap: 0; }
 .where-next-leaders { margin-top: 16px; display: grid; gap: 10px; font-size: 14px; }
 .where-next-leaders li { display: flex; justify-content: space-between; gap: 12px; }

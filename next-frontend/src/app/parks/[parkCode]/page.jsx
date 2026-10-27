@@ -1,11 +1,9 @@
-import { Suspense } from 'react';
 import { notFound, permanentRedirect } from 'next/navigation';
 import { getParkDetails, getParkDetailsBySlug, PARK_PAGE_REVALIDATE_SECONDS } from '@/lib/parkApi';
 import {
   buildParkMetaDescription,
   buildParkPageTitle,
   buildParkSeoLeadLine,
-  formatStateList,
   getStateHubSlug,
   isTierAPark,
 } from '@/lib/parkSeo';
@@ -16,13 +14,19 @@ import {
   getParkPlanningSnapshot,
   hydratePlanningFaq,
 } from '@/lib/parkPlanningContent';
-import ParkSeoOverview from '@/components/seo/ParkSeoOverview';
 import ParkDetailClient from './ParkDetailClient';
-import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { canonicalPageMetadata } from '@/lib/seo';
 
 /** Segment config must be a build-time literal (not imported). Sync with PARK_PAGE_REVALIDATE_SECONDS. */
 export const revalidate = 604800;
+
+/** Server-formatted so the client hydrates the identical "as of" string. */
+const AS_OF_FORMAT = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  timeZone: 'America/Los_Angeles',
+});
 
 export async function generateStaticParams() {
   // Generate each park once on demand, then serve its ISR cache. Building every
@@ -113,7 +117,6 @@ export default async function ParkPage({ params }) {
   const parkUrl = `https://www.nationalparksexplorerusa.com/parks/${parkSlug}`;
   const stateHubSlug = getStateHubSlug(park.states);
   const seoLeadLine = buildParkSeoLeadLine(park, parkSlug);
-  const statesLabel = formatStateList(park.states);
 
   // All structured data below is built from our own server API data (trusted NPS source).
   const placeNode = {
@@ -136,31 +139,9 @@ export default async function ParkPage({ params }) {
     sameAs: park.url,
   };
 
-  const breadcrumb = {
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.nationalparksexplorerusa.com' },
-      { '@type': 'ListItem', position: 2, name: 'Explore', item: 'https://www.nationalparksexplorerusa.com/explore' },
-      ...(stateHubSlug
-        ? [{
-            '@type': 'ListItem',
-            position: 3,
-            name: statesLabel,
-            item: `https://www.nationalparksexplorerusa.com/parks/state/${stateHubSlug}`,
-          }]
-        : []),
-      {
-        '@type': 'ListItem',
-        position: stateHubSlug ? 4 : 3,
-        name: park.fullName,
-        item: parkUrl,
-      },
-    ],
-  };
-
   const structuredData = {
     '@context': 'https://schema.org',
-    '@graph': [placeNode, breadcrumb],
+    '@graph': [placeNode],
   };
 
   // Related parks for "You Might Also Like" — slim payload (~2 KB vs 3.66 MB all-parks)
@@ -207,30 +188,16 @@ export default async function ParkPage({ params }) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
-      <ParkSeoOverview
-        park={park}
-        parkSlug={parkSlug}
+      <ParkDetailClient
+        initialData={data}
+        parkCode={parkCode}
+        relatedParks={relatedParks}
         seoLeadLine={seoLeadLine}
         stateHubSlug={stateHubSlug}
-        relatedParks={relatedParks}
+        planningSnapshot={planningSnapshot}
+        planningFaqItems={planningFaqItems}
+        dataAsOfLabel={AS_OF_FORMAT.format(new Date())}
       />
-      <Suspense
-        fallback={
-          <div className="flex min-h-[50vh] items-center justify-center">
-            <LoadingSpinner size="lg" text="Loading park…" />
-          </div>
-        }
-      >
-        <ParkDetailClient
-          initialData={data}
-          parkCode={parkCode}
-          relatedParks={relatedParks}
-          seoLeadLine={seoLeadLine}
-          stateHubSlug={stateHubSlug}
-          planningSnapshot={planningSnapshot}
-          planningFaqItems={planningFaqItems}
-        />
-      </Suspense>
     </>
   );
 }

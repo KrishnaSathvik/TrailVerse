@@ -1,6 +1,6 @@
 "use client";
-import React, { useState, useEffect, useMemo, useRef, Suspense } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -32,7 +32,6 @@ import ParkReviewPromptDialog from '@/components/park-details/ParkReviewPromptDi
 import ParkAlertsTab from '@/components/park-details/ParkAlertsTab';
 import ParkPermitsTab from '@/components/park-details/ParkPermitsTab';
 import ParkTabSpinner from '@/components/park-details/ParkTabSpinner';
-import LoadingSpinner from '@/components/common/LoadingSpinner';
 import ParkTabEmptyState from '@/components/park-details/ParkTabEmptyState';
 import {
   hasSeenVisitedReviewPrompt,
@@ -43,8 +42,9 @@ import ShareButtons from '@/components/common/ShareButtons';
 import PhotoLightbox from '@/components/common/PhotoLightbox';
 import Button from '@/components/common/Button';
 import { getParkPlanVisitCta } from '@/lib/planAiWelcomeCopy';
-import { hrefWithFrom, LANDING_RETURN_PATH } from '@/lib/returnNavigation';
-import { useReturnNavigation } from '@/hooks/useReturnNavigation';
+import { hrefWithFrom, LANDING_RETURN_PATH, resolveReturnNavigation } from '@/lib/returnNavigation';
+import ParkSearchParamsBridge from './ParkSearchParamsBridge';
+import ParkAlertsSummary from './ParkAlertsSummary';
 import { hasCrowdCalendar } from '@/lib/crowdCalendar';
 import ParkPlanOverviewSection from '@/components/park-details/ParkPlanOverviewSection';
 import ParkPlanningFaqSection from '@/components/park-details/ParkPlanningFaqSection';
@@ -97,20 +97,32 @@ const ParkDetailInner = ({
   stateHubSlug = null,
   planningSnapshot = null,
   planningFaqItems = [],
+  dataAsOfLabel = null,
 }) => {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
-  const [urlSynced, setUrlSynced] = useState(false);
-  useEffect(() => setUrlSynced(true), []);
+  // Query string is read through ParkSearchParamsBridge after hydration, not
+  // useSearchParams() here: that hook bails the prerendered page out to
+  // client-side rendering (empty "Loading park…" HTML). Until the bridge
+  // reports, render the default (overview) view the server rendered.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
+  const [syncedQuery, setSyncedQuery] = useState(null);
+  const handleQueryChange = useCallback((query) => setSyncedQuery(query), []);
+  const urlSynced = syncedQuery !== null;
+  const searchParams = useMemo(() => new URLSearchParams(syncedQuery || ''), [syncedQuery]);
   const requestedTab = urlSynced
     ? (searchParams.get('tab') || 'overview')
     : initialTab;
-  const { backHref, backLabel } = useReturnNavigation({
-    defaultHref: LANDING_RETURN_PATH,
-    defaultLabel: 'TrailVerse',
-  });
+  const fromParam = searchParams.get('from');
+  const { backHref, backLabel } = useMemo(
+    () => resolveReturnNavigation(fromParam, {
+      defaultHref: LANDING_RETURN_PATH,
+      defaultLabel: 'TrailVerse',
+    }),
+    [fromParam]
+  );
   const { isAuthenticated, user, showLoginPrompt } = useAuth();
   const { showToast } = useToast();
   const { addFavorite, removeFavorite, isParkFavorited, refreshFavorites } = useFavorites();
@@ -384,10 +396,14 @@ const ParkDetailInner = ({
       .map((x) => x.img);
   }, [park?.images, galleryPhotos]);
 
+  // `park` is replaced when client data refreshes; count one view per park.
+  const lastLoggedParkView = useRef(null);
   useEffect(() => {
     if (!park) return;
     const searchSession = getParkSearchSession();
     const code = (park.parkCode || parkCode || '').toLowerCase();
+    if (lastLoggedParkView.current === code) return;
+    lastLoggedParkView.current = code;
     const fromSearch =
       searchSession &&
       code &&
@@ -551,7 +567,7 @@ const ParkDetailInner = ({
 
   const planAiHref = `/plan-ai?park=${encodeURIComponent(npsParkCode)}&name=${encodeURIComponent(park?.fullName || '')}`;
 
-  const handlePlanWithTrailie = () => {
+  const handlePlanWithTrailie = (event) => {
     logCtaClick({
       ctaId: 'park_overview_plan_trailie',
       label: parkPlanCta.button,
@@ -559,6 +575,10 @@ const ParkDetailInner = ({
       destination: planAiHref,
       parkCode: npsParkCode,
     });
+    // The CTA is a real link (crawlable, opens in a new tab with modifier keys);
+    // plain clicks keep client-side navigation.
+    if (event && (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)) return;
+    event?.preventDefault?.();
     router.push(planAiHref);
   };
 
@@ -770,6 +790,7 @@ const ParkDetailInner = ({
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
+      {hydrated ? <ParkSearchParamsBridge onChange={handleQueryChange} /> : null}
       <Header />
 
       {/* Hero Image */}
@@ -834,11 +855,11 @@ const ParkDetailInner = ({
 
                 <div className="space-y-3 mb-3">
                   <div className="w-full">
-                    <h2 className="text-3xl sm:text-3xl md:text-4xl lg:text-4xl xl:text-5xl font-semibold text-white tracking-tight leading-[1.05] drop-shadow-lg"
+                    <h1 className="text-3xl sm:text-3xl md:text-4xl lg:text-4xl xl:text-5xl font-semibold text-white tracking-tight leading-[1.05] drop-shadow-lg"
                       title={park.fullName}
                     >
                       {park.fullName}
-                    </h2>
+                    </h1>
                   </div>
 
                   <div className="hidden sm:flex sm:flex-row sm:flex-wrap sm:items-center sm:gap-2.5 lg:gap-3">
@@ -999,6 +1020,7 @@ const ParkDetailInner = ({
                 parkCode={npsParkCode}
                 snapshot={planningSnapshot}
                 planCta={parkPlanCta}
+                planHref={planAiHref}
                 onPlan={handlePlanWithTrailie}
                 compareHref={compareHref}
               />
@@ -1040,6 +1062,15 @@ const ParkDetailInner = ({
                       <p className="text-base leading-relaxed mb-6"
                         style={{ color: 'var(--text-secondary)' }}
                         dangerouslySetInnerHTML={{ __html: processHtmlContent(park.description) }}
+                      />
+
+                      <ParkAlertsSummary
+                        parkName={park.fullName}
+                        alerts={alerts}
+                        asOfLabel={dataAsOfLabel}
+                        isLive={alertsQuery.isFetchedAfterMount}
+                        npsUrl={park.url}
+                        onViewAll={() => handleTabChange('alerts')}
                       />
 
                       <ParkOverviewWeather weatherInfo={park.weatherInfo} />
@@ -3455,7 +3486,7 @@ const ParkDetailInner = ({
           }}
           aria-label="Park planning questions"
         >
-          <div className="public-content px-3 sm:px-4 lg:px-6 xl:px-8">
+          <div className="public-rich px-3 sm:px-4 lg:px-6 xl:px-8">
             <ParkPlanningFaqSection
               faqItems={faqItemsForDisplay}
               parkCode={npsParkCode}
@@ -3523,8 +3554,7 @@ const ParkDetailInner = ({
             <div className="mt-6 sm:hidden">
               <Link
                 href={relatedParksViewAllHref}
-                className="w-full inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-semibold"
-                style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                className="public-action public-action-secondary w-full px-6 text-sm font-semibold"
               >
                 View All Parks in {park.states?.split(',')[0]?.trim()}
               </Link>
@@ -3552,35 +3582,9 @@ const ParkDetailInner = ({
   );
 };
 
-function ParkDetailLoadingFallback() {
-  return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
-      <Header />
-      <div className="flex min-h-[60vh] items-center justify-center px-4">
-        <LoadingSpinner size="lg" text="Loading park…" label="Loading park" />
-      </div>
-    </div>
-  );
-}
-
-export default function ParkDetailClient({
-  relatedParks,
-  seoLeadLine,
-  stateHubSlug,
-  planningSnapshot,
-  planningFaqItems,
-  ...props
-}) {
-  return (
-    <Suspense fallback={<ParkDetailLoadingFallback />}>
-      <ParkDetailInner
-        {...props}
-        relatedParks={relatedParks}
-        seoLeadLine={seoLeadLine}
-        stateHubSlug={stateHubSlug}
-        planningSnapshot={planningSnapshot}
-        planningFaqItems={planningFaqItems}
-      />
-    </Suspense>
-  );
+// No Suspense wrapper: nothing in the park tree suspends on the query string
+// any more (see ParkSearchParamsBridge), and a boundary here only made the
+// prerendered HTML stream the page into a hidden segment behind a spinner.
+export default function ParkDetailClient(props) {
+  return <ParkDetailInner {...props} />;
 }

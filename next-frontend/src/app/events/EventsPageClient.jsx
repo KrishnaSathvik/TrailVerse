@@ -537,7 +537,7 @@ const EventsPage = ({ initialData }) => {
                   <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
                     {error}
                   </p>
-                  <Button
+                  <Button shape="rounded"
                     onClick={() => window.location.reload()}
                     variant="secondary"
                     size="lg"
@@ -563,7 +563,7 @@ const EventsPage = ({ initialData }) => {
                   >
                     Try adjusting your filters or search terms
                   </p>
-                  <Button
+                  <Button shape="rounded"
                     onClick={clearAllFilters}
                     variant="secondary"
                     size="lg"
@@ -592,7 +592,7 @@ const EventsPage = ({ initialData }) => {
                   {/* Pagination Controls */}
                   {totalPages > 1 && (
                     <div className="flex items-center justify-center gap-2 mt-8">
-                      <Button
+                      <Button shape="rounded"
                         onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                         disabled={currentPage === 1}
                         variant="secondary"
@@ -627,7 +627,7 @@ const EventsPage = ({ initialData }) => {
                         })}
                       </div>
 
-                      <Button
+                      <Button shape="rounded"
                         onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                         disabled={currentPage === totalPages}
                         variant="secondary"

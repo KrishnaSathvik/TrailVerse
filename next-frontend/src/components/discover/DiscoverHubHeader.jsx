@@ -21,12 +21,7 @@ export default function DiscoverHubHeader({
         className="inline-flex items-center gap-2 text-sm font-medium mb-6 hover:opacity-80"
       />
 
-      <h1
-        className="text-3xl sm:text-4xl font-bold mb-4"
-        style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}
-      >
-        {title}
-      </h1>
+      <h1 className="public-page-title mb-4">{title}</h1>
 
       {intro && (
         <ExpandableDescription

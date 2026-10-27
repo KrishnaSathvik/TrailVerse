@@ -85,14 +85,7 @@ function CTAButton({ href, children, secondary = false, external = false }) {
       href={href}
       target={external ? '_blank' : undefined}
       rel={external ? 'noopener noreferrer' : undefined}
-      className="inline-flex items-center justify-center public-action rounded-xl px-5 py-3 text-sm font-semibold transition"
-      style={{
-        backgroundColor: secondary ? 'var(--surface)' : 'var(--accent-green)',
-        borderWidth: '1px',
-        borderColor: 'var(--border)',
-        color: secondary ? 'var(--text-primary)' : '#fff',
-        boxShadow: 'none'
-      }}
+      className={`public-action ${secondary ? 'public-action-secondary' : 'public-action-primary'} gap-2 px-6 text-sm font-semibold`}
     >
       {children}
     </Link>
@@ -105,7 +98,7 @@ export default function AboutPage() {
       <Header />
 
       <main className="info-page">
-        <InfoPageHeader title="Hey, I’m Krishna" description={<>
+        <InfoPageHeader eyebrow="About TrailVerse" icon="Mountain" iconColor="var(--icon-nature)" title="Hey, I’m Krishna" description={<>
                     I built TrailVerse to help travelers avoid the messy part of park planning: scattered tabs, outdated conditions, confusing alerts, and half-finished itineraries.
                   </>}>
 

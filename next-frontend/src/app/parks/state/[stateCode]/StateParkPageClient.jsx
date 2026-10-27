@@ -1,16 +1,31 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import ParkCard from '@/components/explore/ParkCard';
 import DiscoverHubHeader from '@/components/discover/DiscoverHubHeader';
 import DiscoverNpsGuideSection from '@/components/discover/DiscoverNpsGuideSection';
-import { useReturnPath } from '@/hooks/useReturnPath';
+import { buildReturnPath } from '@/lib/returnNavigation';
+import { DISCOVER_INDEX_BY_DIMENSION } from '@/lib/browseHub';
+import StateSearchParamsBridge from './StateSearchParamsBridge';
 
 export default function StateParkPageClient({ stateName, parks, intro, npsGuide, loadError = false }) {
-  const returnPath = useReturnPath();
+  // `useSearchParams()` here would bail the prerendered page out to client
+  // rendering. Server HTML uses the bare pathname; the query string arrives
+  // through StateSearchParamsBridge once hydrated.
+  const pathname = usePathname();
+  const [query, setQuery] = useState('');
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
+  const returnPath = useMemo(() => buildReturnPath(pathname, query), [pathname, query]);
+
   return (
     <div className="pb-24">
+      {hydrated ? <StateSearchParamsBridge onChange={setQuery} /> : null}
       <div className="public-shell pt-6">
         <DiscoverHubHeader
+          backHref={DISCOVER_INDEX_BY_DIMENSION.state.href}
+          backLabel={DISCOVER_INDEX_BY_DIMENSION.state.label}
           title={stateName}
           intro={intro}
           parkCount={parks.length}

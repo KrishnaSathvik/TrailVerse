@@ -255,7 +255,7 @@ const BlogContent = ({ initialData }) => {
                   >
                     #{selectedTag}
                   </span>
-                  <Button
+                  <Button shape="rounded"
                     onClick={() => {
                       shouldScrollToResultsRef.current = true;
                       clearTagFilter();
@@ -277,7 +277,7 @@ const BlogContent = ({ initialData }) => {
                     </div>
                     <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Something went wrong</h3>
                     <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>{error}</p>
-                    <Button onClick={() => window.location.reload()} variant="secondary" size="md">Try Again</Button>
+                    <Button shape="rounded" onClick={() => window.location.reload()} variant="secondary" size="md">Try Again</Button>
                   </div>
                 ) : posts.length > 0 ? (
                   <>
@@ -289,7 +289,7 @@ const BlogContent = ({ initialData }) => {
 
                     {totalPages > 1 && (
                       <div className="flex items-center justify-center gap-2">
-                        <Button
+                        <Button shape="rounded"
                           onClick={() => setCurrentPage((previous) => previous - 1)}
                           disabled={currentPage === 1}
                           variant="secondary"
@@ -318,7 +318,7 @@ const BlogContent = ({ initialData }) => {
                           </button>
                         ))}
 
-                        <Button
+                        <Button shape="rounded"
                           onClick={() => setCurrentPage((previous) => previous + 1)}
                           disabled={currentPage === totalPages}
                           variant="secondary"
@@ -390,7 +390,7 @@ const BlogContent = ({ initialData }) => {
                   When to Go. Without the Crowd.
                 </h3>
                 <p className="text-sm sm:text-base" style={{ color: 'var(--text-secondary)' }}>
-                  Month-by-month crowd levels, shoulder season windows, and permit info for all 63 national parks.
+                  Month-by-month crowd levels, shoulder season windows, and permit info for all 64 national parks.
                 </p>
               </div>
               <span

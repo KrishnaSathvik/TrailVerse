@@ -62,9 +62,22 @@ export function normalizeBlogCategory(value) {
   return LEGACY_BLOG_CATEGORY_TO_SLUG[value] || value.toLowerCase().replace(/\s+/g, '-');
 }
 
+/** Title-case a raw slug ("night-sky" → "Night Sky") for categories outside the catalog. */
+function humanizeCategorySlug(value) {
+  const text = String(value).trim();
+  if (!/[-_]/.test(text) && /[A-Z\s]/.test(text)) return text; // already a display label
+  return text
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+/** Human-readable label for a stored category (canonical slug or legacy label). Never returns a raw slug. */
 export function blogCategoryLabel(slugOrLegacy) {
   const slug = normalizeBlogCategory(slugOrLegacy);
-  return BLOG_CATEGORIES[slug]?.name || slugOrLegacy || 'Park Guides';
+  if (BLOG_CATEGORIES[slug]) return BLOG_CATEGORIES[slug].name;
+  return humanizeCategorySlug(slugOrLegacy) || 'Park Guides';
 }
 
 /**

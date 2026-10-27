@@ -36,8 +36,7 @@ export default function TrailieDemoCta({ className = '', askPrompt = null }) {
 
           <Link
             href={planHref}
-            className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white transition-all hover:opacity-90 sm:px-6 sm:py-3"
-            style={{ backgroundColor: 'var(--accent-green)' }}
+            className="public-action public-action-primary gap-2 px-6 text-sm font-semibold"
           >
             Plan your trip
             <ArrowRight className="h-4 w-4" />

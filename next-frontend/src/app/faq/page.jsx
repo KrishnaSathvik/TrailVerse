@@ -1,7 +1,6 @@
 import InfoPageHeader from '@/components/info/InfoPageHeader';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
-import Button from '@/components/common/Button';
 import FAQAccordionClient from './FAQAccordionClient';
 import { FAQ_CATEGORIES } from '@/data/faqContent';
 import { SUPPORT_EMAIL } from '@/lib/publicEmails';
@@ -46,14 +45,14 @@ export default function FAQPage() {
         <Header />
 
         <main className="info-page">
-          <InfoPageHeader title="Frequently Asked Questions" description={<>
+          <InfoPageHeader eyebrow="Help Center" icon="MessageSquare" iconColor="var(--icon-discovery)" title="Frequently Asked Questions" description={<>
                 How TrailVerse works, what your account saves, and what to check before you travel.
               </>} />
 
           <FAQAccordionClient />
 
           <section className="info-section" style={{ backgroundColor: 'var(--bg-primary)' }}>
-            <div className="max-w-6xl mx-auto">
+            <div className="public-content">
               <div
                 className="public-editorial-section py-6 h-full"
                 style={{
@@ -66,9 +65,9 @@ export default function FAQPage() {
                 <p className="text-base mb-6 public-content" style={{ color: 'var(--text-secondary)' }}>
                   Can&apos;t find the answer you&apos;re looking for? Our support team is here to help.
                 </p>
-                <Button href={`mailto:${SUPPORT_EMAIL}`} variant="secondary" size="md" className="public-action" style={{ borderRadius: '12px', boxShadow: 'none', outline: undefined }}>
+                <a href={`mailto:${SUPPORT_EMAIL}`} className="public-action public-action-secondary px-6 text-sm font-semibold">
                   Contact Support
-                </Button>
+                </a>
               </div>
             </div>
           </section>

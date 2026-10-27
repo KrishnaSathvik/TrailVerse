@@ -855,8 +855,7 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
           </p>
           <Link
             href="/plan-ai"
-            className="inline-flex w-full items-center justify-center gap-2 px-7 py-3.5 rounded-full text-sm font-semibold text-white transition-all hover:opacity-90 sm:w-auto"
-            style={{ backgroundColor: 'var(--accent-green)' }}
+            className="public-action public-action-primary w-full gap-2 px-6 text-sm font-semibold sm:w-auto"
           >
             {mobilePlanCta.button}
             <ArrowRight className="h-4 w-4" />

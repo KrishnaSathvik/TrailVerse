@@ -7,6 +7,7 @@ import { useToast } from '../../context/ToastContext';
 import { useWebSocket } from '../../hooks/useWebSocket';
 import { useAuth } from '../../context/AuthContext';
 import cacheService from '../../services/cacheService';
+import { blogCategoryLabel } from '@/lib/blogCategories';
 
 const FavoriteBlogs = ({ onCountChange }) => {
   const { showToast } = useToast();
@@ -190,7 +191,7 @@ const FavoriteBlogs = ({ onCountChange }) => {
                         color: 'var(--text-tertiary)'
                       }}
                     >
-                      {blog.category}
+                      {blogCategoryLabel(blog.category)}
                     </span>
                   )}
                   <Link href={`/blog/${blog.slug}`}>

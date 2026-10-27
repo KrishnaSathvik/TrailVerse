@@ -2,7 +2,6 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
-import Button from '@/components/common/Button';
 import NewsletterWidget from '@/components/blog/NewsletterWidget';
 import BlogCard from '@/components/blog/BlogCard';
 import BlogCategoryNav from '@/components/blog/BlogCategoryNav';
@@ -78,8 +77,8 @@ export default async function BlogCategoryPage({ params }) {
       />
       <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <Header />
-        <main className="pt-16">
-          <section className="py-12 px-4 sm:px-6 lg:px-10 xl:px-12">
+        <main>
+          <section className="py-5 sm:py-8">
             <div className="public-shell">
               <nav className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
                 <Link href="/" style={{ color: 'var(--text-secondary)' }}>Home</Link>
@@ -88,10 +87,10 @@ export default async function BlogCategoryPage({ params }) {
                 <span className="mx-2">/</span>
                 <span style={{ color: 'var(--text-primary)' }}>{cat.name}</span>
               </nav>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+              <h1 className="public-page-title mb-4" style={{ color: 'var(--text-primary)' }}>
                 {cat.name}
               </h1>
-              <p className="text-lg mb-6 public-content" style={{ color: 'var(--text-secondary)' }}>
+              <p className="public-page-intro mb-6" style={{ color: 'var(--text-secondary)' }}>
                 {cat.description}
               </p>
               <p className="text-sm mb-8" style={{ color: 'var(--text-tertiary)' }}>
@@ -105,7 +104,7 @@ export default async function BlogCategoryPage({ params }) {
                   <p className="text-lg mb-4" style={{ color: 'var(--text-secondary)' }}>
                     No articles in this category yet — check back soon.
                   </p>
-                  <Button variant="success" size="sm" href="/blog">Browse all articles</Button>
+                  <Link href="/blog" className="public-action public-action-primary px-6 text-sm font-semibold">Browse all articles</Link>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mt-10">

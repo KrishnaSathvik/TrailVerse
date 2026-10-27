@@ -208,11 +208,7 @@ const TestimonialForm = ({
           <button
             type="submit"
             disabled={loading || formData.content.length < 50 || !formData.name.trim()}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{
-              backgroundColor: 'var(--accent-green)',
-              color: 'white'
-            }}
+            className="public-action public-action-primary gap-2 px-6 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <>

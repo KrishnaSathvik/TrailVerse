@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { ArrowLeft } from '@components/icons';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import DiscoverGridCard from './DiscoverGridCard';
-import { BROWSE_HUB_PATH, BROWSE_HUB_TITLE } from '@/lib/browseHub';
+import { BROWSE_HUB_BACK_LABEL, BROWSE_HUB_PATH } from '@/lib/browseHub';
 
 function hrefForItem(gridKind, item) {
   switch (gridKind) {
@@ -80,15 +80,10 @@ export default function DiscoverFullGridPage({
           style={{ color: 'var(--text-secondary)' }}
         >
           <ArrowLeft className="h-4 w-4" />
-          {BROWSE_HUB_TITLE}
+          {BROWSE_HUB_BACK_LABEL}
         </Link>
 
-        <h1
-          className="text-3xl font-bold mb-6"
-          style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}
-        >
-          {title}
-        </h1>
+        <h1 className="public-page-title mb-6">{title}</h1>
 
         {loading && !items.length ? (
           <div className="flex justify-center py-16">

@@ -3,13 +3,11 @@ import Image from 'next/image';
 import IconGlyph from '@/components/common/IconGlyph';
 import BlogViewCount from '@/components/blog/BlogViewCount';
 import { LANDING_SECTION, LANDING_SECTION_HEADER_MB } from '@/lib/landingLayout';
+import { blogCategoryLabel } from '@/lib/blogCategories';
 
 function formatCategory(category) {
   if (!category) return 'Blog';
-  return category
-    .split('-')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+  return blogCategoryLabel(category);
 }
 
 export default function LandingPopularBlogsSection({ posts = [] }) {
@@ -110,13 +108,7 @@ export default function LandingPopularBlogsSection({ posts = [] }) {
         <div className="mt-6 sm:hidden">
           <Link
             href="/blog"
-            className="w-full inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-semibold"
-            style={{
-              backgroundColor: 'var(--surface)',
-              borderWidth: '1px',
-              borderColor: 'var(--border)',
-              color: 'var(--text-primary)',
-            }}
+            className="public-action public-action-secondary w-full px-6 text-sm font-semibold"
           >
             View all blog posts
           </Link>

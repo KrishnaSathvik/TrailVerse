@@ -7,6 +7,8 @@ const Button = ({
   children,
   variant = 'secondary',
   size = 'md',
+  // 'pill' (default) or 'rounded' — the 12px-radius public CTA shape (.public-action).
+  shape = 'pill',
   disabled = false,
   loading = false,
   icon: Icon,
@@ -32,7 +34,7 @@ const Button = ({
     fontWeight: '600',
     textDecoration: 'none',
     border: 'none',
-    borderRadius: '9999px', // rounded-full
+    borderRadius: shape === 'rounded' ? '0.75rem' : '9999px',
     cursor: disabled || loading ? 'not-allowed' : 'pointer',
     transition: 'all 0.2s ease-in-out',
     boxShadow: 'none',
@@ -44,7 +46,6 @@ const Button = ({
     msUserSelect: 'none',
     WebkitTapHighlightColor: 'transparent',
     WebkitTouchCallout: 'none',
-    outline: 'none',
     ...style
   };
 
@@ -147,34 +148,36 @@ const Button = ({
 
   const handleMouseEnter = (e) => {
     if (disabled || loading) return;
-    e.target.style.backgroundColor = currentVariant.hoverBackgroundColor;
-    e.target.style.borderColor = currentVariant.hoverBorderColor;
-    e.target.style.boxShadow = currentVariant.hoverShadow;
+    const el = e.currentTarget;
+    el.style.backgroundColor = currentVariant.hoverBackgroundColor;
+    el.style.borderColor = currentVariant.hoverBorderColor;
+    el.style.boxShadow = currentVariant.hoverShadow;
     if (currentVariant.hoverColor) {
-      e.target.style.color = currentVariant.hoverColor;
+      el.style.color = currentVariant.hoverColor;
     }
   };
 
   const handleMouseLeave = (e) => {
     if (disabled || loading) return;
-    e.target.style.backgroundColor = currentVariant.backgroundColor;
-    e.target.style.borderColor = currentVariant.border;
-    e.target.style.boxShadow = baseStyles.boxShadow;
-    e.target.style.color = currentVariant.color;
+    const el = e.currentTarget;
+    el.style.backgroundColor = currentVariant.backgroundColor;
+    el.style.borderColor = currentVariant.borderColor;
+    el.style.boxShadow = baseStyles.boxShadow;
+    el.style.color = currentVariant.color;
   };
 
   const handleMouseDown = (e) => {
     if (disabled || loading) return;
     // Add pressed state
-    e.target.style.transform = 'scale(0.98)';
-    e.target.style.boxShadow = 'inset 0 2px 4px rgba(0, 0, 0, 0.1)';
+    e.currentTarget.style.transform = 'scale(0.98)';
+    e.currentTarget.style.boxShadow = 'inset 0 2px 4px rgba(0, 0, 0, 0.1)';
   };
 
   const handleMouseUp = (e) => {
     if (disabled || loading) return;
     // Reset pressed state
-    e.target.style.transform = 'scale(1)';
-    e.target.style.boxShadow = currentVariant.hoverShadow || baseStyles.boxShadow;
+    e.currentTarget.style.transform = 'scale(1)';
+    e.currentTarget.style.boxShadow = currentVariant.hoverShadow || baseStyles.boxShadow;
   };
 
   const iconSizePx =
@@ -229,7 +232,7 @@ const Button = ({
         href={href}
         target={target}
         rel={rel}
-        className={className}
+        className={`ui-button ${className}`.trim()}
         style={buttonStyles}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
@@ -250,7 +253,7 @@ const Button = ({
   return (
     <button
       type={type}
-      className={className}
+      className={`ui-button ${className}`.trim()}
       style={buttonStyles}
       disabled={disabled || loading}
       onClick={onClick}

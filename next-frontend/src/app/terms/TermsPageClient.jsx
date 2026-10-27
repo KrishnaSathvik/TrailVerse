@@ -238,7 +238,7 @@ export default function TermsPageContent() {
   return (
     <>
       <main className="info-page info-legal">
-        <InfoPageHeader title="Terms of Service" description="Please read these terms carefully before using TrailVerse." />
+        <InfoPageHeader eyebrow="Legal" icon="Shield" iconColor="var(--icon-discovery)" title="Terms of Service" description="Please read these terms carefully before using TrailVerse." />
 
         <LegalSections sections={sections} />
 

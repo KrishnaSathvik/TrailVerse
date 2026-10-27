@@ -42,7 +42,7 @@ export default async function TestimonialsPage({ searchParams }) {
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
       <main className="info-page">
-        <InfoPageHeader title="Traveler Stories" description={<>
+        <InfoPageHeader eyebrow="Community" icon="Award" iconColor="var(--icon-travel)" title="Traveler Stories" description={<>
               {TESTIMONIALS_SECTION_SUBTITLE}
             </>} />
 

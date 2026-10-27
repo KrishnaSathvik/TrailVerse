@@ -72,8 +72,7 @@ export default function IntentTopMatches({ landing, initialParks = [], fromPath 
         </p>
         <a
           href="/explore"
-          className="inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold"
-          style={{ backgroundColor: 'var(--accent-green)', color: '#fff' }}
+          className="public-action public-action-primary px-6 text-sm font-semibold"
         >
           Explore all parks
         </a>

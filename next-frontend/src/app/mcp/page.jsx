@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import IntegrationDetails from '@/components/info/IntegrationDetails';
 import { INTEGRATION_CAPABILITIES } from '@/data/integrationCapabilities';
 import InfoPageHeader, { InfoSectionLabel } from '@/components/info/InfoPageHeader';
@@ -56,7 +57,7 @@ export default function MCPPage() {
 
       <main className="info-page">
         {/* Hero */}
-        <InfoPageHeader title="TrailVerse for Claude" description={<>
+        <InfoPageHeader eyebrow="Integrations" icon="Globe" iconColor="var(--icon-discovery)" title="TrailVerse for Claude" description={<>
               Connect Claude to live National Park Service data for all 470+ NPS sites &mdash; plus
               day-by-day trip planning for US destinations beyond the NPS catalog.
             </>}>
@@ -65,10 +66,9 @@ export default function MCPPage() {
               ctaId="hero_install"
               label="Install in Claude"
               href="#install"
-              className="inline-flex items-center gap-2 public-action rounded-xl px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
-              style={{ backgroundColor: 'var(--accent-green)' }}
+              className="public-action public-action-secondary gap-2 px-6 text-sm font-semibold"
             >
-              <IconGlyph name="ArrowRight" className="h-4 w-4 text-white" />
+              <Image src="/brand/claude.svg" alt="" width={24} height={24} unoptimized className="rounded bg-white p-0.5" />
               Install in Claude
             </TrackedCtaLink>
         </InfoPageHeader>
@@ -189,11 +189,7 @@ export default function MCPPage() {
                 </div>
                 <McpConnectorCopyButton
                   mcpUrl={MCP_URL}
-                  className="mt-3 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition hover:opacity-90"
-                  style={{
-                    backgroundColor: 'var(--accent-green)',
-                    color: '#fff',
-                  }}
+                  className="mt-3 public-action public-action-secondary gap-2 px-5 text-sm font-semibold"
                 >
                   Copy connector URL
                 </McpConnectorCopyButton>
@@ -361,10 +357,9 @@ export default function MCPPage() {
                   ctaId="footer_install"
                   label="Install Now"
                   href="#install"
-                  className="inline-flex items-center gap-2 public-action rounded-xl px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
-                  style={{ backgroundColor: 'var(--accent-green)' }}
+                  className="public-action public-action-secondary gap-2 px-6 text-sm font-semibold"
                 >
-                  <IconGlyph name="ArrowRight" className="h-4 w-4 text-white" />
+                  <Image src="/brand/claude.svg" alt="" width={24} height={24} unoptimized className="rounded bg-white p-0.5" />
                   Install Now
                 </TrackedCtaLink>
                 <TrackedCtaLink
@@ -372,14 +367,7 @@ export default function MCPPage() {
                   ctaId="footer_explore_parks"
                   label="Explore Parks"
                   href="/explore"
-                  className="inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition"
-                  style={{
-                    backgroundColor: 'var(--surface)',
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text-primary)',
-                    boxShadow: 'none',
-                  }}
+                  className="public-action public-action-secondary px-6 text-sm font-semibold"
                 >
                   <span className="inline-flex items-center gap-2">
                     <IconGlyph name="Compass" className="h-4 w-4" />

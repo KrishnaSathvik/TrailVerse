@@ -12,6 +12,15 @@ import { parkDetailHref } from '@/lib/returnNavigation';
 
 const DEFAULT_PARK_IMAGE = '/og-image-trailverse.jpg';
 
+/**
+ * NPS returns an empty `designation` for ~35 sites (Alcatraz Island, Lincoln
+ * Memorial, Presidio of San Francisco, ...). Fall back to a generic label so the
+ * badge never renders as an empty pill.
+ */
+export function getParkDesignationLabel(park) {
+  return String(park?.designation || '').trim() || 'NPS Site';
+}
+
 function getParkCardSubtitle(park) {
   if (park.matchReason) return park.matchReason;
   const description = htmlToPlainText(park.description || '').trim();
@@ -247,7 +256,7 @@ const ParkCard = memo(({
 
         <div className="absolute top-4 left-4">
           <span className="px-3 py-1 rounded-full bg-forest-500/90 text-white text-xs font-semibold">
-            {park.designation}
+            {getParkDesignationLabel(park)}
           </span>
         </div>
 

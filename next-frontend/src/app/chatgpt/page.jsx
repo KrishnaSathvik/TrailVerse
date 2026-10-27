@@ -57,7 +57,7 @@ export default function ChatGPTPage() {
       <Header />
 
       <main className="info-page">
-        <InfoPageHeader title="TrailVerse for ChatGPT" description={<>
+        <InfoPageHeader eyebrow="Integrations" icon="Globe" iconColor="var(--icon-discovery)" title="TrailVerse for ChatGPT" description={<>
               Live data for <strong className="font-semibold text-[var(--text-primary)]">470+ NPS parks and sites</strong> inside ChatGPT
               with <strong className="font-semibold text-[var(--text-primary)]">Trailie</strong> — plus day-by-day trip planning for{' '}
               <strong className="font-semibold text-[var(--text-primary)]">US destinations beyond the NPS catalog</strong>, including state parks, cities,
@@ -68,8 +68,7 @@ export default function ChatGPTPage() {
               ctaId="hero_start_chat"
               label="Open in ChatGPT"
               href={CHATGPT_APP_URL}
-              className="inline-flex items-center gap-2 public-action rounded-xl px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
-              style={{ backgroundColor: 'var(--accent-green)' }}
+              className="public-action public-action-secondary gap-2 px-6 text-sm font-semibold"
             >
               <Image src="/brand/chatgpt.png" alt="" width={24} height={24} className="rounded bg-white p-0.5" />
               Open in ChatGPT
@@ -79,7 +78,7 @@ export default function ChatGPTPage() {
         <section className="info-section">
           <div className="w-full">
             <div className="mb-8">
-              <InfoSectionLabel>Real-time NPS Data</InfoSectionLabel>
+              <InfoSectionLabel>Current NPS Data</InfoSectionLabel>
               <h2
                 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4"
                 style={{ color: 'var(--text-primary)' }}
@@ -162,7 +161,7 @@ export default function ChatGPTPage() {
                     Ask for a trip plan, park details, a comparison, or upcoming ranger events
                   </>,
                   <>
-                    Planning a state park or want the full website experience? Continue on{' '}
+                    Want saved trips or the full website experience? Continue on{' '}
                     <TrackedCtaLink
                       channel={DIST_CHANNEL}
                       ctaId="install_step_plan_ai"
@@ -197,10 +196,9 @@ export default function ChatGPTPage() {
                 ctaId="install_start_chat"
                 label="Open in ChatGPT"
                 href={CHATGPT_APP_URL}
-                className="mt-6 inline-flex items-center gap-2 public-action rounded-xl px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
-                style={{ backgroundColor: 'var(--accent-green)' }}
+                className="mt-6 public-action public-action-secondary gap-2 px-6 text-sm font-semibold"
               >
-                <IconGlyph name="ArrowRight" className="h-4 w-4 text-white" />
+                <IconGlyph name="ArrowRight" className="h-4 w-4" />
                 Open in ChatGPT
               </TrackedOutboundLink>
 
@@ -301,10 +299,9 @@ export default function ChatGPTPage() {
                   ctaId="footer_start_chat"
                   label="Open in ChatGPT"
                   href={CHATGPT_APP_URL}
-                  className="inline-flex items-center gap-2 public-action rounded-xl px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
-                  style={{ backgroundColor: 'var(--accent-green)' }}
+                  className="public-action public-action-secondary gap-2 px-6 text-sm font-semibold"
                 >
-                  <IconGlyph name="ArrowRight" className="h-4 w-4 text-white" />
+                  <IconGlyph name="ArrowRight" className="h-4 w-4" />
                   Open in ChatGPT
                 </TrackedOutboundLink>
                 <TrackedCtaLink
@@ -312,14 +309,7 @@ export default function ChatGPTPage() {
                   ctaId="footer_explore_parks"
                   label="Explore Parks"
                   href="/explore"
-                  className="inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition"
-                  style={{
-                    backgroundColor: 'var(--surface)',
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text-primary)',
-                    boxShadow: 'none',
-                  }}
+                  className="public-action public-action-secondary px-6 text-sm font-semibold"
                 >
                   <span className="inline-flex items-center gap-2">
                     <IconGlyph name="Compass" className="h-4 w-4" />

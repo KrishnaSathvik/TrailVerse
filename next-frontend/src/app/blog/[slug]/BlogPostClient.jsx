@@ -12,6 +12,7 @@ import TableOfContents from '@/components/blog/TableOfContents';
 import blogService from '@/services/blogService';
 import BlogViewCount from '@/components/blog/BlogViewCount';
 import { logBlogView } from '@/utils/analytics';
+import { blogCategoryLabel } from '@/lib/blogCategories';
 import {
   ARTICLE_BODY,
   ARTICLE_CONTENT,
@@ -50,7 +51,7 @@ const BlogPostSkeleton = () => (
 const BlogPostNotFound = () => (
   <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
     <Header />
-    <div className="public-content px-4 sm:px-6 lg:px-8 py-8 sm:py-20 text-center">
+    <div className="public-rich px-4 sm:px-6 lg:px-8 py-8 sm:py-20 text-center">
       <div
         className="w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center"
         style={{ backgroundColor: 'var(--surface)' }}
@@ -224,7 +225,7 @@ const BlogPostClient = ({ slug, initialPost = null }) => {
 
           <div className="mb-4 flex flex-wrap items-center gap-3">
             <span className="inline-block px-3 py-1 rounded-full text-sm font-semibold" style={{ backgroundColor: 'var(--accent-green)', color: 'white' }}>
-              {post.category}
+              {blogCategoryLabel(post.category)}
             </span>
           </div>
 

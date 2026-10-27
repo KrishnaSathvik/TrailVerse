@@ -116,7 +116,7 @@ export default function PrivacyPageContent() {
   }));
   return (
     <main className="info-page info-legal">
-      <InfoPageHeader title="Privacy Policy" description="What we collect, how planning requests are processed, and the controls available to you." />
+      <InfoPageHeader eyebrow="Legal" icon="Shield" iconColor="var(--icon-discovery)" title="Privacy Policy" description="What we collect, how planning requests are processed, and the controls available to you." />
       <LegalSections sections={sections} />
       <section className="info-section">
         <h2 className="mb-4">Questions about your information?</h2>

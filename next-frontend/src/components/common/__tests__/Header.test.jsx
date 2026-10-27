@@ -254,3 +254,70 @@ describe('Header on /plan-ai matches other product pages', () => {
     expect(screen.getAllByRole('link', { name: 'Home' }).length).toBeGreaterThan(0);
   });
 });
+
+describe('Header route-aware active state', () => {
+  beforeEach(() => {
+    vi.stubGlobal('scrollTo', vi.fn());
+    mockUseAuth.mockReturnValue({
+      isAuthenticated: false,
+      authReady: false,
+      initialAuthHint: false,
+      user: null,
+      logout: vi.fn(),
+      loading: false,
+    });
+  });
+
+  const currentLinks = () =>
+    screen
+      .queryAllByRole('link')
+      .filter((link) => link.getAttribute('aria-current') === 'page')
+      .map((link) => link.textContent);
+
+  it.each([
+    ['/parks/yellowstone-national-park', 'Explore'],
+    ['/parks/state/utah', 'Explore'],
+    ['/blog/category/trip-planning', 'Blog'],
+    ['/blog/kenai-fjords-day-trip', 'Blog'],
+    ['/plan-ai/trip-123', 'Trailie'],
+  ])('highlights %s as %s on mobile and desktop', (pathname, label) => {
+    mockUsePathname.mockReturnValue(pathname);
+    render(<Header />);
+
+    const mobileLink = within(screen.getByTestId('mobile-inline-nav')).getByRole('link', { name: label });
+    expect(mobileLink).toHaveAttribute('aria-current', 'page');
+    // Desktop + mobile copies of the same item, nothing else.
+    expect(currentLinks()).toEqual([label, label]);
+  });
+
+  it.each(['/compare/zion-vs-bryce', '/discover/activities/hiking', '/events'])(
+    'marks More active and the nested menu item current on %s',
+    async (pathname) => {
+      mockUsePathname.mockReturnValue(pathname);
+      render(<Header />);
+
+      const moreButton = within(screen.getByTestId('mobile-inline-nav')).getByRole('button', { name: /more/i });
+      expect(moreButton.className).toContain('header-mobile-nav-item--active');
+      expect(currentLinks()).toEqual([]);
+
+      await userEvent.click(moreButton);
+      const moreMenu = document.getElementById('more-navigation-menu-mobile');
+      const current = within(moreMenu)
+        .getAllByRole('menuitem')
+        .filter((item) => item.getAttribute('aria-current') === 'page');
+      expect(current).toHaveLength(1);
+    }
+  );
+
+  it.each(['/about', '/features', '/guides/first-trip', '/itineraries/zion-3-day', '/where-next'])(
+    'leaves nothing active on footer-only page %s',
+    (pathname) => {
+      mockUsePathname.mockReturnValue(pathname);
+      render(<Header />);
+
+      expect(currentLinks()).toEqual([]);
+      const moreButton = within(screen.getByTestId('mobile-inline-nav')).getByRole('button', { name: /more/i });
+      expect(moreButton.className).not.toContain('header-mobile-nav-item--active');
+    }
+  );
+});

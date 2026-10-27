@@ -52,6 +52,10 @@ export function sanitizeFromPath(from) {
 
 const FROM_LABEL_BY_PREFIX = [
   ['/explore', 'Explore'],
+  ['/discover/activities', 'All activities'],
+  ['/discover/topics', 'All topics'],
+  ['/discover/types', 'All park types'],
+  ['/discover/states', 'All states'],
   ['/discover', BROWSE_HUB_TITLE],
   ['/guides', 'All planning guides'],
   ['/itineraries', 'All sample itineraries'],

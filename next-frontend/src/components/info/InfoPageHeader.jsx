@@ -1,13 +1,7 @@
-export default function InfoPageHeader({ title, description, children }) {
-  return (
-    <section className="info-width">
-      <div className="info-introduction">
-        <h1 className="public-page-title">{title}</h1>
-        <p className="public-page-intro">{description}</p>
-        {children && <div className="info-header-detail">{children}</div>}
-      </div>
-    </section>
-  );
+import PublicPageHero from '@/components/common/PublicPageHero';
+
+export default function InfoPageHeader(props) {
+  return <PublicPageHero {...props} />;
 }
 
 export function InfoSectionLabel({ children }) {

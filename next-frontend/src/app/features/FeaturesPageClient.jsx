@@ -179,7 +179,7 @@ const FeaturesPage = () => {
 
   return (
     <main className="info-page">
-      <InfoPageHeader title="Plan national park trips without juggling a dozen tabs" description={<>
+      <InfoPageHeader eyebrow="Features" icon="Sparkles" iconColor="var(--icon-trailie)" title="Plan national park trips without juggling a dozen tabs" description={<>
             TrailVerse covers 470+ NPS parks and sites — research, live conditions, and Trailie in one place.
             Browse without an account; sign in to save trips and keep your planning history.
           </>}>
@@ -295,11 +295,7 @@ const FeaturesPage = () => {
 
                 <Link
                   href={item.href}
-                  className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition"
-                  style={{
-                    backgroundColor: 'var(--accent-green)',
-                    color: 'white',
-                  }}
+                  className="public-action public-action-primary gap-2 px-6 text-sm font-semibold"
                 >
                   {item.cta}
                   <ArrowRight className="h-4 w-4" />
@@ -375,21 +371,14 @@ const FeaturesPage = () => {
             <div className="flex flex-col sm:flex-row items-center gap-4">
               <Link
                 href="/plan-ai"
-                className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white transition"
-                style={{ backgroundColor: 'var(--accent-green)' }}
+                className="public-action public-action-primary gap-2 px-6 text-sm font-semibold"
               >
                 <Sparkles className="h-4 w-4" />
                 Try Trailie
               </Link>
               <Link
                 href="/explore"
-                className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)',
-                  color: 'var(--text-primary)'
-                }}
+                className="public-action public-action-secondary gap-2 px-6 text-sm font-semibold"
               >
                 <Compass className="h-4 w-4" />
                 Explore Parks

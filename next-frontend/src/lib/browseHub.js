@@ -6,6 +6,17 @@ export const BROWSE_HUB_NAV_LABEL = 'Explore by Activity';
 /** Short label for back links and breadcrumbs */
 export const BROWSE_HUB_TITLE = 'Explore by Activity';
 
+/** Back-link label for pages whose parent is the /discover hub itself */
+export const BROWSE_HUB_BACK_LABEL = 'Discover';
+
+/** Parent index page for each Discover detail dimension (back links on detail/state pages). */
+export const DISCOVER_INDEX_BY_DIMENSION = {
+  activity: { href: '/discover/activities', label: 'All activities' },
+  topic: { href: '/discover/topics', label: 'All topics' },
+  type: { href: '/discover/types', label: 'All park types' },
+  state: { href: '/discover/states', label: 'All states' },
+};
+
 /** Main hub page headline (H1) */
 export const BROWSE_HUB_HEADLINE = 'Find your kind of park';
 

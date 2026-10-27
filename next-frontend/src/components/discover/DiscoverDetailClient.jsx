@@ -20,6 +20,7 @@ import ExpandableDescription from './ExpandableDescription';
 import DiscoverHubHeader from './DiscoverHubHeader';
 import DiscoverNpsGuideSection from './DiscoverNpsGuideSection';
 import DiscoverAboutSection from './DiscoverAboutSection';
+import { DISCOVER_INDEX_BY_DIMENSION } from '@/lib/browseHub';
 import { useSavedEvents } from '@/hooks/useSavedEvents';
 import { useAuth } from '@/context/AuthContext';
 
@@ -93,6 +94,8 @@ export default function DiscoverDetailClient({ detail: initialDetail, dimension 
     <div className="pb-24">
       <div className="public-shell pt-6">
         <DiscoverHubHeader
+          backHref={DISCOVER_INDEX_BY_DIMENSION[dimension]?.href}
+          backLabel={DISCOVER_INDEX_BY_DIMENSION[dimension]?.label}
           title={detail.title}
           intro={detail.intro}
           parkCount={detail.nps?.parkCount ?? pagination.total}
@@ -114,19 +117,19 @@ export default function DiscoverDetailClient({ detail: initialDetail, dimension 
             <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
               {detail.featured.title}
             </h2>
-            <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1">
+            <div className="flex gap-4 overflow-x-auto overscroll-x-contain snap-x snap-mandatory pb-2">
               {detail.featured.parks.map((park) => (
                 <Link
                   key={park.parkCode}
                   href={parkDetailHref(parkToSlug(park.fullName), returnPath)}
-                  className="shrink-0 w-64 rounded-2xl overflow-hidden group"
+                  className="shrink-0 w-64 snap-start rounded-2xl overflow-hidden group lg:w-auto lg:min-w-[11rem] lg:flex-1 lg:basis-0"
                   style={{
                     borderWidth: '1px',
                     borderColor: 'var(--border)',
                     backgroundColor: 'var(--surface)'
                   }}
                 >
-                  <div className="relative h-36">
+                  <div className="relative h-36 overflow-hidden">
                     <OptimizedImage
                       src={park.images?.[0]?.url}
                       alt={park.fullName}
@@ -182,11 +185,11 @@ export default function DiscoverDetailClient({ detail: initialDetail, dimension 
                         rel={program.url && !park ? 'noopener noreferrer' : undefined}
                         className="block shrink-0"
                       >
-                        <div className="relative aspect-[16/10] w-full">
+                        <div className="relative aspect-[16/10] w-full overflow-hidden">
                           <OptimizedImage
                             src={programImage}
                             alt={programImageAlt}
-                            className="w-full h-full object-cover"
+                            className="absolute inset-0 w-full h-full object-cover"
                           />
                         </div>
                       </Link>

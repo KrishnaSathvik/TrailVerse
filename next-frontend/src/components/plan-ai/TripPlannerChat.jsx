@@ -49,6 +49,7 @@ import {
   recordGuestPendingTurn,
   selectCompletedGuestHistory,
 } from '@/lib/guestTurnLifecycle';
+import { trailieFairUseRefusalCopy } from '@/lib/trailieFairUseCopy';
 import {
   SIGNUP_PROMPT_REASONS,
 } from '@/lib/planAiSignupPrompts';
@@ -2349,6 +2350,7 @@ const TripPlannerChat = ({
               ...requestMetadata,
               userId: user?.id,
             },
+            clientTurnId,
             ...streamCallbacks,
           });
         }
@@ -2428,6 +2430,7 @@ const TripPlannerChat = ({
               ...requestMetadata,
               userId: user?.id,
             },
+            clientTurnId,
           });
         }
       }
@@ -2737,7 +2740,6 @@ const TripPlannerChat = ({
       const errorDetails = error.response?.data;
       const errorStatus = error.response?.status;
       
-      // Check if it's a token limit error
       let errorMessage = 'Could not get a reply';
       let assistantMessage = 'I couldn\'t get that just now. Please try again.';
       // Phase 6C — only set for a genuine client-only connection loss (see
@@ -2746,14 +2748,17 @@ const TripPlannerChat = ({
       // server-resolved failure — no Retry action is ever attached to it.
       let messageOutcomeClass = null;
 
-      if (errorStatus === 429) {
-        if (errorDetails?.error === 'Daily token limit exceeded') {
-          errorMessage = 'Daily usage limit reached. Please try again tomorrow.';
-          assistantMessage = `**Daily Limit Reached**\n\nYou've reached your daily usage limit. Please try again tomorrow.`;
-        } else {
-          errorMessage = 'Rate limit exceeded. Please wait a moment and try again.';
-          assistantMessage = '⏳ **Rate Limited**\n\nYou\'re making requests too quickly. Please wait a moment and try again.';
-        }
+      const fairUseCopy = trailieFairUseRefusalCopy(errorStatus, errorDetails);
+      if (fairUseCopy) {
+        // Signed-in fair use: a short burst window or one-active-generation
+        // guard. Never a daily cap; the copy says when to try again.
+        errorMessage = fairUseCopy.toast;
+        assistantMessage = fairUseCopy.message;
+      } else if (errorStatus === 429) {
+        // Signed-in Trailie has no daily usage cap; a 429 here is request-rate
+        // protection only.
+        errorMessage = 'Rate limit exceeded. Please wait a moment and try again.';
+        assistantMessage = '⏳ **Rate Limited**\n\nYou\'re making requests too quickly. Please wait a moment and try again.';
       } else if (errorStatus === 400) {
         errorMessage = 'Could not complete that';
         assistantMessage = 'I couldn\'t complete that. Please try again.';
@@ -3540,7 +3545,7 @@ ${[
       <div className="min-h-screen flex items-center justify-center" 
         style={{ backgroundColor: 'var(--bg-primary)' }}
       >
-        <div className="public-content w-full px-3 sm:px-4 lg:px-6 xl:px-8">
+        <div className="public-rich w-full px-3 sm:px-4 lg:px-6 xl:px-8">
           <div className="rounded-2xl p-8 backdrop-blur text-center"
             style={{
               backgroundColor: 'var(--surface)',

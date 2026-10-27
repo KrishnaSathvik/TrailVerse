@@ -1,10 +1,15 @@
 import "./globals.css";
 
 import Script from "next/script";
+import { Bricolage_Grotesque, Geist } from "next/font/google";
 import Providers from "../components/Providers";
 import GoogleMapsLoader from "../components/maps/GoogleMapsLoader";
 import VoiceButton from "../components/voice/VoiceButton";
 import { indexablePageRobots } from "@/lib/seo";
+
+/** Brand fonts — exposed as CSS variables consumed by --font-sans / --font-display in globals.css. */
+const geist = Geist({ subsets: ["latin"], display: "swap", variable: "--font-geist" });
+const bricolage = Bricolage_Grotesque({ subsets: ["latin"], display: "swap", variable: "--font-bricolage" });
 
 const JSON_LD = {
   '@context': 'https://schema.org',
@@ -84,7 +89,7 @@ export default function RootLayout({ children }) {
   const gaId = process.env.NEXT_PUBLIC_GA_TRACKING_ID;
 
   return (
-    <html lang="en" className="h-full antialiased" suppressHydrationWarning>
+    <html lang="en" className={`${geist.variable} ${bricolage.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="min-h-full flex flex-col font-sans" suppressHydrationWarning>
         {/* beforeInteractive theme bootstrap — keeps root layout cacheable */}
         <Script id="theme-init" src="/theme-init.js" strategy="beforeInteractive" />

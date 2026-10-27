@@ -8,6 +8,7 @@ import { LogOut, ChevronDown } from '@components/icons';
 import ThemeSwitcher, { SegmentedThemeSkeleton } from './ThemeSwitcher';
 import { BROWSE_HUB_NAV_LABEL, BROWSE_HUB_PATH } from '@/lib/browseHub';
 import { resolveHeaderMobileNav } from '@/lib/planAiHeaderNav';
+import { isNavPathActive } from '@/lib/headerNavActive';
 import { captureNavigation } from '@/utils/analytics';
 
 const AUTH_HOME_NAV_ITEM = { path: '/home', label: 'Home' };
@@ -61,13 +62,7 @@ const Header = () => {
     ? [BLOG_NAV_ITEM, ...SECONDARY_NAV_ITEMS, ...AUTH_MORE_NAV_ITEMS]
     : SECONDARY_NAV_ITEMS;
 
-  const isActive = (path) => {
-    if (path === '/plan-ai') return pathname.startsWith('/plan-ai');
-    if (path === '/chat-history') return pathname.startsWith('/chat-history');
-    if (path === BROWSE_HUB_PATH) return pathname.startsWith(BROWSE_HUB_PATH);
-    if (path === '/blog') return pathname.startsWith('/blog');
-    return pathname === path;
-  };
+  const isActive = (path) => isNavPathActive(path, pathname);
 
 
   const {
@@ -116,8 +111,9 @@ const Header = () => {
           onClick?.(event);
         }}
         className={navLinkClassName(active, { mobileInline })}
+        aria-current={active ? 'page' : undefined}
         {...(mobileInline
-          ? { 'aria-current': active ? 'page' : undefined }
+          ? {}
           : {
               style: navLinkStyle(active),
               onMouseEnter: (event) => handleNavLinkHover(event, active),
@@ -149,6 +145,7 @@ const Header = () => {
           color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
         }}
         role="menuitem"
+        aria-current={active ? 'page' : undefined}
       >
         {item.label}
       </Link>

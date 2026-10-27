@@ -209,7 +209,7 @@ const UnsubscribeContent = () => {
   if (!email) {
     return (
       <>
-        <InfoPageHeader
+        <InfoPageHeader eyebrow="Email Preferences" icon="Mail" iconColor="var(--icon-discovery)"
           title="Email Preferences"
           description="Enter your email address to manage your TrailVerse subscriptions."
         >
@@ -244,7 +244,7 @@ const UnsubscribeContent = () => {
   const rowButton = { flexDirection: 'row', flexWrap: 'nowrap', whiteSpace: 'nowrap', width: '100%', maxWidth: '20rem' };
 
   return (
-    <InfoPageHeader
+    <InfoPageHeader eyebrow="Email Preferences" icon="Mail" iconColor="var(--icon-discovery)"
       title="Email Preferences"
       description={<>Manage your TrailVerse email subscriptions for <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{email}</span>.</>}
     >

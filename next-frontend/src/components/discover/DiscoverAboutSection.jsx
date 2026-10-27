@@ -52,11 +52,11 @@ export default function DiscoverAboutSection({ about }) {
                   style={{ borderWidth: '1px', borderColor: 'var(--border)' }}
                 >
                   {snippet.image && (
-                    <div className="relative aspect-[16/10] w-full shrink-0">
+                    <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden">
                       <OptimizedImage
                         src={snippet.image}
                         alt={snippet.imageAlt || snippet.title}
-                        className="w-full h-full object-cover"
+                        className="absolute inset-0 w-full h-full object-cover"
                       />
                     </div>
                   )}

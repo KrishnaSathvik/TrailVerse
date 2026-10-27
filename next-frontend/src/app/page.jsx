@@ -2,15 +2,15 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
-import LandingSearchClient from './LandingSearchClient';
 import LandingDailyFeedClient from './LandingDailyFeedClient';
 import LandingPopularBlogsSection from '@/components/landing/LandingPopularBlogsSection';
 import LandingPressMentions from '@/components/landing/LandingPressMentions';
+import { withNewParkSpotlight } from '@/lib/landingSpotlight';
 import LandingTestimonialsClient from '@/components/testimonials/LandingTestimonialsClient';
 import IconGlyph from '@/components/common/IconGlyph';
 import { getApiBaseUrl } from '@/lib/apiBase';
 import { getBlogPostsServer } from '@/lib/blogApi';
-import LandingHeroCta, { LandingExploreShortcuts } from './LandingHeroCta';
+import LandingHeroCta from './LandingHeroCta';
 import LandingFeaturedParks from './LandingFeaturedParks';
 import { getLandingDailyFeedServer, getLandingTestimonialsServer } from '@/lib/landingApi';
 import { LANDING_SECTION, LANDING_SECTION_HEADER_MB, LANDING_SECTION_X } from '@/lib/landingLayout';
@@ -72,9 +72,12 @@ export default async function LandingPage() {
     getLandingDailyFeedServer(),
   ]);
   const popularBlogs = popularBlogsData?.data || [];
-  const featuredParks = featuredParkCodes
-    .map((code) => allParks.find((park) => park.parkCode === code))
-    .filter(Boolean);
+  const featuredParks = withNewParkSpotlight(
+    featuredParkCodes
+      .map((code) => allParks.find((park) => park.parkCode === code))
+      .filter(Boolean),
+    allParks
+  );
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
@@ -117,20 +120,6 @@ export default async function LandingPage() {
           </section>
         </div>
 
-        <section aria-label="More ways to explore" className="py-4 sm:py-5">
-          <div className="public-shell">
-            <LandingExploreShortcuts />
-          </div>
-        </section>
-
-        <section className="relative z-20 public-shell pt-6 sm:pt-8 pb-2" style={{ backgroundColor: 'var(--bg-primary)' }}>
-          <div className="public-full">
-            <div className="relative mx-auto w-full public-content">
-              <LandingSearchClient />
-            </div>
-          </div>
-        </section>
-
         <section className={`relative z-0 pt-6 sm:pt-8 pb-0 ${LANDING_SECTION_X}`} style={{ backgroundColor: 'var(--bg-primary)' }}>
           <div className="public-full">
             <div className={`flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between ${LANDING_SECTION_HEADER_MB}`}>
@@ -140,7 +129,7 @@ export default async function LandingPage() {
                   <span className="text-sm font-medium uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>Popular Destinations</span>
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>Start exploring</h2>
-                <p className="text-base sm:text-lg mt-2 max-w-lg" style={{ color: 'var(--text-secondary)' }}>Iconic destinations loved by millions — click any park to dive in</p>
+                <p className="text-base sm:text-lg mt-2 max-w-2xl text-pretty" style={{ color: 'var(--text-secondary)' }}>Iconic destinations loved by millions — click any park to dive in</p>
               </div>
               <Link href="/explore" className="hidden sm:flex items-center gap-1.5 font-semibold text-sm hover:underline flex-shrink-0 whitespace-nowrap" style={{ color: 'var(--accent-green)' }}>
                 View All Parks

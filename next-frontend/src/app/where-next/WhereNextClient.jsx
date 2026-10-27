@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Search, X } from '@components/icons';
 import DotSpinner from '@/components/common/DotSpinner';
+import PublicPageHero from '@/components/common/PublicPageHero';
 import { useDebounce } from '@/hooks/useDebounce';
 import npsApi from '@/services/npsApi';
 import {
@@ -167,11 +168,9 @@ export default function WhereNextClient({ children }) {
   const displayName = selectedName;
 
   return (
-    <main className="info-page where-next-page">
-      <header className="where-next-heading">
-        <h1>Where Next?</h1>
-        <p>A place you’ve been dreaming of. A trip you haven’t planned yet. Start here.</p>
-      </header>
+    <main className="info-page">
+      <PublicPageHero eyebrow="Trip Finder" icon="Compass" iconColor="var(--icon-discovery)" title="Where Next?" description="A place you’ve been dreaming of. A trip you haven’t planned yet. Start here." />
+      <div className="where-next-page">
       <div className="where-next-layout">
       <section className="where-next-picker" aria-label="Choose your next destination">
         {step === 'search' && <>
@@ -309,6 +308,7 @@ export default function WhereNextClient({ children }) {
         {error && <p role="alert" className="mt-4 text-sm text-[var(--text-secondary)]">{error}</p>}
       </section>
       {children}
+      </div>
       </div>
     </main>
   );

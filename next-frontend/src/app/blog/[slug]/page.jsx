@@ -5,6 +5,8 @@ export const revalidate = 3600;
 export async function generateStaticParams() { return []; }
 import BlogPostClient from './BlogPostClient';
 import { blogMetaDescription, blogRobots } from '@/lib/blogSeo';
+import { blogDateModifiedIso } from '@/lib/blogDates';
+import { blogCategoryLabel } from '@/lib/blogCategories';
 
 const SITE_URL = 'https://www.nationalparksexplorerusa.com';
 
@@ -110,12 +112,12 @@ export default async function BlogPostPage({ params }) {
           }
         },
         datePublished: post.publishedAt,
-        dateModified: post.updatedAt || post.publishedAt,
+        dateModified: blogDateModifiedIso(post),
         mainEntityOfPage: {
           '@type': 'WebPage',
           '@id': `${SITE_URL}/blog/${post.slug}`
         },
-        articleSection: post.category || 'Travel',
+        articleSection: post.category ? blogCategoryLabel(post.category) : 'Travel',
         keywords: post.tags?.length ? post.tags.join(', ') : undefined,
         wordCount: post.content ? post.content.split(/\s+/).filter(Boolean).length : 0,
         inLanguage: 'en-US',

@@ -21,7 +21,7 @@ export default function FAQAccordionClient() {
 
   return (
     <section className="info-section" style={{ backgroundColor: 'var(--bg-primary)' }}>
-      <div className="max-w-4xl space-y-12">
+      <div className="public-content space-y-12">
         {faqCategories.map((category, categoryIndex) => (
           <div key={categoryIndex}>
             <div className="flex items-center gap-3 mb-6">

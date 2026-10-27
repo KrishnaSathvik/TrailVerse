@@ -149,7 +149,7 @@ export default function NewsletterWidget({
   };
   const buttonClass = embedded
     ? 'rounded-xl px-5 py-2.5 text-sm font-semibold whitespace-nowrap sm:flex-shrink-0 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--accent-green)]'
-    : 'rounded-xl px-8 py-3.5 text-base font-semibold whitespace-nowrap focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--accent-green)]';
+    : 'public-action px-6 text-sm font-semibold whitespace-nowrap focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--accent-green)]';
 
   if (status === 'success') {
     const successBody = (

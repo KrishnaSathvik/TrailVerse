@@ -19,14 +19,14 @@ export const metadata = {
     url: 'https://www.nationalparksexplorerusa.com/guides',
     siteName: 'TrailVerse',
     type: 'website',
-    images: [{ url: '/og/guides.jpg', width: 1200, height: 630, alt: 'TrailVerse — National park planning guides' }],
+    images: [{ url: '/og-image-trailverse.jpg', width: 1200, height: 630, alt: 'TrailVerse — National park planning guides' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'National Park Planning Guides | TrailVerse',
     description:
       'Planning guides and ranked park picks for national park trips — tools, comparisons, and live search results.',
-    images: ['/og/guides.jpg'],
+    images: ['/og-image-trailverse.jpg'],
   },
 };
 
@@ -61,7 +61,7 @@ export default function GuidesHubPage() {
         <Header />
 
         <main className="info-page">
-          <InfoPageHeader title="National Park Planning Guides" description={<>
+          <InfoPageHeader eyebrow="Planning Guides" icon="BookOpen" iconColor="var(--icon-travel)" title="National Park Planning Guides" description={<>
                 Still sorting out how to plan? Read the articles on tools, reservations, maps, and
                 AI planning. Already know the trip you want—couples, fall color, quiet weekends, kids,
                 dogs? Open a list under Parks by vibe: a short answer up top, eight parks we spell out,
