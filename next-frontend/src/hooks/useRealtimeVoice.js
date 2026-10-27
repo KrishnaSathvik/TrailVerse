@@ -9,6 +9,9 @@ const API_URL =
     : 'http://localhost:5001/api');
 
 const REALTIME_API_URL = 'https://api.openai.com/v1/realtime/calls';
+const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+const MIC_COOLDOWN_MS = 1200;
+const MIN_SPEECH_MS = 500;
 
 // Cache geolocation at module level — only request once per page session
 let cachedLocation = null;
@@ -16,7 +19,7 @@ let locationRequested = false;
 
 async function getCachedLocation() {
   if (cachedLocation) return cachedLocation;
-  if (locationRequested) return null; // already tried and failed
+  if (locationRequested) return null;
   if (!navigator.geolocation) return null;
 
   locationRequested = true;
@@ -24,9 +27,15 @@ async function getCachedLocation() {
     cachedLocation = await new Promise((resolve) => {
       const timer = setTimeout(() => resolve(null), 2000);
       navigator.geolocation.getCurrentPosition(
-        (pos) => { clearTimeout(timer); resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }); },
-        () => { clearTimeout(timer); resolve(null); },
-        { timeout: 2000, maximumAge: 600000 } // cache for 10 minutes
+        (pos) => {
+          clearTimeout(timer);
+          resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        },
+        () => {
+          clearTimeout(timer);
+          resolve(null);
+        },
+        { timeout: 2000, maximumAge: 600000 }
       );
     });
     return cachedLocation;
@@ -37,50 +46,155 @@ async function getCachedLocation() {
 
 /**
  * Hook states: idle → connecting → connected → speaking → listening → error
+ * UI chrome must NOT own this hook — mount once in VoiceSessionProvider.
  */
 export default function useRealtimeVoice() {
-  const [status, setStatus] = useState('idle'); // idle | connecting | connected | speaking | listening | error
-  const [transcript, setTranscript] = useState([]); // [{ role: 'user'|'assistant', text }]
+  const [status, setStatus] = useState('idle');
+  const [transcript, setTranscript] = useState([]);
   const [isTrailieSpeaking, setIsTrailieSpeaking] = useState(false);
   const [isToolCalling, setIsToolCalling] = useState(false);
-  const [toolCallInfo, setToolCallInfo] = useState(null); // tool name string or null
+  const [toolCallInfo, setToolCallInfo] = useState(null);
   const [error, setError] = useState(null);
   const [authRequired, setAuthRequired] = useState(false);
+  const [userMuted, setUserMuted] = useState(false);
+  const [bargeInEnabled, setBargeInEnabled] = useState(false);
+  const [audioLevel, setAudioLevel] = useState(0);
+  const [permissionDenied, setPermissionDenied] = useState(false);
 
   const pcRef = useRef(null);
   const dcRef = useRef(null);
   const streamRef = useRef(null);
   const audioRef = useRef(null);
   const handlerRef = useRef(null);
-  const connectGenRef = useRef(0); // generation counter to cancel stale async connects
-
-  // Track in-flight function calls: { call_id, name, arguments }
+  const connectGenRef = useRef(0);
+  const toolTokenRef = useRef(null);
+  const userMutedRef = useRef(false);
+  const bargeInRef = useRef(false);
   const activeFnCallRef = useRef(null);
-  // Cooldown timer — prevents mic from picking up residual audio after Trailie stops
   const micCooldownRef = useRef(null);
-  // Track whether a response is currently in progress — prevents duplicate response.create
   const responseActiveRef = useRef(false);
-  // Track when speech started — used to filter noise (real speech > 500ms)
   const speechStartRef = useRef(null);
+  const idleTimerRef = useRef(null);
+  const analyserRef = useRef(null);
+  const analyserCtxRef = useRef(null);
+  const analyserRafRef = useRef(null);
+  const remoteAnalyserRef = useRef(null);
+  const levelSourceRef = useRef('none'); // mic | remote | none
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      cleanup();
-    };
+  const bumpIdleTimer = useCallback(() => {
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = setTimeout(() => {
+      if (!pcRef.current) return;
+      connectGenRef.current += 1;
+      stopAnalyser();
+      cleanupMedia();
+      setIsTrailieSpeaking(false);
+      setIsToolCalling(false);
+      setToolCallInfo(null);
+      setUserMuted(false);
+      userMutedRef.current = false;
+      setError('Voice session ended after inactivity. Tap Retry to reconnect.');
+      setStatus('error');
+    }, IDLE_TIMEOUT_MS);
   }, []);
 
-  function cleanup() {
+  function stopAnalyser() {
+    if (analyserRafRef.current) {
+      cancelAnimationFrame(analyserRafRef.current);
+      analyserRafRef.current = null;
+    }
+    analyserRef.current = null;
+    remoteAnalyserRef.current = null;
+    if (analyserCtxRef.current) {
+      try {
+        analyserCtxRef.current.close();
+      } catch (_) {}
+      analyserCtxRef.current = null;
+    }
+    levelSourceRef.current = 'none';
+    setAudioLevel(0);
+  }
+
+  function startAnalyserLoop() {
+    if (analyserRafRef.current) return;
+    const tick = () => {
+      const prefersReduced =
+        typeof window !== 'undefined' &&
+        window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+      if (prefersReduced) {
+        setAudioLevel(0);
+        analyserRafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+
+      let level = 0;
+      const useRemote = levelSourceRef.current === 'remote' && remoteAnalyserRef.current;
+      const analyser = useRemote ? remoteAnalyserRef.current : analyserRef.current;
+      if (analyser) {
+        const data = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteTimeDomainData(data);
+        let sum = 0;
+        for (let i = 0; i < data.length; i++) {
+          const v = (data[i] - 128) / 128;
+          sum += v * v;
+        }
+        level = Math.min(1, Math.sqrt(sum / data.length) * 3.2);
+      }
+      setAudioLevel((prev) => prev * 0.6 + level * 0.4);
+      analyserRafRef.current = requestAnimationFrame(tick);
+    };
+    analyserRafRef.current = requestAnimationFrame(tick);
+  }
+
+  function attachMicAnalyser(stream) {
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      const ctx = analyserCtxRef.current || new Ctx();
+      analyserCtxRef.current = ctx;
+      const source = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      analyserRef.current = analyser;
+      if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+      startAnalyserLoop();
+    } catch (_) {
+      // Visualization is optional
+    }
+  }
+
+  function attachRemoteAnalyser(mediaStream) {
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx || !mediaStream) return;
+      const ctx = analyserCtxRef.current || new Ctx();
+      analyserCtxRef.current = ctx;
+      const source = ctx.createMediaStreamSource(mediaStream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      remoteAnalyserRef.current = analyser;
+      if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+      startAnalyserLoop();
+    } catch (_) {}
+  }
+
+  function cleanupMedia() {
     if (dcRef.current) {
-      try { dcRef.current.close(); } catch (_) {}
+      try {
+        dcRef.current.close();
+      } catch (_) {}
       dcRef.current = null;
     }
     if (pcRef.current) {
-      try { pcRef.current.close(); } catch (_) {}
+      try {
+        pcRef.current.close();
+      } catch (_) {}
       pcRef.current = null;
     }
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
     if (audioRef.current) {
@@ -91,249 +205,358 @@ export default function useRealtimeVoice() {
     }
     activeFnCallRef.current = null;
     responseActiveRef.current = false;
+    toolTokenRef.current = null;
     if (micCooldownRef.current) {
       clearTimeout(micCooldownRef.current);
       micCooldownRef.current = null;
     }
+    if (idleTimerRef.current) {
+      clearTimeout(idleTimerRef.current);
+      idleTimerRef.current = null;
+    }
   }
 
-  // Execute a function call against our Express backend and send the result back
+  function cleanup() {
+    stopAnalyser();
+    cleanupMedia();
+  }
+
+  useEffect(() => {
+    return () => {
+      cleanup();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- unmount-only teardown
+  }, []);
+
+  function setMicTracksEnabled(enabled) {
+    if (!streamRef.current) return;
+    // User mute always wins over auto mute/unmute during speaking
+    const next = Boolean(enabled) && !userMutedRef.current;
+    streamRef.current.getAudioTracks().forEach((t) => {
+      t.enabled = next;
+    });
+  }
+
   async function executeFunctionCall(callId, fnName, fnArgs) {
     try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (toolTokenRef.current) {
+        headers.Authorization = `Bearer ${toolTokenRef.current}`;
+        headers['X-TrailVerse-Voice-Token'] = toolTokenRef.current;
+      }
+
       const res = await fetch(`${API_URL}/ai/voice-tool`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tool: fnName, args: fnArgs }),
+        headers,
+        body: JSON.stringify({
+          tool: fnName,
+          args: fnArgs,
+          toolToken: toolTokenRef.current || undefined,
+        }),
       });
 
-      const data = await res.json();
-      const output = data.result || data.error || 'No data returned';
+      const data = await res.json().catch(() => ({}));
+      const output =
+        res.ok
+          ? data.result || data.error || 'No data returned'
+          : data.error || `Tool failed (${res.status})`;
 
-      // Send function result back through data channel
       const dc = dcRef.current;
       if (dc && dc.readyState === 'open') {
-        // 1. Create the function_call_output item
-        dc.send(JSON.stringify({
-          type: 'conversation.item.create',
-          item: {
-            type: 'function_call_output',
-            call_id: callId,
-            output: typeof output === 'string' ? output : JSON.stringify(output),
-          },
-        }));
-
-        // 2. Trigger the model to respond with the data
+        dc.send(
+          JSON.stringify({
+            type: 'conversation.item.create',
+            item: {
+              type: 'function_call_output',
+              call_id: callId,
+              output: typeof output === 'string' ? output : JSON.stringify(output),
+            },
+          })
+        );
         responseActiveRef.current = true;
         dc.send(JSON.stringify({ type: 'response.create' }));
       }
     } catch (err) {
       console.error('[Voice] Function call execution failed:', err.message);
-      // Send error result so the model can respond gracefully
       const dc = dcRef.current;
       if (dc && dc.readyState === 'open') {
-        dc.send(JSON.stringify({
-          type: 'conversation.item.create',
-          item: {
-            type: 'function_call_output',
-            call_id: callId,
-            output: `Error fetching data: ${err.message}`,
-          },
-        }));
+        dc.send(
+          JSON.stringify({
+            type: 'conversation.item.create',
+            item: {
+              type: 'function_call_output',
+              call_id: callId,
+              output: `Error fetching data: ${err.message}`,
+            },
+          })
+        );
         responseActiveRef.current = true;
         dc.send(JSON.stringify({ type: 'response.create' }));
       }
     }
   }
 
-  const connect = useCallback(async (parkCode = null) => {
-    // Bump generation — any in-flight connect with an older gen will bail out
-    const gen = ++connectGenRef.current;
-    const stale = () => connectGenRef.current !== gen;
+  const connect = useCallback(
+    async (parkCode = null) => {
+      const gen = ++connectGenRef.current;
+      const stale = () => connectGenRef.current !== gen;
 
-    try {
-      setStatus('connecting');
-      setError(null);
-      setAuthRequired(false);
-      setTranscript([]);
-      setIsTrailieSpeaking(false);
-      setIsToolCalling(false);
-      setToolCallInfo(null);
+      try {
+        cleanup();
+        setStatus('connecting');
+        setError(null);
+        setAuthRequired(false);
+        setPermissionDenied(false);
+        setTranscript([]);
+        setIsTrailieSpeaking(false);
+        setIsToolCalling(false);
+        setToolCallInfo(null);
+        setUserMuted(false);
+        userMutedRef.current = false;
 
-      // Get user's location (cached — only prompts once per page session)
-      const userLocation = await getCachedLocation();
-      if (stale()) return;
+        const userLocation = await getCachedLocation();
+        if (stale()) return;
 
-      // 1. Get ephemeral token from our backend
-      const body = {};
-      if (parkCode) body.parkCode = parkCode;
-      if (userLocation?.lat && userLocation?.lng) {
-        body.lat = userLocation.lat;
-        body.lng = userLocation.lng;
-      }
-      // Send auth token if logged in so backend can identify authenticated users
-      const headers = { 'Content-Type': 'application/json' };
-      const token = typeof localStorage !== 'undefined'
-        && (localStorage.getItem('token') || sessionStorage.getItem('token'));
-      if (token) headers.Authorization = `Bearer ${token}`;
+        const body = {};
+        if (parkCode) body.parkCode = parkCode;
+        if (userLocation?.lat && userLocation?.lng) {
+          body.lat = userLocation.lat;
+          body.lng = userLocation.lng;
+        }
+        const headers = { 'Content-Type': 'application/json' };
+        const token =
+          typeof localStorage !== 'undefined' &&
+          (localStorage.getItem('token') || sessionStorage.getItem('token'));
+        if (token) headers.Authorization = `Bearer ${token}`;
 
-      const res = await fetch(`${API_URL}/ai/realtime-session`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(body),
-      });
-      if (stale()) return;
+        const res = await fetch(`${API_URL}/ai/realtime-session`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body),
+        });
+        if (stale()) return;
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        if (errData.authRequired) {
-          setAuthRequired(true);
-          setStatus('error');
-          setError(errData.error || 'Sign up to continue using Trailie Voice.');
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          if (errData.authRequired) {
+            setAuthRequired(true);
+            setStatus('error');
+            setError(errData.error || 'Sign up to continue using Trailie Voice.');
+            return;
+          }
+          throw new Error(errData.error || `Failed to create session (${res.status})`);
+        }
+
+        const sessionData = await res.json();
+        const ephemeralKey = sessionData.value;
+        toolTokenRef.current = sessionData.toolToken || null;
+        const bargeIn = Boolean(sessionData.voiceMeta?.bargeIn);
+        bargeInRef.current = bargeIn;
+        setBargeInEnabled(bargeIn);
+
+        const pc = new RTCPeerConnection();
+        pcRef.current = pc;
+
+        const audioEl = document.createElement('audio');
+        audioEl.autoplay = true;
+        audioEl.playsInline = true;
+        audioEl.setAttribute('playsinline', '');
+        if (typeof audioEl.setSinkId === 'function') {
+          try {
+            await audioEl.setSinkId('default');
+          } catch (_) {}
+        }
+        audioRef.current = audioEl;
+        audioEl.style.display = 'none';
+        document.body.appendChild(audioEl);
+
+        pc.ontrack = (event) => {
+          const remoteStream = event.streams[0];
+          audioEl.srcObject = remoteStream;
+          audioEl.play().catch(() => {});
+          attachRemoteAnalyser(remoteStream);
+        };
+
+        let stream;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+            },
+          });
+        } catch (mediaErr) {
+          if (mediaErr?.name === 'NotAllowedError' || mediaErr?.name === 'PermissionDeniedError') {
+            setPermissionDenied(true);
+            throw new Error('Microphone permission denied. Allow mic access to talk to Trailie.');
+          }
+          throw mediaErr;
+        }
+        if (stale()) {
+          stream.getTracks().forEach((t) => t.stop());
+          pc.close();
           return;
         }
-        throw new Error(errData.error || `Failed to create session (${res.status})`);
-      }
+        streamRef.current = stream;
+        stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+        attachMicAnalyser(stream);
 
-      const sessionData = await res.json();
-      const ephemeralKey = sessionData.value;
+        const dc = pc.createDataChannel('oai-events');
+        dcRef.current = dc;
 
-      // 2. Create RTCPeerConnection
-      const pc = new RTCPeerConnection();
-      pcRef.current = pc;
+        dc.onopen = () => {
+          if (!stale()) {
+            setStatus('connected');
+            bumpIdleTimer();
+          }
+        };
 
-      // 3. Set up audio playback for Trailie's responses
-      const audioEl = document.createElement('audio');
-      audioEl.autoplay = true;
-      audioEl.playsInline = true;
-      audioEl.setAttribute('playsinline', '');
-      // Route to system default output (BT speaker support)
-      if (typeof audioEl.setSinkId === 'function') {
-        try { await audioEl.setSinkId('default'); } catch (_) {}
-      }
-      audioRef.current = audioEl;
+        dc.onmessage = (e) => {
+          if (handlerRef.current) handlerRef.current(e.data);
+        };
 
-      // Append to DOM — some browsers/BT devices won't play detached audio elements
-      audioEl.style.display = 'none';
-      document.body.appendChild(audioEl);
-
-      pc.ontrack = (event) => {
-        audioEl.srcObject = event.streams[0];
-        // Force play for BT devices that may block autoplay
-        audioEl.play().catch(() => {});
-      };
-
-      // 4. Get microphone access and add track (with echo cancellation)
-      // Use device's default mic — don't lock to a specific device (BT compatibility)
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          // Don't specify deviceId — let browser pick the best available mic
-        },
-      });
-      if (stale()) { stream.getTracks().forEach(t => t.stop()); pc.close(); return; }
-      streamRef.current = stream;
-      stream.getTracks().forEach(track => pc.addTrack(track, stream));
-
-      // 5. Create data channel for events (transcript, tool calls, etc.)
-      const dc = pc.createDataChannel('oai-events');
-      dcRef.current = dc;
-
-      dc.onopen = () => {
-        if (!stale()) setStatus('connected');
-      };
-
-      dc.onmessage = (e) => {
-        if (handlerRef.current) handlerRef.current(e.data);
-      };
-
-      // 6. SDP exchange — create offer and send to OpenAI
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      if (stale()) { pc.close(); stream.getTracks().forEach(t => t.stop()); return; }
-
-      const sdpRes = await fetch(REALTIME_API_URL, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${ephemeralKey}`,
-          'Content-Type': 'application/sdp',
-        },
-        body: offer.sdp,
-      });
-      if (stale()) { pc.close(); stream.getTracks().forEach(t => t.stop()); return; }
-
-      if (!sdpRes.ok) {
-        throw new Error(`WebRTC SDP exchange failed (${sdpRes.status})`);
-      }
-
-      const answerSdp = await sdpRes.text();
-      await pc.setRemoteDescription({ type: 'answer', sdp: answerSdp });
-
-      // Monitor connection state
-      pc.onconnectionstatechange = () => {
-        if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
-          setStatus('error');
-          setError('Connection lost');
-          cleanup();
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        if (stale()) {
+          pc.close();
+          stream.getTracks().forEach((t) => t.stop());
+          return;
         }
-      };
 
-    } catch (err) {
-      if (stale()) return;
-      console.error('[Voice] Connection error:', err.message);
-      setStatus('error');
-      setError(err.message);
-      cleanup();
-    }
-  }, []);
+        const sdpRes = await fetch(REALTIME_API_URL, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${ephemeralKey}`,
+            'Content-Type': 'application/sdp',
+          },
+          body: offer.sdp,
+        });
+        if (stale()) {
+          pc.close();
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+
+        if (!sdpRes.ok) {
+          throw new Error(`WebRTC SDP exchange failed (${sdpRes.status})`);
+        }
+
+        const answerSdp = await sdpRes.text();
+        await pc.setRemoteDescription({ type: 'answer', sdp: answerSdp });
+
+        pc.onconnectionstatechange = () => {
+          if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+            setStatus('error');
+            setError('Connection lost');
+            cleanup();
+          }
+        };
+      } catch (err) {
+        if (stale()) return;
+        console.error('[Voice] Connection error:', err.message);
+        setStatus('error');
+        setError(err.message || 'Connection error');
+        cleanup();
+      }
+    },
+    [bumpIdleTimer]
+  );
 
   const disconnect = useCallback(() => {
-    connectGenRef.current++; // cancel any in-flight connect
+    connectGenRef.current += 1;
     cleanup();
     setStatus('idle');
     setIsTrailieSpeaking(false);
     setIsToolCalling(false);
     setToolCallInfo(null);
+    setUserMuted(false);
+    userMutedRef.current = false;
+    setPermissionDenied(false);
+    setError(null);
+    setAuthRequired(false);
   }, []);
 
-  // Keep handler ref always pointing to latest version (avoids stale closures)
+  const setMuted = useCallback((muted) => {
+    const next = Boolean(muted);
+    userMutedRef.current = next;
+    setUserMuted(next);
+    if (!streamRef.current) return;
+    if (next) {
+      streamRef.current.getAudioTracks().forEach((t) => {
+        t.enabled = false;
+      });
+      return;
+    }
+    const blockWhileSpeaking =
+      !bargeInRef.current && (responseActiveRef.current || Boolean(micCooldownRef.current));
+    streamRef.current.getAudioTracks().forEach((t) => {
+      t.enabled = !blockWhileSpeaking;
+    });
+  }, []);
+
+  const toggleMute = useCallback(() => {
+    setMuted(!userMutedRef.current);
+  }, [setMuted]);
+
   handlerRef.current = function handleDataChannelMessage(raw) {
     try {
       const event = JSON.parse(raw);
 
       switch (event.type) {
-        // ── User speech ──
         case 'input_audio_buffer.speech_started': {
-          // Ignore completely while Trailie is speaking, during cooldown, or mic is muted
-          if (responseActiveRef.current) break;
-          if (streamRef.current?.getAudioTracks()[0]?.enabled === false) break;
+          bumpIdleTimer();
+          if (userMutedRef.current) break;
+
+          if (bargeInRef.current && responseActiveRef.current) {
+            // Cancel in-flight assistant audio for natural interruption
+            const dc = dcRef.current;
+            if (dc && dc.readyState === 'open') {
+              try {
+                dc.send(JSON.stringify({ type: 'response.cancel' }));
+              } catch (_) {}
+            }
+            responseActiveRef.current = false;
+            setIsTrailieSpeaking(false);
+            if (audioRef.current) {
+              try {
+                audioRef.current.pause();
+                // Resume element for next response
+                audioRef.current.play().catch(() => {});
+              } catch (_) {}
+            }
+          } else if (responseActiveRef.current) {
+            break;
+          }
+
+          if (!bargeInRef.current && streamRef.current?.getAudioTracks()[0]?.enabled === false) break;
           if (micCooldownRef.current) break;
           speechStartRef.current = Date.now();
+          levelSourceRef.current = 'mic';
           setStatus('listening');
           break;
         }
 
         case 'input_audio_buffer.speech_stopped': {
-          // Only update status if mic is live and no active response
-          if (responseActiveRef.current) break;
-          if (streamRef.current?.getAudioTracks()[0]?.enabled !== false && !micCooldownRef.current) {
+          if (responseActiveRef.current && !bargeInRef.current) break;
+          if (!userMutedRef.current && !micCooldownRef.current) {
             setStatus('connected');
           }
           break;
         }
 
-        // Audio buffer committed — VAD detected end of speech turn
-        // Only respond if speech lasted > 500ms (filters out noise/false triggers)
         case 'input_audio_buffer.committed': {
-          const speechDuration = speechStartRef.current
-            ? Date.now() - speechStartRef.current
-            : 0;
+          const speechDuration = speechStartRef.current ? Date.now() - speechStartRef.current : 0;
           speechStartRef.current = null;
 
-          // Block if: mic muted, cooldown active, response in progress, or noise (<500ms)
           const micEnabled = streamRef.current?.getAudioTracks()[0]?.enabled !== false;
-          if (speechDuration > 500 && micEnabled && !micCooldownRef.current && !responseActiveRef.current) {
+          if (
+            speechDuration > MIN_SPEECH_MS &&
+            micEnabled &&
+            !userMutedRef.current &&
+            !micCooldownRef.current &&
+            !responseActiveRef.current
+          ) {
             const dc = dcRef.current;
             if (dc && dc.readyState === 'open') {
               responseActiveRef.current = true;
@@ -343,23 +566,18 @@ export default function useRealtimeVoice() {
           break;
         }
 
-        // User transcript finalized — update transcript display only
-        // (response.create is triggered from committed handler based on speech duration)
         case 'conversation.item.done': {
           if (event.item?.role === 'user') {
             const parts = event.item.content || [];
             const text = parts
-              .filter(p => p.transcript)
-              .map(p => p.transcript.trim())
+              .filter((p) => p.transcript)
+              .map((p) => p.transcript.trim())
               .join(' ');
             if (text && text.length > 1) {
-              setTranscript(prev => {
+              setTranscript((prev) => {
                 const last = prev[prev.length - 1];
                 if (last && last.role === 'user') {
-                  return [
-                    ...prev.slice(0, -1),
-                    { role: 'user', text: last.text + ' ' + text },
-                  ];
+                  return [...prev.slice(0, -1), { role: 'user', text: `${last.text} ${text}` }];
                 }
                 return [...prev, { role: 'user', text }];
               });
@@ -368,16 +586,15 @@ export default function useRealtimeVoice() {
           break;
         }
 
-        // ── Trailie speaking ──
         case 'output_audio_buffer.started': {
+          bumpIdleTimer();
           setIsTrailieSpeaking(true);
-          // Audio starting after a tool call → tool phase is over
           setIsToolCalling(false);
           setToolCallInfo(null);
           setStatus('speaking');
-          // Mute mic to prevent echo from triggering VAD self-interruption
-          if (streamRef.current) {
-            streamRef.current.getAudioTracks().forEach(t => { t.enabled = false; });
+          levelSourceRef.current = 'remote';
+          if (!bargeInRef.current) {
+            setMicTracksEnabled(false);
           }
           break;
         }
@@ -385,22 +602,17 @@ export default function useRealtimeVoice() {
         case 'output_audio_buffer.stopped':
         case 'response.output_audio.done': {
           setIsTrailieSpeaking(false);
-          // Don't re-enable mic here — wait for response.done so the full
-          // response cycle completes before accepting new input
+          levelSourceRef.current = 'mic';
           break;
         }
 
-        // Trailie's text transcript (streamed deltas)
         case 'response.output_audio_transcript.delta': {
           const delta = event.delta;
           if (delta) {
-            setTranscript(prev => {
+            setTranscript((prev) => {
               const last = prev[prev.length - 1];
               if (last && last.role === 'assistant' && last.streaming) {
-                return [
-                  ...prev.slice(0, -1),
-                  { ...last, text: last.text + delta },
-                ];
+                return [...prev.slice(0, -1), { ...last, text: last.text + delta }];
               }
               return [...prev, { role: 'assistant', text: delta, streaming: true }];
             });
@@ -408,9 +620,8 @@ export default function useRealtimeVoice() {
           break;
         }
 
-        // Trailie's transcript finalized
         case 'response.output_audio_transcript.done': {
-          setTranscript(prev => {
+          setTranscript((prev) => {
             const last = prev[prev.length - 1];
             if (last && last.role === 'assistant' && last.streaming) {
               return [
@@ -423,18 +634,12 @@ export default function useRealtimeVoice() {
           break;
         }
 
-        // ── Function call lifecycle ──
         case 'response.output_item.added': {
           if (event.item?.type === 'function_call' && event.item?.name) {
             setIsToolCalling(true);
             setToolCallInfo(event.item.name);
-            // Clear any filler transcript so only the post-tool answer shows
-            setTranscript(prev => prev.filter(m => m.role === 'user'));
-            // Mute mic during tool call — prevents noise from queuing phantom responses
-            if (streamRef.current) {
-              streamRef.current.getAudioTracks().forEach(t => { t.enabled = false; });
-            }
-            // Start tracking this function call
+            setTranscript((prev) => prev.filter((m) => m.role === 'user'));
+            if (!bargeInRef.current) setMicTracksEnabled(false);
             activeFnCallRef.current = {
               call_id: event.item.call_id,
               name: event.item.name,
@@ -444,7 +649,6 @@ export default function useRealtimeVoice() {
           break;
         }
 
-        // Function call arguments streaming
         case 'response.function_call_arguments.delta': {
           if (activeFnCallRef.current && event.delta) {
             activeFnCallRef.current.arguments += event.delta;
@@ -453,7 +657,6 @@ export default function useRealtimeVoice() {
           break;
         }
 
-        // Function call arguments complete — execute the function
         case 'response.function_call_arguments.done': {
           const fnCall = activeFnCallRef.current;
           if (fnCall) {
@@ -461,45 +664,39 @@ export default function useRealtimeVoice() {
             try {
               fnArgs = JSON.parse(event.arguments || fnCall.arguments || '{}');
             } catch (_) {}
-            // Execute async — don't await in the handler
             executeFunctionCall(fnCall.call_id, fnCall.name, fnArgs);
             activeFnCallRef.current = null;
           }
           break;
         }
 
-        // Tool result returned — keep isToolCalling=true, audio will clear it
         case 'response.output_item.done': {
-          // Don't clear isToolCalling here — let output_audio_buffer.started do it
           break;
         }
 
-        // Response complete — re-enable mic after cooldown
         case 'response.done': {
           responseActiveRef.current = false;
-          // If a function call is pending, don't re-enable mic yet — a new response will follow
           if (activeFnCallRef.current) break;
 
           setIsTrailieSpeaking(false);
           setIsToolCalling(false);
           setToolCallInfo(null);
-          // Re-enable mic after cooldown so residual speaker audio doesn't trigger VAD
+          levelSourceRef.current = 'mic';
+          bumpIdleTimer();
+
           if (micCooldownRef.current) clearTimeout(micCooldownRef.current);
           micCooldownRef.current = setTimeout(() => {
-            if (streamRef.current) {
-              streamRef.current.getAudioTracks().forEach(t => { t.enabled = true; });
-            }
+            if (!bargeInRef.current) setMicTracksEnabled(true);
+            else if (!userMutedRef.current) setMicTracksEnabled(true);
             micCooldownRef.current = null;
             setStatus('connected');
-          }, 1200);
+          }, bargeInRef.current ? 200 : MIC_COOLDOWN_MS);
           break;
         }
 
-        // Error from API
         case 'error': {
           const msg = event.error?.message || '';
-          // Ignore non-fatal errors — these don't affect the conversation
-          if (msg.includes('active response') || msg.includes('already has')) {
+          if (msg.includes('active response') || msg.includes('already has') || msg.includes('cancelled')) {
             console.warn('[Voice] Non-fatal:', msg);
             break;
           }
@@ -511,10 +708,17 @@ export default function useRealtimeVoice() {
         default:
           break;
       }
-    } catch (err) {
-      // Non-JSON messages or parse errors — ignore
+    } catch (_) {
+      // ignore non-JSON
     }
   };
+
+  const micActive =
+    status !== 'idle' &&
+    status !== 'error' &&
+    status !== 'connecting' &&
+    !userMuted &&
+    Boolean(streamRef.current);
 
   return {
     status,
@@ -524,7 +728,14 @@ export default function useRealtimeVoice() {
     toolCallInfo,
     error,
     authRequired,
+    permissionDenied,
+    userMuted,
+    bargeInEnabled,
+    audioLevel,
+    micActive,
     connect,
     disconnect,
+    setMuted,
+    toggleMute,
   };
 }

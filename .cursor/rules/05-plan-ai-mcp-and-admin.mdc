@@ -58,12 +58,15 @@ Filenames still say `simple` / `modelFirst` for historical reasons — those mod
 - Token usage + analytics endpoints (protect)
 - Feedback loop: `/api/ai/feedback` for learning service
 
-### Voice (`components/voice/`)
+### Voice (`components/voice/` + `VoiceSessionProvider`)
 
-- `VoiceButton` in root layout — "Talk to Trailie"
-- `VoiceOverlay` — realtime session via `POST /api/ai/realtime-session`
-- `POST /api/ai/voice-tool` — tool callback (public, server-validated)
+- Compact **Talk to Trailie** launcher via `Providers` → `VoiceSessionProvider` → `VoiceButton`
+- UI modes: docked card / minimized pill / optional immersive (`VoiceDock`, `VoiceMinimizedPill`, `VoiceImmersive`)
+- Model: `gpt-realtime-2.1` + voice `marin` (`server/src/config/voiceConfig.js`)
+- `POST /api/ai/realtime-session` returns ephemeral key + `toolToken`
+- `POST /api/ai/voice-tool` requires valid `toolToken` (Bearer / header / body)
 - Limits: anonymous 3 free sessions / 24h then sign-in; **10 sessions / hour** for everyone
+- Optional barge-in: `VOICE_BARGE_IN=true` (default off)
 
 ## Chat history
 

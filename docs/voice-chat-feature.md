@@ -4,46 +4,35 @@
 
 Trailie Voice is a real-time voice assistant integrated into TrailVerse that lets users ask questions about U.S. national parks and receive spoken answers powered by live data. It uses OpenAI's Realtime API over WebRTC for low-latency voice-to-voice interaction, with function calling to fetch live park data from the NPS API, weather services, and TrailVerse's data layer.
 
-**Status:** Beta
-**Rate limit:** 30 sessions per hour per user
-**Voice model:** `gpt-realtime` with `marin` voice
+**Status:** Local upgrade (Realtime 2.1 + compact dock) — manual mic verification required  
+**Rate limit:** 10 sessions per hour per user; anonymous 3 free / 24h  
+**Voice model:** `gpt-realtime-2.1` with `marin` voice (configurable via `VOICE_REALTIME_MODEL`)  
+**UI:** Compact launcher → expandable dock / minimized pill / optional immersive. Desktop pill collapses to a fixed 48px mic while scrolling (hover/focus expands); mobile keeps a persistent mic. Never hides on scroll.  
+**Session ownership:** `VoiceSessionProvider` + `useRealtimeVoice` (UI modes do not remint)  
+**Tool auth:** `/voice-tool` requires `toolToken` from `/realtime-session`  
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────┐      ┌──────────────────┐      ┌─────────────────┐
-│   Browser        │      │  Express Backend  │      │  OpenAI Realtime │
-│                  │      │  (server/routes/  │      │  API             │
-│  VoiceButton     │      │   ai.js)          │      │                  │
-│  VoiceOverlay    │      │                   │      │                  │
-│  useRealtimeVoice│      │                   │      │                  │
-│                  │      │                   │      │                  │
-│  1. Tap mic ─────┼──2──▶│  /realtime-session │──3──▶│  Create session  │
-│                  │      │  - Rate limit     │◀──4──│  Return token    │
-│  5. WebRTC ──────┼──────┼───────────────────┼──────┼▶ Audio stream    │
-│     connection   │      │                   │      │                  │
-│                  │      │                   │      │  6. Model needs  │
-│  7. Function ────┼──────┼▶ /voice-tool      │      │     data →       │
-│     call result  │      │  - get_park_details│      │     function call│
-│                  │      │  - search_parks   │      │                  │
-│  8. Audio ◀──────┼──────┼───────────────────┼──────┼─ Speaks answer   │
-│     response     │      │  - compare_parks  │      │                  │
-│                  │      │  - find_events    │      │                  │
-└─────────────────┘      └──────────────────┘      └─────────────────┘
+Browser: VoiceSessionProvider + launcher/dock/mini/immersive
+  → POST /api/ai/realtime-session (mint gpt-realtime-2.1 + toolToken)
+  → WebRTC to OpenAI /v1/realtime/calls
+  → POST /api/ai/voice-tool with toolToken for park tools
+Minimize/Expand change UI only; End Call tears down the peer.
 ```
 
 ### Connection Flow
 
-1. User taps the microphone FAB (floating action button)
-2. `VoiceOverlay` mounts, `useRealtimeVoice.connect()` is called
+1. User taps the **Talk to Trailie** launcher
+2. `VoiceSessionProvider` opens dock UI and calls `useRealtimeVoice.connect()` (session lives outside UI chrome)
 3. Geolocation is retrieved from module-level cache (only prompts user once per page session; 2s timeout on first request)
 4. Frontend POSTs to `/api/ai/realtime-session` with optional `parkCode`, `lat`, `lng`
-5. Backend builds instructions (park context, geolocation, date/season), requests ephemeral token from OpenAI
+5. Backend builds instructions (park context, geolocation, date), requests ephemeral token from OpenAI (`gpt-realtime-2.1` / `marin`)
 6. Frontend creates RTCPeerConnection, exchanges SDP with OpenAI Realtime API
 7. WebRTC data channel opens for events (transcripts, function calls)
-8. Voice session is live — user speaks, model responds
+8. Voice session is live — Minimize / Expand change UI only; **End Call** disconnects
 
 ### Function Calling Flow
 
@@ -66,15 +55,30 @@ When the model needs live data it can't answer from pre-loaded context:
 
 | File | Purpose |
 |------|---------|
-| `components/voice/VoiceButton.jsx` | Floating mic button (FAB), hint tooltip, page visibility logic |
-| `components/voice/VoiceOverlay.jsx` | Full-screen voice UI — orb, status, captions, suggested prompts |
-| `hooks/useRealtimeVoice.js` | WebRTC connection, data channel events, function call execution |
+| `context/VoiceSessionProvider` | Persistent session owner + UI mode (`closed` / `docked` / `minimized` / `immersive`) |
+| `components/voice/VoiceButton.jsx` | Compact launcher + routes chrome to dock / mini / immersive |
+| `components/voice/VoiceDock.jsx` | Floating card / mobile bottom sheet |
+| `components/voice/VoiceMinimizedPill.jsx` | Active minimized indicator (mic still visible) |
+| `components/voice/VoiceImmersive.jsx` | Optional full-screen focused mode |
+| `components/voice/VoiceWaveform.jsx` | Audio-level waveform (reduced-motion aware) |
+| `hooks/useRealtimeVoice.js` | WebRTC connection, mute, barge-in flag, tool token, analyser |
 
 ### Backend
 
 | File | Purpose |
 |------|---------|
-| `server/src/routes/ai.js` | `/realtime-session` — session creation, context injection; `/voice-tool` — function execution |
+| `server/src/config/voiceConfig.js` | Model / Marin / barge-in / reasoning effort env config |
+| `server/src/services/voiceSessionStore.js` | In-memory `toolToken` binding for `/voice-tool` |
+| `server/src/routes/ai.js` | `/realtime-session` + authorized `/voice-tool` |
+
+### Local env (server)
+
+| Variable | Default | Notes |
+|---|---|---|
+| `VOICE_REALTIME_MODEL` | `gpt-realtime-2.1` | Also allows mini / 2 / 1.5 |
+| `VOICE_NAME` | `marin` | Locked product voice |
+| `VOICE_BARGE_IN` | unset/false | Set `true` to keep mic hot + `interrupt_response` |
+| `VOICE_REASONING_EFFORT` | `low` | Use `none` to omit reasoning block |
 
 ---
 
@@ -190,13 +194,13 @@ A tooltip appears after 3 seconds for first-time visitors (per session) with con
 
 ```json
 {
-  "model": "gpt-realtime",
+  "model": "gpt-realtime-2.1",
   "output_modalities": ["audio"],
   "audio": {
     "input": {
       "turn_detection": {
         "type": "semantic_vad",
-        "interrupt_response": true,
+        "interrupt_response": false,
         "create_response": true
       }
     },
@@ -208,12 +212,12 @@ A tooltip appears after 3 seconds for first-time visitors (per session) with con
 ```
 
 - **Semantic VAD:** Understands natural speech patterns — pauses mid-sentence don't trigger responses, only when the user is actually done talking
-- **Interrupt support:** Enabled in config, but mic is muted while Trailie speaks (see Echo Prevention below) so self-interruption is prevented. Users can speak after Trailie finishes.
-- **Voice:** `marin` — warm, conversational tone
+- **Interrupt support:** Default off (`interrupt_response: false` + mic muted while Trailie speaks). Set `VOICE_BARGE_IN=true` to keep the mic hot and allow `response.cancel` interruption (manual verification required).
+- **Voice:** `marin` only — product-locked; unsupported `VOICE_NAME` values fall back to marin
 
 ### Echo Prevention
 
-To prevent the mic from picking up Trailie's audio and triggering VAD self-interruption:
+To prevent the mic from picking up Trailie's audio and triggering VAD self-interruption (default turn-taking mode):
 - Microphone requests echo cancellation, noise suppression, and auto gain control
 - Mic track is **disabled** when `output_audio_buffer.started` fires (Trailie starts speaking)
 - Mic track is **re-enabled** when `output_audio_buffer.stopped` fires (Trailie stops speaking)

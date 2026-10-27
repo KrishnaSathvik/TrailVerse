@@ -1,131 +1,22 @@
-import { useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
-import { ArrowUp } from '@components/icons';
+'use client';
 
+import { useEffect } from 'react';
+import { usePathname } from 'next/navigation';
+
+/**
+ * Resets window scroll on route change. No floating scroll-to-top control —
+ * that competed with Trailie Voice in the bottom-right.
+ */
 const ScrollToTop = () => {
   const pathname = usePathname();
-  const [isVisible, setIsVisible] = useState(false);
+  const isChatPage = pathname?.startsWith('/plan-ai') || pathname?.includes('/chat');
 
-  // Don't show scroll-to-top button on chat pages
-  const isChatPage = pathname.startsWith('/plan-ai') || pathname.includes('/chat');
-
-  // Scroll to top when route changes (except for chat pages)
   useEffect(() => {
-    // Don't auto-scroll on chat pages to preserve user's scroll position
-    if (isChatPage) {
-      return;
-    }
-    
-    window.scrollTo({
-      top: 0,
-      left: 0,
-      behavior: 'smooth'
-    });
+    if (isChatPage) return;
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
   }, [pathname, isChatPage]);
 
-  // Show/hide button based on scroll position (but not on chat pages)
-  useEffect(() => {
-    const toggleVisibility = () => {
-      // Don't show on chat pages
-      if (isChatPage) {
-        setIsVisible(false);
-        return;
-      }
-      
-      // Show button when page is scrolled down 300px (reduced for better UX)
-      if (window.pageYOffset > 300) {
-        setIsVisible(true);
-      } else {
-        setIsVisible(false);
-      }
-    };
-
-    window.addEventListener('scroll', toggleVisibility);
-
-    return () => {
-      window.removeEventListener('scroll', toggleVisibility);
-    };
-  }, [isChatPage]);
-
-  // Scroll to top smoothly
-  const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
-  };
-
-  // Don't render anything on chat pages
-  if (isChatPage) {
-    return null;
-  }
-
-  return (
-    <>
-      {isVisible && (
-        <button
-          onClick={scrollToTop}
-          className="fixed bottom-24 right-6 sm:bottom-28 sm:right-6 z-50
-                     flex items-center justify-center
-                     w-11 h-11 sm:w-12 sm:h-12
-                     rounded-full
-                     transition-all duration-300 ease-out
-                     hover:scale-110 active:scale-95
-                     opacity-0 animate-fade-in
-                     group
-                     focus:outline-none focus:ring-4 focus:ring-opacity-50
-                     backdrop-blur-md
-                     border-2"
-          style={{
-            backgroundColor: 'var(--surface)',
-            boxShadow: 'var(--shadow-xl), 0 0 0 1px var(--border)',
-            borderColor: 'var(--border)',
-            animation: 'fadeInUp 0.3s ease-out forwards'
-          }}
-          aria-label="Scroll to top of page"
-          title="Scroll to top"
-        >
-          <ArrowUp
-            className="h-5 w-5 sm:h-6 sm:w-6 transition-all duration-300
-                       group-hover:-translate-y-1 group-hover:scale-110
-                       group-active:translate-y-0 group-active:scale-100" 
-            style={{ 
-              color: 'var(--accent-green)', 
-              strokeWidth: 2.5,
-              filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))'
-            }} 
-          />
-          
-          {/* Subtle glow effect on hover */}
-          <div 
-            className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 
-                       transition-opacity duration-300 pointer-events-none"
-            style={{
-              background: 'radial-gradient(circle, var(--accent-green-light) 0%, transparent 70%)',
-              transform: 'scale(1.2)'
-            }}
-          />
-        </button>
-      )}
-      
-      <style>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px) scale(0.8);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-        
-        .animate-fade-in {
-          animation: fadeInUp 0.3s ease-out forwards;
-        }
-      `}</style>
-    </>
-  );
+  return null;
 };
 
 export default ScrollToTop;

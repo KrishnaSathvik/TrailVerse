@@ -7,9 +7,11 @@ import { IconContext } from '@phosphor-icons/react';
 import { ThemeProvider } from '../context/ThemeContext';
 import { ToastProvider } from '../context/ToastContext';
 import { AuthProvider } from '../context/AuthContext';
+import { VoiceSessionProvider } from '../context/VoiceSessionContext';
 import ScrollToTop from './common/ScrollToTop';
 import NavigationProgress from './common/NavigationProgress';
 import AnalyticsPageTracker from './common/AnalyticsPageTracker';
+import VoiceButton from './voice/VoiceButton';
 import { initGA } from '../utils/analytics';
 import { applyClientCacheMigration } from '@/lib/clientCacheVersion';
 
@@ -50,12 +52,15 @@ export default function Providers({
       <ThemeProvider initialTheme={initialTheme} initialResolvedTheme={initialResolvedTheme}>
         <ToastProvider>
           <AuthProvider initialAuthHint={initialAuthHint}>
-            {children}
-            <Suspense fallback={null}>
-              <NavigationProgress />
-            </Suspense>
-            <AnalyticsPageTracker />
-            <ScrollToTop />
+            <VoiceSessionProvider>
+              {children}
+              <VoiceButton />
+              <Suspense fallback={null}>
+                <NavigationProgress />
+              </Suspense>
+              <AnalyticsPageTracker />
+              <ScrollToTop />
+            </VoiceSessionProvider>
           </AuthProvider>
         </ToastProvider>
       </ThemeProvider>

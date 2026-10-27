@@ -4,7 +4,6 @@ import Script from "next/script";
 import { Bricolage_Grotesque, Geist } from "next/font/google";
 import Providers from "../components/Providers";
 import GoogleMapsLoader from "../components/maps/GoogleMapsLoader";
-import VoiceButton from "../components/voice/VoiceButton";
 import { indexablePageRobots } from "@/lib/seo";
 
 /** Brand fonts — exposed as CSS variables consumed by --font-sans / --font-display in globals.css. */
@@ -135,7 +134,6 @@ export default function RootLayout({ children }) {
         <GoogleMapsLoader />
         <Providers>
           {children}
-          <VoiceButton />
         </Providers>
       </body>
     </html>

@@ -277,6 +277,11 @@ const { resolveDestinationDisplayName } = require('../utils/resolvedDestinationD
 const { correctItinerary, computeConfidence, scoreItinerary } = require('../utils/itineraryCorrector');
 const { logAIRequest, extractParksMentioned } = require('../utils/aiLogger');
 const { TRAILIE_VOICE_INSTRUCTIONS } = require('../prompts');
+const { getVoiceConfig } = require('../config/voiceConfig');
+const {
+  createVoiceToolSession,
+  validateVoiceToolSession,
+} = require('../services/voiceSessionStore');
 const { buildItineraryOutputInstruction } = require('../prompts/itineraryOutputInstruction');
 // Stage 11 — itinerary generation config (early-event gating on auth stream).
 const { getItineraryGenerationConfig } = require('../config/itineraryGenerationConfig');
@@ -3946,12 +3951,12 @@ router.post('/realtime-session', optionalAuth, async (req, res) => {
       }
     }
 
-    // Inject current date & season
+    // Inject current date (do not assume the visitor is outdoors or experiencing that weather)
     const today = new Date();
     const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     const month = today.getMonth(); // 0-11
     const season = month >= 2 && month <= 4 ? 'spring' : month >= 5 && month <= 7 ? 'summer' : month >= 8 && month <= 10 ? 'fall' : 'winter';
-    instructions += `\n\nToday is ${months[month]} ${today.getDate()}, ${today.getFullYear()} (${season}). Use this for seasonal recommendations.`;
+    instructions += `\n\nToday is ${months[month]} ${today.getDate()}, ${today.getFullYear()} (${season}). Use this only for date-aware answers. Do not assume the user is outdoors or currently experiencing that season's weather. Do not open with weather or seasonal greetings.`;
 
     // Inject nearby parks if user shared geolocation
     const userLat = parseFloat(req.body?.lat);
@@ -4008,33 +4013,33 @@ router.post('/realtime-session', optionalAuth, async (req, res) => {
       }
     }
 
+    const voiceConfig = getVoiceConfig();
+    const toolSession = createVoiceToolSession({
+      userId: req.user?.id || null,
+      ip: req.ip || req.connection?.remoteAddress || null,
+    });
+
     // Request ephemeral token from OpenAI
     const fetch = require('node-fetch');
-    const response = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        session: {
-          type: 'realtime',
-          model: 'gpt-realtime',
-          instructions,
-          output_modalities: ['audio'],
-          audio: {
-            input: {
-              turn_detection: {
-                type: 'semantic_vad',
-                interrupt_response: false,
-                create_response: false,
-              },
-            },
-            output: {
-              voice: 'marin',
+    const sessionBody = {
+      session: {
+        type: 'realtime',
+        model: voiceConfig.model,
+        instructions,
+        output_modalities: ['audio'],
+        audio: {
+          input: {
+            turn_detection: {
+              type: 'semantic_vad',
+              interrupt_response: voiceConfig.bargeIn,
+              create_response: false,
             },
           },
-          tools: [
+          output: {
+            voice: voiceConfig.voice,
+          },
+        },
+        tools: [
             {
               type: 'function',
               name: 'get_park_details',
@@ -4091,8 +4096,21 @@ router.post('/realtime-session', optionalAuth, async (req, res) => {
               },
             },
           ],
-        },
-      }),
+      },
+    };
+
+    // Reasoning effort for Realtime 2.x (low latency default). Older models ignore unknown fields poorly — only attach for 2.x.
+    if (/^gpt-realtime-2/.test(voiceConfig.model) && voiceConfig.reasoningEffort !== 'none') {
+      sessionBody.session.reasoning = { effort: voiceConfig.reasoningEffort };
+    }
+
+    const response = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(sessionBody),
     });
 
     if (!response.ok) {
@@ -4102,8 +4120,22 @@ router.post('/realtime-session', optionalAuth, async (req, res) => {
     }
 
     const sessionData = await response.json();
-    console.log('[Voice] Session created successfully, keys:', Object.keys(sessionData));
-    res.json(sessionData);
+    console.log('[Voice] Session created successfully', {
+      model: voiceConfig.model,
+      voice: voiceConfig.voice,
+      bargeIn: voiceConfig.bargeIn,
+      keys: Object.keys(sessionData),
+    });
+    res.json({
+      ...sessionData,
+      toolToken: toolSession.token,
+      toolTokenExpiresAt: toolSession.expiresAt,
+      voiceMeta: {
+        model: voiceConfig.model,
+        voice: voiceConfig.voice,
+        bargeIn: voiceConfig.bargeIn,
+      },
+    });
   } catch (err) {
     console.error('[Voice] Session creation error:', err);
     res.status(500).json({ error: 'Internal server error' });
@@ -4114,6 +4146,19 @@ router.post('/realtime-session', optionalAuth, async (req, res) => {
 // ====================================================
 router.post('/voice-tool', async (req, res) => {
   try {
+    const authHeader = req.headers.authorization || '';
+    const bearer = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+    const headerToken = String(req.headers['x-trailverse-voice-token'] || '').trim();
+    const bodyToken = typeof req.body?.toolToken === 'string' ? req.body.toolToken.trim() : '';
+    const toolToken = bearer || headerToken || bodyToken;
+    const validation = validateVoiceToolSession(toolToken);
+    if (!validation.ok) {
+      return res.status(401).json({
+        error: 'Voice tool session required. Start a voice conversation first.',
+        reason: validation.reason,
+      });
+    }
+
     const { tool, args } = req.body;
     if (!tool || typeof tool !== 'string') {
       return res.status(400).json({ error: 'Missing tool name' });
