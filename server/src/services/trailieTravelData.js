@@ -458,9 +458,12 @@ function createSimpleTravelTools({ broker, now = () => new Date(), destinationRe
       await resolveNamedPlaces(s, requestedPlaces, ctx);
       // Non-NPS destinations (place:query / place:known without catalog coords) resolve
       // as a locality through the same named_place path — no extra provider or model call.
-      // Only when the traveler listed no places (pinless / destination-only research),
-      // so locality grounding cannot steal named-place budget from explicit stops.
-      const needsLocalityDestination = requestedPlaces.length === 0 && !(args.resources?.length && !topics.length)
+      // Runs after the traveler's places, so it cannot steal their named-place budget.
+      // It also runs when places were requested but none resolved to a location:
+      // otherwise a city trip whose attractions miss the geocoder ("San Diego Zoo")
+      // has no U.S. grounding at all and is rejected as us_geography_unsupported.
+      const anyRequestedPlaceLocated = requestedPlaces.some(name => validLocation(placeRow(s, name)?.claim?.normalizedValue?.location));
+      const needsLocalityDestination = !anyRequestedPlaceLocated && !(args.resources?.length && !topics.length)
         && !s.evidence.some(row => row.topic === 'destination_identity')
         && e?.displayName
         && /^place:(query|known):/i.test(String(e.entityId || ''));
