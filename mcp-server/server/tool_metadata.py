@@ -22,18 +22,19 @@ PLAN_TRIP_DESCRIPTION = (
     "or wants to change an itinerary that plan_trip already returned in this conversation. "
     "Works for National Park Service sites and for other US destinations (state parks, "
     "cities, road trips); for a non-NPS place pass park_name and omit park_code. "
-    "New trips need park_code or park_name plus number_of_days (1–14 days; longer trips "
-    "are rejected). To revise, pass the session_id from the previous plan_trip result plus "
-    "revision_request. "
+    "New trips need park_code or park_name, number_of_days (1–14; longer trips are "
+    "rejected), and either start_date or travel_month (a missing date returns "
+    "MISSING_TRAVEL_DATE). To revise, pass the session_id from the previous plan_trip "
+    "result plus revision_request. "
     "Do not use for: facts or current conditions about a park (get_park_details), choosing "
     "between named parks (compare_parks), finding parks (search_parks), reservations, "
     "campsite or permit availability, bookings of any kind (not supported), or trips "
     "outside the US. "
     "Each call sends the request to TrailVerse's Trailie planner and saves the itinerary in "
     "a temporary anonymous TrailVerse session (expires 48 hours after last use) so later "
-    "revisions can build on it. Returns Trailie's narrative plus the canonical TripPlan "
-    "(days, dayparts, stops, road transfers, save state). Present it as returned, without "
-    "adding times, drive durations, meals, budgets, or stops."
+    "revisions can build on it. Returns Trailie's narrative, a day-by-day summary of the "
+    "itinerary, and whether it was saved; the full canonical TripPlan is in structured content. "
+    "Times, drive durations, meals and stops appear only where Trailie supplied them."
 )
 
 GET_PARK_DETAILS_DESCRIPTION = (
@@ -85,8 +86,10 @@ SEARCH_PARKS_DESCRIPTION = (
     "ordered by match strength; with only state or activity filters, national parks are "
     "listed first, then monuments and other units. "
     "Do not use for: details about one named park (get_park_details), non-NPS places, or "
-    "destinations outside the US. Provide at least one of query, state, or activity; "
-    "combine them when the user gives several."
+    "destinations outside the US. There is no distance search: for 'parks near <city>' "
+    "use the state filter for that city's state (and neighboring states); a distance "
+    "phrase in query returns PROXIMITY_SEARCH_UNSUPPORTED. Provide at least one of query, "
+    "state, or activity; combine them when the user gives several."
 )
 
 SEARCH_QUERY = (

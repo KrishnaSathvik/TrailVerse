@@ -13,9 +13,14 @@ import json
 import re
 from datetime import datetime
 from typing import Any
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 from .client import extract_itinerary, strip_itinerary_block
+
+# Text-only hosts get the lossless canonical plan as compact JSON after the
+# readable itinerary (the architecture contract). Set to false to send only the
+# readable view in text; structuredContent always carries the full plan.
+TEXT_INCLUDES_CANONICAL_JSON = os.getenv("MCP_TEXT_CANONICAL_JSON", "true").lower() not in ("0", "false", "no")
 from .plan_trip_service import DEFAULT_UNVERIFIED, build_plan_trip_structured
 
 WEB_BASE = os.getenv(
@@ -332,12 +337,24 @@ def format_plan_trip(
             summary_parts.append(f"{len(itinerary['days'])}-day itinerary")
         text = ", ".join(summary_parts) if summary_parts else "Trip planning response"
 
-    # Text-only clients receive the same contract, not a second itinerary or
-    # default driving directions. JSON inside Markdown preserves unknown fields too.
+    # Readable first: a day-by-day view built only from canonical fields, then a
+    # plain save sentence. The lossless canonical JSON follows for text-only hosts
+    # (Claude passes text, not structuredContent, to the model), compacted: the
+    # indented dump was ~10k characters for a two-day trip.
     if itinerary:
-        text += "\n\n### Canonical trip\n\n```json\n" + json.dumps(itinerary, ensure_ascii=False, indent=2) + "\n```"
+        summary = render_trip_summary(itinerary)
+        if summary:
+            text += "\n\n### Itinerary\n\n" + summary
     if outcome:
-        text += "\n\n### Trip save state\n\n```json\n" + json.dumps(outcome, ensure_ascii=False, indent=2) + "\n```"
+        text += "\n\n### Trip save state\n\n" + describe_save_state(outcome)
+    if itinerary and TEXT_INCLUDES_CANONICAL_JSON:
+        text += (
+            "\n\n### Canonical trip (machine-readable)\n\n```json\n"
+            + json.dumps(itinerary, ensure_ascii=False, separators=(",", ":"))
+            + "\n```"
+        )
+    if outcome and TEXT_INCLUDES_CANONICAL_JSON:
+        text += "\n\n```json\n" + json.dumps(outcome, ensure_ascii=False, separators=(",", ":")) + "\n```"
     structured["dayMaps"] = []
 
     text += f"\n\nContinue planning at {WEB_BASE}/plan-ai"
@@ -345,6 +362,81 @@ def format_plan_trip(
         text += f" | Park details: {WEB_BASE}/parks/{park_code}"
 
     return structured, text
+
+
+def _stop_line(stop: dict[str, Any]) -> str:
+    name = stop.get("displayName") or stop.get("name") or "Stop"
+    when = stop.get("startTime") or ""
+    if when and stop.get("timingReason"):
+        when = f"{when} ({stop['timingReason']})"
+    head = f"**{name}**" + (f" — {when}" if when else "")
+    note = (stop.get("note") or "").strip()
+    return f"{head}: {note}" if note else head
+
+
+def render_trip_summary(plan: dict[str, Any]) -> str:
+    """Day-by-day Markdown view of a canonical TripPlan.
+
+    Uses only fields Trailie returned: labels, dayparts, stop names and notes,
+    exact times with their reason, and edge labels as written ("37 min by road").
+    Nothing is added: no clocks for untimed stops, no meals, no drive estimates.
+    """
+    lines: list[str] = []
+    for day in plan.get("days") or []:
+        if not isinstance(day, dict):
+            continue
+        number = day.get("dayNumber") or day.get("day")
+        title = f"**Day {number}" + (f" — {day['label']}" if day.get("label") else "") + "**"
+        if day.get("overnightLocation"):
+            title += f" · overnight {day['overnightLocation']}"
+        lines.append(title)
+        stops = {st.get("id"): st for st in day.get("stops") or [] if isinstance(st, dict)}
+        used: set[Any] = set()
+        blocks = (day.get("dayStructure") or {}).get("blocks") or []
+        for block in blocks:
+            if not isinstance(block, dict):
+                continue
+            periods = ", ".join(p.capitalize() for p in block.get("periods") or [] if isinstance(p, str))
+            label = block.get("label") or ""
+            block_stops = [stops[i] for i in block.get("stopIds") or [] if i in stops]
+            used.update(st.get("id") for st in block_stops)
+            if block_stops:
+                for st in block_stops:
+                    same = label.strip().lower() == str(st.get("name") or "").strip().lower()
+                    lead = f"{label} → " if label and not same and len(block_stops) == 1 else ""
+                    lines.append(f"- {periods + ': ' if periods else ''}{lead}{_stop_line(st)}")
+            elif label:
+                note = (block.get("note") or "").strip()
+                lines.append(f"- {periods + ': ' if periods else ''}{label}" + (f" — {note}" if note else ""))
+        for st in (day.get("stops") or []):
+            if isinstance(st, dict) and st.get("id") not in used:
+                window = st.get("timeWindow") or ""
+                lines.append(f"- {window + ': ' if window else ''}{_stop_line(st)}")
+        for edge in day.get("travelEdges") or []:
+            if isinstance(edge, dict) and edge.get("label"):
+                a = stops.get(edge.get("fromStopId") or edge.get("sourceStopId"), {}).get("name")
+                b = stops.get(edge.get("toStopId") or edge.get("targetStopId"), {}).get("name")
+                lines.append(f"- Between {a} and {b}: {edge['label']}" if a and b else f"- {edge['label']}")
+        lines.append("")
+    for section in plan.get("narrativeSections") or []:
+        if isinstance(section, dict) and section.get("markdown"):
+            if section.get("heading"):
+                lines.append(f"**{section['heading']}**")
+            lines.append(section["markdown"].strip())
+            lines.append("")
+    return "\n".join(lines).strip()
+
+
+def describe_save_state(outcome: dict[str, Any]) -> str:
+    """One plain sentence on persistence; generation success is reported separately."""
+    artifact = outcome.get("artifactStatus") or {}
+    status = artifact.get("status") or outcome.get("status")
+    if status == "save_failed" or str(outcome.get("mutationStatus", "")).startswith("rejected"):
+        notice = artifact.get("notice") or "The answer above is usable, but the trip was not saved."
+        return f"**Not saved** (save_failed): {notice}"
+    if outcome.get("mutationStatus") == "accepted":
+        return "Saved to this TrailVerse planning session; pass session_id to revise it."
+    return "Save status was not reported."
 
 
 # ---------- get_park_details ----------
@@ -702,10 +794,55 @@ def _pick_images(park: dict[str, Any], limit: int = 6) -> list[dict[str, str | N
     return result
 
 
+# NPS lists activities alphabetically, umbrella categories included, so taking
+# the first few produced "Known for arts and culture, auto and ATV" for
+# Yellowstone and dropped hiking from Glacier entirely. Signature visitor
+# activities come first; umbrella categories and amenities go last.
+_ACTIVITY_PRIORITY = [
+    "hiking", "wildlife watching", "scenic driving", "camping", "backcountry camping",
+    "stargazing", "astronomy", "paddling", "kayaking", "canoeing", "boating", "boat tour",
+    "fishing", "birdwatching", "horseback riding", "biking", "mountain biking",
+    "swimming", "snorkeling", "climbing", "rock climbing", "caving",
+    "snowshoeing", "cross-country skiing", "downhill skiing", "guided tours",
+    "ranger programs", "junior ranger program", "museum exhibits", "living history",
+    "historic sites", "picnicking",
+]
+_ACTIVITY_RANK = {name: i for i, name in enumerate(_ACTIVITY_PRIORITY)}
+_ACTIVITY_LAST = frozenset({
+    "arts and culture", "auto and atv", "cultural demonstrations", "live music",
+    "shopping", "food", "dining", "gift shop and souvenirs", "bookstore and park store",
+    "park film", "self-guided tours - auto", "self-guided tours - walking",
+    "craft demonstrations", "theater", "pet friendly",
+})
+
+
+def rank_activity_names(names: list[str]) -> list[str]:
+    """Order activity names by visitor relevance, keeping NPS order as tiebreak."""
+    seen: set[str] = set()
+    unique = []
+    for name in names:
+        key = (name or "").strip().lower()
+        if key and key not in seen:
+            seen.add(key)
+            unique.append(name.strip())
+
+    def key(item: tuple[int, str]) -> tuple[int, int, int]:
+        idx, name = item
+        lower = name.lower()
+        if lower in _ACTIVITY_RANK:
+            return (0, _ACTIVITY_RANK[lower], idx)
+        if lower in _ACTIVITY_LAST:
+            return (2, 0, idx)
+        return (1, 0, idx)
+
+    return [name for _, name in sorted(enumerate(unique), key=key)]
+
+
 def _pick_activities(park: dict[str, Any]) -> list[str]:
     acts = park.get("activities") or []
     if isinstance(acts, list):
-        return [a.get("name") if isinstance(a, dict) else str(a) for a in acts[:12]]
+        names = [a.get("name") if isinstance(a, dict) else str(a) for a in acts]
+        return rank_activity_names([n for n in names if n])[:12]
     return []
 
 
@@ -808,14 +945,15 @@ def format_compare(
                         fee = str(cost)
 
         # activities: nested in activities array or topActivities
-        top_acts = p.get("topActivities") or []
+        top_acts = list(p.get("topActivities") or [])
         if not top_acts:
             acts_arr = p.get("activities") or []
             if isinstance(acts_arr, list):
-                for a in acts_arr[:5]:
+                for a in acts_arr:
                     name = a.get("name") if isinstance(a, dict) else str(a)
                     if name:
                         top_acts.append(name)
+        top_acts = rank_activity_names([str(a) for a in top_acts if a])
 
         parks.append({
             "parkCode": code,
@@ -950,7 +1088,7 @@ def _search_framing_sentence(query: str | None, park_count: int) -> str:
     if not query or not query.strip():
         return (
             f"TrailVerse ranked **{park_count}** NPS sites from live data. "
-            "Best fits first; more options below."
+            "Best fits first."
         )
     q = query.lower()
     goals: list[str] = []
@@ -970,15 +1108,11 @@ def _search_framing_sentence(query: str | None, park_count: int) -> str:
         r"\b(cool|cooler|beat the heat|escape the heat|mild)\b", q
     ) and re.search(r"\b(july|summer|june|august)\b", q):
         goals.append("cooler summer weather")
+    # Describe the result only. Tool output must not tell the host model how to
+    # present it (directory review rejects instructions embedded in results).
     if not goals:
-        return (
-            f"TrailVerse ranked **{park_count}** NPS sites from live data. "
-            "Lead with your top pick, then 2–4 strong alternates from the list below."
-        )
-    return (
-        f"TrailVerse ranked **{park_count}** parks for **{', '.join(goals)}**. "
-        "Lead with one clear recommendation, then a few alternates — not a flat dump."
-    )
+        return f"TrailVerse ranked **{park_count}** NPS sites from live data, best fits first."
+    return f"TrailVerse ranked **{park_count}** parks for **{', '.join(goals)}**, best fits first."
 
 
 def _search_headline(query: str | None) -> str:
@@ -1002,7 +1136,7 @@ _PARK_LOGISTICS_NOTES: dict[str, str] = {
 }
 
 
-def _search_park_block(p: dict[str, Any], rank: int) -> list[str]:
+def _search_park_block(p: dict[str, Any], rank: int, generic_reasons: frozenset[str] = frozenset()) -> list[str]:
     """One park entry for search tool text — complete enough to send as the user reply."""
     pname = p.get("name", "Unknown")
     states = p.get("states") or ""
@@ -1012,14 +1146,15 @@ def _search_park_block(p: dict[str, Any], rank: int) -> list[str]:
     title_suffix = " · Logistics" if logistics else ""
     lines = [f"### {rank}. {pname}{state_bit}{title_suffix}"]
     match_reason = p.get("matchReason")
+    if match_reason in generic_reasons:
+        match_reason = None
     summary = p.get("summary") or ""
-    if match_reason:
-        if match_reason.startswith("Strong match"):
-            lines.append(f"**Why it matches:** {match_reason}")
-        else:
-            lines.append(match_reason)
-    elif summary:
+    # The park's own description first: a reason shared by every result
+    # ("Low-stress and peaceful…" five times) says nothing about this park.
+    if summary:
         lines.append(summary)
+    if match_reason:
+        lines.append(f"**Why it matches:** {match_reason}")
     if logistics:
         lines.append(f"**Planning:** {logistics}")
     link_parts = []
@@ -1106,8 +1241,15 @@ def format_search(
 
     text_lines.append("## Top picks")
     text_lines.append("")
+    reason_counts: dict[str, int] = {}
+    for p in parks:
+        if p.get("matchReason"):
+            reason_counts[p["matchReason"]] = reason_counts.get(p["matchReason"], 0) + 1
+    generic_reasons = frozenset(
+        r for r, n in reason_counts.items() if n > 1 or r == "Matches what you searched for."
+    )
     for i, p in enumerate(top, 1):
-        text_lines.extend(_search_park_block(p, i))
+        text_lines.extend(_search_park_block(p, i, generic_reasons))
 
     if rest:
         text_lines.append("## Also consider")
@@ -1117,7 +1259,7 @@ def format_search(
             states = p.get("states") or ""
             line = f"- **{pname}** ({states})"
             match_reason = p.get("matchReason")
-            if match_reason:
+            if match_reason and match_reason not in generic_reasons:
                 line += f" — {match_reason}"
             elif p.get("summary"):
                 line += f": {_smart_truncate(p['summary'], 120)}"
@@ -1169,7 +1311,7 @@ def format_events(resp: dict[str, Any], park_name: str | None = None) -> tuple[d
             "timezone": e.get("timezone") or e.get("timeZone") or None,
             "duration": e.get("duration"),
             "category": e.get("category") or e.get("type"),
-            "description": _strip_html((e.get("description") or ""))[:240],
+            "description": _smart_truncate(_strip_html(e.get("description") or ""), 320),
             "location": e.get("location"),
             "registrationUrl": e.get("registrationUrl") or e.get("regresurl") or e.get("url"),
             "isFree": e.get("isfree"),
@@ -1194,6 +1336,7 @@ def format_events(resp: dict[str, Any], park_name: str | None = None) -> tuple[d
         return structured, "\n".join(text_lines)
 
     unique_parks = {e.get("parkName") for e in events if e.get("parkName")}
+    multi_park = len(unique_parks) > 1
     if len(unique_parks) == 1:
         park_name = events[0].get("parkName") or "the park"
         text_lines.append(f"Here's what's happening at {park_name}:\n")
@@ -1216,6 +1359,8 @@ def format_events(resp: dict[str, Any], park_name: str | None = None) -> tuple[d
         free_tag = " (free)" if e.get("isFree") and not already_says_free else ""
 
         line = f"- {'⭐ ' if is_special else ''}**{title}**{free_tag}"
+        if multi_park and e.get("parkName"):
+            line += f" · {e['parkName']}"
         if time_str:
             line += f" — {time_str}"
         elif e.get("date"):
@@ -1229,14 +1374,17 @@ def format_events(resp: dict[str, Any], park_name: str | None = None) -> tuple[d
         if e.get("description"):
             lines.append(f"  {e['description']}")
         if e.get("location"):
-            loc = e["location"][:150] if len(e.get("location", "")) > 150 else e["location"]
-            short_loc = loc.split(",")[0].split(".")[0].strip()[:60]
+            short_loc = re.split(r"[,.;]", e["location"], maxsplit=1)[0].strip()
+            if len(short_loc) > 80:
+                short_loc = short_loc[:80].rsplit(" ", 1)[0].rstrip("( ") + "…"
             park_ctx = e.get("parkName") or ""
             loc_query = quote(f"{short_loc}, {park_ctx}")
             maps_link = f"https://www.google.com/maps/search/?api=1&query={loc_query}"
             lines.append(f"  📍 [{short_loc}]({maps_link})")
-        if e.get("registrationUrl"):
-            lines.append(f"  [Register/Details]({e['registrationUrl']})")
+        reg_url = e.get("registrationUrl") or ""
+        # A bare site root (https://www.recreation.gov/) is not a registration page.
+        if reg_url and urlparse(reg_url).path.strip("/"):
+            lines.append(f"  [Register/Details]({reg_url})")
         return lines
 
     if recurring_events:
