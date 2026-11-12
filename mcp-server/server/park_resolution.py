@@ -31,8 +31,12 @@ GENERIC_NAME_TOKENS = frozenset({
 })
 
 # Short strings that look like 4-letter codes but are ordinary words.
+# Never list a word that is itself a real NPS code: "arch" is Arches National
+# Park and "cave" is Carlsbad Caverns. Listing "arch" here sent park_code="arch"
+# through name matching, where the only whole-word hit was Gateway Arch (jeff),
+# so Arches trips were planned against the wrong park and failed to save.
 NOT_CODES = frozenset({
-    "utah", "mesa", "bend", "park", "lake", "cave", "reef", "arch", "fire",
+    "utah", "mesa", "bend", "park", "lake", "reef", "fire",
     "teton", "peak", "fort", "gulf", "bear", "hill", "rock", "isle", "dune",
 })
 
@@ -143,6 +147,7 @@ def rank_candidates(raw: str, parks: list[dict[str, Any]]) -> ParkResolution:
     """Pure ranking step (no I/O) — exposed for tests."""
     q_full = name_tokens(raw)
     q_core = core_tokens(raw)
+    q_norm = normalize_text(raw)
     non_nps = bool(NON_NPS_RE.search(raw or ""))
 
     scored: list[tuple[int, int, dict[str, str]]] = []
@@ -158,7 +163,10 @@ def rank_candidates(raw: str, parks: list[dict[str, Any]]) -> ParkResolution:
         c_full = name_tokens(pname)
         c_core = core_tokens(pname)
         c_words = set(c_full)
-        if q_full and q_full == c_full:
+        if q_norm and q_norm == code:
+            # The input is this unit's official NPS code: identity, not a name match.
+            scored.append((-1, 0, entry))
+        elif q_full and q_full == c_full:
             scored.append((0, len(pname), entry))
         elif q_core and set(q_core) == set(c_core):
             scored.append((1, len(pname), entry))
@@ -171,16 +179,16 @@ def rank_candidates(raw: str, parks: list[dict[str, Any]]) -> ParkResolution:
             if overlap and overlap * 2 > len(q_core):
                 partial.append((overlap, entry))
 
-    if non_nps and not any(rank == 0 for rank, _, _ in scored):
+    if non_nps and not any(rank <= 0 for rank, _, _ in scored):
         return ParkResolution(input=raw, status="non_nps")
 
-    if not q_core and not any(rank == 0 for rank, _, _ in scored):
+    if not q_core and not any(rank <= 0 for rank, _, _ in scored):
         return ParkResolution(input=raw, status="invalid")
 
     if scored:
         best = min(rank for rank, _, _ in scored)
         tier = [entry for rank, _, entry in sorted(scored, key=lambda s: (s[0], s[1])) if rank == best]
-        if len(tier) == 1 or best == 0:
+        if len(tier) == 1 or best <= 0:
             top = tier[0]
             return ParkResolution(input=raw, status="matched", code=top["code"], name=top["name"])
         return ParkResolution(input=raw, status="ambiguous", candidates=tier)

@@ -336,7 +336,8 @@ async def _park_display_name(park_code: str) -> str:
         outer = details.get("data") or details
         park = outer.get("park") or outer
         return park.get("fullName") or park.get("name") or ""
-    except TrailVerseAPIError:
+    except Exception:  # a display name is never worth failing a tool call over
+        logger.warning("park display name lookup failed for %s", code)
         return ""
 
 
@@ -646,12 +647,18 @@ async def plan_trip(
         user_message = build_plan_trip_message(payload)
 
         resolved_park_code = None
+        resolved_park_name = ""
         park_lookup = payload.park_code or payload.park_name
         if park_lookup:
-            candidate = await _resolve_park_code(park_lookup)
+            resolution = await _resolve_park(park_lookup)
+            candidate = resolution.code or ""
             if re.fullmatch(r"[a-z0-9]{2,10}", candidate):
                 resolved_park_code = candidate
                 _park_codes = [resolved_park_code]
+                resolved_park_name = resolution.name or await _park_display_name(candidate)
+                if not payload.revision_request and resolved_park_name:
+                    # The planner gets the official name, never a bare code.
+                    user_message = build_plan_trip_message(payload, park_label=resolved_park_name)
             elif payload.park_code:
                 return validation_error_result(
                     validation_error(
@@ -743,8 +750,8 @@ async def plan_trip(
         if assistant_content:
             conv.append_message("assistant", assistant_content)
 
-        park_name_hint = ""
-        if resolved_park_code:
+        park_name_hint = resolved_park_name
+        if resolved_park_code and not park_name_hint:
             park_name_hint = await _park_display_name(resolved_park_code)
 
         structured, text = format_plan_trip(
