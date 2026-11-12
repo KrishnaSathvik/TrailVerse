@@ -93,7 +93,7 @@ from .tool_metadata import (
     SEARCH_QUERY,
     STATE_FILTER,
 )
-from .search_query import count_search_results, expand_search_query
+from .search_query import detect_proximity, count_search_results, expand_search_query
 from .park_resolution import ParkResolution, resolve_park
 from .search_ranking import normalize_state, rank_catalog_results, rerank_search_results
 from .types import (
@@ -228,26 +228,15 @@ from mcp.server.fastmcp.prompts.base import UserMessage, AssistantMessage
     title="What is TrailVerse?",
     description="What the TrailVerse tools cover: US trip planning and about 470 NPS sites",
 )
-def welcome() -> list[AssistantMessage]:
+def welcome() -> list[UserMessage]:
+    # Prompt pickers insert this as the traveler's own turn; an assistant-role
+    # message has no user turn to answer. The host answers from the server
+    # instructions' "Questions about TrailVerse itself" block.
     return [
-        AssistantMessage(
+        UserMessage(
             content=(
-                "TrailVerse covers US travel planning and about 470 National Park Service "
-                "sites: national parks, monuments, seashores, battlefields, historic sites, "
-                "and more.\n\n"
-                "With current NPS data (alerts, weather, fees, events — cached, refreshed "
-                "regularly), the tools can:\n\n"
-                "1. **Plan a trip** — day-by-day itineraries for any US destination\n"
-                "2. **Explore a park** — current weather, alerts, campgrounds, permits, fees, hours\n"
-                "3. **Compare parks** — side-by-side on weather, crowds, fees, activities\n"
-                "4. **Search parks** — find the right park by state, activity, or vibe\n"
-                "5. **Find events** — ranger programs, guided tours, star parties\n\n"
-                "Try asking:\n"
-                '- "Plan 3 days at Zion"\n'
-                '- "Tell me about Glacier National Park"\n'
-                '- "Compare Yellowstone and Grand Teton"\n\n'
-                "More on the website: [TrailVerse planner](https://www.nationalparksexplorerusa.com/plan-ai) "
-                "and [planning guides](https://www.nationalparksexplorerusa.com/guides)."
+                "What can TrailVerse do? Give me a short overview of its US trip planning "
+                "and National Park Service tools, with a few example requests."
             )
         ),
     ]
@@ -336,7 +325,8 @@ async def _park_display_name(park_code: str) -> str:
         outer = details.get("data") or details
         park = outer.get("park") or outer
         return park.get("fullName") or park.get("name") or ""
-    except TrailVerseAPIError:
+    except Exception:  # a display name is never worth failing a tool call over
+        logger.warning("park display name lookup failed for %s", code)
         return ""
 
 
@@ -646,12 +636,18 @@ async def plan_trip(
         user_message = build_plan_trip_message(payload)
 
         resolved_park_code = None
+        resolved_park_name = ""
         park_lookup = payload.park_code or payload.park_name
         if park_lookup:
-            candidate = await _resolve_park_code(park_lookup)
+            resolution = await _resolve_park(park_lookup)
+            candidate = resolution.code or ""
             if re.fullmatch(r"[a-z0-9]{2,10}", candidate):
                 resolved_park_code = candidate
                 _park_codes = [resolved_park_code]
+                resolved_park_name = resolution.name or await _park_display_name(candidate)
+                if not payload.revision_request and resolved_park_name:
+                    # The planner gets the official name, never a bare code.
+                    user_message = build_plan_trip_message(payload, park_label=resolved_park_name)
             elif payload.park_code:
                 return validation_error_result(
                     validation_error(
@@ -743,8 +739,8 @@ async def plan_trip(
         if assistant_content:
             conv.append_message("assistant", assistant_content)
 
-        park_name_hint = ""
-        if resolved_park_code:
+        park_name_hint = resolved_park_name
+        if resolved_park_code and not park_name_hint:
             park_name_hint = await _park_display_name(resolved_park_code)
 
         structured, text = format_plan_trip(
@@ -1160,6 +1156,30 @@ async def search_parks(
                 )
             )
 
+        near = detect_proximity(payload.query)
+        if near:
+            near_state, is_state = normalize_state(near)
+            if is_state and near_state:
+                # "parks near Utah" is a state filter, not a distance search.
+                rest = re.sub(r"\s+", " ", re.sub(re.escape(near), " ", payload.query or "", flags=re.IGNORECASE)).strip()
+                rest = re.sub(r"\b(near(by)?|close to|around|in)\s*$", "", rest, flags=re.IGNORECASE).strip()
+                payload = payload.model_copy(update={"state": payload.state or near_state, "query": rest or None})
+            else:
+                return validation_error_result(
+                    validation_error(
+                        code="PROXIMITY_SEARCH_UNSUPPORTED",
+                        message=(
+                            f"search_parks has no distance search, so '{near}' cannot be used as a "
+                            "starting point (a keyword match would return unrelated sites). Retry "
+                            "with the state that place is in, and neighboring states if the traveler "
+                            "will drive further, using the state filter."
+                        ),
+                        field="query",
+                        received=payload.query,
+                        expected="state filter, e.g. state='IL'",
+                    )
+                )
+
         try:
             async with TrailVerseClient() as client:
                 raw_query = payload.query
@@ -1167,12 +1187,15 @@ async def search_parks(
                 expanded_count = 0
                 used_expanded = False
 
+                # Text queries fetch a wider pool so re-ranking can promote a
+                # national park that the backend placed just past ``limit``.
+                pool_limit = min(50, max(payload.limit * 3, 25))
                 if raw_query:
                     resp = await client.search_parks(
                         q=raw_query,
                         state=payload.state,
                         activity=payload.activity,
-                        limit=payload.limit,
+                        limit=pool_limit,
                     )
                 else:
                     # Filter-only: fetch the whole filtered set (catalog order is
@@ -1198,7 +1221,7 @@ async def search_parks(
                             q=expanded_query,
                             state=payload.state,
                             activity=payload.activity,
-                            limit=payload.limit,
+                            limit=pool_limit,
                         )
                         expanded_count = count_search_results(retry)
                         if expanded_count > raw_count:
@@ -1217,7 +1240,7 @@ async def search_parks(
             logger.exception("search_parks backend call failed")
             return _error_result(str(e))
 
-        resp = rerank_search_results(resp, raw_query)
+        resp = rerank_search_results(resp, raw_query, limit=payload.limit if raw_query else None)
 
         structured, text = format_search(resp, query=raw_query or query)
 

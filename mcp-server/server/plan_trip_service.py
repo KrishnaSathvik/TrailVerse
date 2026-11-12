@@ -103,15 +103,20 @@ def validate_plan_trip_business_rules(payload: PlanTripInput) -> dict[str, Any] 
     return None
 
 
-def build_plan_trip_message(payload: PlanTripInput) -> str:
-    """Compose the natural-language user message sent to the anonymous AI endpoint."""
+def build_plan_trip_message(payload: PlanTripInput, park_label: str | None = None) -> str:
+    """Compose the natural-language user message sent to the anonymous AI endpoint.
+
+    ``park_label`` is the resolved official name ("Arches National Park"). Pass it
+    whenever the park was resolved, so the planner never has to interpret a raw NPS
+    code such as "arch" (which read as "Assuming you mean…" or as Gateway Arch).
+    """
     if payload.revision_request:
         base = payload.revision_request.strip()
         if payload.message:
             return f"{base}\n\nAdditional context: {payload.message.strip()}"
         return base
 
-    park_label = payload.park_name or payload.park_code or "the destination"
+    park_label = park_label or payload.park_name or payload.park_code or "the destination"
     days = payload.number_of_days or 1
     parts = [f"Plan a {days}-day itinerary for {park_label}"]
 

@@ -150,3 +150,41 @@ test('unavailable locality lookup fails closed for pinless plans', async () => {
     evidence: result.evidence,
   })).toContain('us_geography_unsupported');
 });
+
+test('city trip whose requested attractions do not resolve still gets U.S. locality grounding (San Diego)', async () => {
+  // Reproduces the MCP audit failure: "2 days in San Diego" proposed San Diego Zoo and
+  // USS Midway; neither resolved, no destination_identity was written, and the plan was
+  // rejected as us_geography_unsupported.
+  const travel = toolsFor(async (query) => (
+    /san diego/i.test(String(query)) && !/zoo|midway/i.test(String(query))
+      ? [locality('San Diego', 'sd-id', 'US', 32.7157, -117.1611)]
+      : []
+  ));
+  const result = await travel.execute('read_travel', {
+    destination: 'San Diego',
+    question: 'Two family days in San Diego',
+    topics: ['activities'],
+    places: ['San Diego Zoo', 'USS Midway Museum'],
+  }, { requestId: 'locality-sd', userMessage: 'Plan 2 days in San Diego' });
+  const dest = result.evidence.find((e) => e.topic === 'destination_identity');
+  expect(dest?.claim?.normalizedValue?.countryCode).toBe('US');
+  expect(evaluateUsPlanGeography({
+    plan: experiencePlan('San Diego').plan,
+    evidence: result.evidence,
+  })).toEqual([]);
+});
+
+test('locality grounding is skipped when a requested place already resolved', async () => {
+  const calls = [];
+  const travel = toolsFor(async (query) => {
+    calls.push(String(query));
+    return /zoo/i.test(String(query)) ? [{ ...locality('San Diego Zoo', 'zoo-id', 'US', 32.7353, -117.149), types: ['zoo', 'point_of_interest'] }] : [];
+  });
+  await travel.execute('read_travel', {
+    destination: 'San Diego',
+    question: 'Zoo day',
+    topics: ['activities'],
+    places: ['San Diego Zoo'],
+  }, { requestId: 'locality-sd-zoo', userMessage: 'Zoo day in San Diego' });
+  expect(calls.some((q) => /^san diego$/i.test(q.trim()))).toBe(false);
+});
