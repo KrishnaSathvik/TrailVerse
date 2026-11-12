@@ -60,7 +60,11 @@ test('search titles alone cannot create identities and vague lodging cannot inve
   b.lookup.mockResolvedValue([point('Example Hotel','hotel',['lodging'])]);
   const r=await b.tools.execute('read_travel',{...req,places:['hotel or motel in Example Town','a shorter marked loop']},input);
   expect(r.namedPlaceResolutions.every(row=>row.status!=='resolved')).toBe(true);
-  expect(r.unresolved.filter(u=>u.place)).toHaveLength(2);
+  // The destination locality is also looked up when no requested place resolves
+  // (city-trip grounding); it stays unresolved here and invents nothing.
+  const requested=['hotel or motel in Example Town','a shorter marked loop'];
+  expect(r.unresolved.filter(u=>requested.includes(u.place))).toHaveLength(2);
+  expect(r.unresolved.filter(u=>u.place && !requested.includes(u.place)).every(u=>u.status==='unresolved')).toBe(true);
   expect(b.route.fetch).not.toHaveBeenCalled();
 });
 test('ambiguous exact identities remain unresolved rather than selecting the first',async()=>{
