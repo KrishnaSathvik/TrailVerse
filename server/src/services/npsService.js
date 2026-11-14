@@ -1853,6 +1853,7 @@ class NPSService {
       pageSize = 50,
       maxPages = 20,
       limit = 100,
+      _forceRefresh = false,
     } = options;
     const normalizedLimit = Math.max(Number(limit) || 100, 1);
     const normalizedPageSize = Math.min(Number(pageSize) || 50, 50);
@@ -1881,7 +1882,23 @@ class NPSService {
         })
       : null;
 
-    if (!hasFilters) {
+    // A stale snapshot is served immediately, and a refresh runs in the background.
+    // Before this, "is stale, will refresh" was logged but nothing refreshed: the stale
+    // copy was returned and re-cached, so per-park event queries went ~4 months old.
+    const refreshInBackground = (key) => {
+      if (_forceRefresh) return;
+      this._eventsRefreshInFlight = this._eventsRefreshInFlight || new Set();
+      if (this._eventsRefreshInFlight.has(key)) return;
+      this._eventsRefreshInFlight.add(key);
+      Promise.resolve()
+        .then(() => this.getAllEvents({ ...options, _forceRefresh: true }))
+        .catch((error) => console.warn(`⚠️ Background events refresh failed for ${key}:`, error.message))
+        .finally(() => this._eventsRefreshInFlight.delete(key));
+    };
+
+    if (_forceRefresh) {
+      // fall through to the live NPS fetch below
+    } else if (!hasFilters) {
       const cachedEvents = this.getCachedEvents();
       if (cachedEvents) {
         return this._dedupeNpsEvents(cachedEvents).slice(0, normalizedLimit);
@@ -1893,6 +1910,7 @@ class NPSService {
         this.setEventsCache(dedupedSnapshot);
         if (snapshot.stale) {
           console.log(`🗄️ Serving stale bulk-events snapshot (${dedupedSnapshot.length} events)`);
+          refreshInBackground('bulk-events');
         }
         return dedupedSnapshot.slice(0, normalizedLimit);
       }
@@ -1909,6 +1927,7 @@ class NPSService {
         this._setEndpointCache(queryCacheKey, dedupedSnapshot, 'eventsQuery', { allowEmpty: true });
         if (querySnapshot.stale) {
           console.log(`🗄️ Serving stale filtered events snapshot for ${queryCacheKey}`);
+          refreshInBackground(queryCacheKey);
         } else {
           console.log(`🗄️ Returning cached filtered events snapshot for ${queryCacheKey}`);
         }
