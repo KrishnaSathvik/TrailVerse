@@ -35,7 +35,7 @@
 | Frontend | http://127.0.0.1:3000 |
 | Backend API | http://localhost:5001/api |
 | Production API | https://trailverse.onrender.com/api |
-| MCP server (cloud) | https://trailverse-mcp.onrender.com/mcp |
+| MCP server (cloud) | https://mcp.nationalparksexplorerusa.com/mcp |
 | Auth cookie | `trailverse_auth_token` |
 | AI persona | **Trailie** → `/plan-ai` |
 | Park URLs | `/parks/yellowstone-national-park` (slug, not `yell`) |
@@ -168,7 +168,7 @@ python -m server.main
 | `/testimonials` | `TestimonialsPageClient.jsx` | `POST /api/testimonials` |
 | `/magazine`, `/newsletter` | Newsletter / magazine | Subscribers API |
 | `/chatgpt` | ChatGPT App Directory landing | See [§8](#8-mcp-chatgpt--cloud-render) |
-| `/mcp` | Claude MCP install guide | Connector: `https://trailverse-mcp.onrender.com/mcp` |
+| `/mcp` | Claude MCP install guide | Connector: `https://mcp.nationalparksexplorerusa.com/mcp` |
 | `/privacy`, `/terms` | Legal | |
 | `/reports/when-to-go.html` | Crowd calendar (static; analytics: `crowd_calendar_view`) | Redirect from `/reports/when-to-go` |
 | `/where-next` | Where Next destination pick | `POST /api/where-next/pick` |
@@ -322,8 +322,8 @@ Requires JWT + `role: 'admin'`.
 
 | Service | URL |
 |---------|-----|
-| MCP server | https://trailverse-mcp.onrender.com |
-| MCP endpoint | https://trailverse-mcp.onrender.com/mcp |
+| MCP server | https://mcp.nationalparksexplorerusa.com |
+| MCP endpoint | https://mcp.nationalparksexplorerusa.com/mcp |
 | MCP health | `GET /health` (MCP service only) |
 | Express API | https://trailverse.onrender.com/api |
 | Express liveness | `GET /health/ping` (Render health check) |

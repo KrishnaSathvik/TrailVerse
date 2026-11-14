@@ -149,7 +149,7 @@ Use when the pin matches a **trip vibe** (link park + list page):
 | Channel | Landing | Notes |
 |---------|---------|-------|
 | **ChatGPT App** | `/chatgpt` | 5 tools: plan, details, compare, search, events |
-| **Claude MCP** | `/mcp` | Connector: `https://trailverse-mcp.onrender.com/mcp` |
+| **Claude MCP** | `/mcp` | Connector: `https://mcp.nationalparksexplorerusa.com/mcp` |
 | **Voice** | Any page — mic button (bottom right) | “Talk to Trailie” — live weather, alerts, compare |
 
 ---

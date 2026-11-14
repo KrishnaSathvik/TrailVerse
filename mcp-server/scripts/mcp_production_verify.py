@@ -6,7 +6,7 @@ import json
 import time
 import urllib.request
 
-MCP_URL = "https://trailverse-mcp.onrender.com/mcp"
+MCP_URL = "https://mcp.nationalparksexplorerusa.com/mcp"
 
 
 def mcp_call(method: str, params: dict | None = None, req_id: int = 1) -> dict:

@@ -6,9 +6,9 @@ The TrailVerse MCP (Model Context Protocol) server is a Python service that expo
 
 The server covers all **470+ NPS sites**: not just the 63 national parks, but also national monuments, seashores, lakeshores, recreation areas, historic sites, battlefields, memorials, and preserves.
 
-**Live deployment:** `https://trailverse-mcp.onrender.com`
-**MCP endpoint:** `https://trailverse-mcp.onrender.com/mcp`
-**Health check:** `https://trailverse-mcp.onrender.com/health`
+**Live deployment:** `https://mcp.nationalparksexplorerusa.com`
+**MCP endpoint:** `https://mcp.nationalparksexplorerusa.com/mcp`
+**Health check:** `https://mcp.nationalparksexplorerusa.com/health`
 
 ---
 
@@ -593,7 +593,7 @@ Root directory: mcp-server/
 | Variable | Required | Description |
 |---|---|---|
 | `TRAILVERSE_API_BASE` | Yes | Backend URL (e.g., `https://trailverse.onrender.com`) |
-| `MCP_SERVER_BASE` | Yes | This server's public URL (e.g., `https://trailverse-mcp.onrender.com`) |
+| `MCP_SERVER_BASE` | Yes | This server's public URL (e.g., `https://mcp.nationalparksexplorerusa.com`) |
 | `TRAILVERSE_WEB_BASE` | Yes | Website URL for links (e.g., `https://www.nationalparksexplorerusa.com`) |
 | `PORT` | No | Default: 8000 |
 | `BACKEND_TIMEOUT` | No | Default: 120 (seconds) |

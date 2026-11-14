@@ -54,7 +54,7 @@ Footer links **Planning Guides** → `/guides`.
 ### `/mcp` — Claude MCP connector
 - **File**: `app/mcp/page.jsx` (server component, indexable)
 - **Purpose**: Install guide for **Claude** (Desktop / claude.ai custom connector)
-- **Connector URL**: `https://trailverse-mcp.onrender.com/mcp`
+- **Connector URL**: `https://mcp.nationalparksexplorerusa.com/mcp`
 - **Note**: The MCP server is also what powers the ChatGPT app; this page targets Claude users specifically
 
 Full MCP/cloud architecture: **`06-mcp-chatgpt-cloud.mdc`**
