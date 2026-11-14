@@ -3,7 +3,8 @@ const fs = require('fs');
 const path = require('path');
 
 const RIDB_API_BASE = 'https://ridb.recreation.gov/api/v1';
-const RIDB_API_KEY = process.env.RIDB_API_KEY;
+// Trim: a pasted key with a trailing newline/space or quotes is rejected with 401.
+const RIDB_API_KEY = (process.env.RIDB_API_KEY || '').trim().replace(/^['"]|['"]$/g, '') || undefined;
 
 const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
 const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;

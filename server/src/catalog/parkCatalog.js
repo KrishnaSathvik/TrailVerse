@@ -15,6 +15,16 @@ async function loadCanonicalParks(options = {}) {
   let npsParks;
 
   if (state) {
+    // Prefer the in-memory full catalog: the live NPS ?stateCode= call can run
+    // past the MCP server's 30s timeout when NPS is slow, which made every
+    // state-filtered search fail with "Backend service unreachable".
+    const cached = typeof getNpsService().getCachedParks === 'function' ? getNpsService().getCachedParks() : null;
+    if (Array.isArray(cached) && cached.length) {
+      npsParks = cached.filter(
+        (p) => p.states && canonicalParkInState({ states: p.states }, state)
+      );
+      return npsRecordsToCanonical(npsParks);
+    }
     try {
       npsParks = await getNpsService().getParksByState(state);
     } catch {

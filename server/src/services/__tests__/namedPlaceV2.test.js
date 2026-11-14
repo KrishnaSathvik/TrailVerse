@@ -101,3 +101,32 @@ describe('a named feature and a same-name town at the same spot are one place, n
   expect(r.raw).toBeNull();
  });
 });
+describe('slow official NPS records do not starve the Google lookup',()=>{
+ // Production 2026-11-14: Arches stops all came back deadline_or_cancelled with
+ // querySent=null — the NPS places call used the whole 8s provider budget.
+ const arch={source:'nps',parkCode:'arch',sourceId:'nps:park:arch',name:'Arches National Park',shortName:'Arches',country:'US',states:['UT']};
+ const g=(name,id)=>({name,place_id:id,types:['establishment','natural_feature'],address_components:[{short_name:'US',types:['country']},{short_name:'UT',types:['administrative_area_level_1']}],geometry:{location:{lat:38.74,lng:-109.5}},formatted_address:'Utah'});
+ test('a hung official lookup times out and Google resolves the place',async()=>{
+  const lookup=jest.fn(async()=>[g('Delicate Arch','delicate')]);
+  let officialSignal;
+  const officialLookup=jest.fn((_a,{signal})=>{officialSignal=signal;return new Promise(()=>{});});
+  const p=createNamedPlaceEvidenceProvider({catalog:{},lookup,officialLookup,officialTimeoutMs:20});
+  const started=Date.now();
+  const r=await p.fetch(p.buildRequest({entity:{displayName:'Delicate Arch'},queryProvenance:{destinationAnchors:[arch],contextualRegions:[{code:'UT'}]}}));
+  expect(Date.now()-started).toBeLessThan(1000);
+  expect(lookup).toHaveBeenCalled();
+  expect(officialSignal.aborted).toBe(true);
+  expect(r.raw).toMatchObject({canonicalId:'google:place:delicate'});
+  expect(r.metadata.sourceAttempts).toEqual(expect.arrayContaining(['nps:timed_out','google']));
+ });
+ test('a caller abort still propagates instead of falling back',async()=>{
+  const ac=new AbortController();
+  const lookup=jest.fn(async()=>[]);
+  const officialLookup=jest.fn((_a,{signal})=>new Promise((_,reject)=>signal.addEventListener('abort',()=>reject(new Error('aborted')))));
+  const p=createNamedPlaceEvidenceProvider({catalog:{},lookup,officialLookup,officialTimeoutMs:5000});
+  const pending=p.fetch(p.buildRequest({entity:{displayName:'Delicate Arch'},queryProvenance:{destinationAnchors:[arch]}}),{signal:ac.signal});
+  ac.abort();
+  await expect(pending).rejects.toThrow();
+  expect(lookup).not.toHaveBeenCalled();
+ });
+});
