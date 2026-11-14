@@ -1280,6 +1280,78 @@ def format_search(
 
 # ---------- find_events ----------
 
+def _event_identity(e: dict[str, Any]) -> tuple[str, str, str, str]:
+    loc = re.split(r"[,.;]", e.get("location") or "", maxsplit=1)[0]
+    norm = lambda v: re.sub(r"\s+", " ", str(v or "")).strip().lower()
+    return (norm(e.get("title")), norm(e.get("parkCode") or e.get("parkName")), norm(loc), norm(e.get("time")))
+
+
+def _merge_duplicate_events(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Merge NPS records that describe one program on different dates.
+
+    NPS publishes a ranger walk as a multi-date record plus separate single-date
+    records (Capitol Reef "Guided Walk": Nov 19–23, Nov 15, Nov 16). Listing them
+    separately printed the same walk three times. Same title, park, meeting point
+    and time → one entry carrying every date.
+    """
+    merged: dict[tuple[str, str, str, str], dict[str, Any]] = {}
+    order: list[tuple[str, str, str, str]] = []
+    for e in events:
+        key = _event_identity(e)
+        if not key[0]:
+            key = (f"__id:{e.get('id')}:{len(order)}", "", "", "")
+        if key not in merged:
+            merged[key] = {**e, "dates": list(e.get("dates") or [])}
+            order.append(key)
+            continue
+        target = merged[key]
+        target["dates"].extend(d for d in e.get("dates") or [] if d not in target["dates"])
+        for field in ("description", "registrationUrl", "location"):
+            if not target.get(field) and e.get(field):
+                target[field] = e[field]
+    out = []
+    for key in order:
+        e = merged[key]
+        dates = sorted(set(e.get("dates") or []))
+        e["dates"] = dates
+        if len(dates) > 1:
+            e.update(recurring=True, date=dates[0], dateEnd=dates[-1], totalDates=len(dates))
+        out.append(e)
+    return out
+
+
+def _compact_dates(dates: list[str]) -> str:
+    """["2026-11-15","2026-11-16","2026-11-19",…,"2026-11-23"] → "Nov 15–16, 19–23"."""
+    from datetime import date as _date, timedelta
+    parsed = []
+    for d in dates:
+        try:
+            parsed.append(_date.fromisoformat(d[:10]))
+        except ValueError:
+            continue
+    if not parsed:
+        return ", ".join(dates)
+    parsed = sorted(set(parsed))
+    runs: list[list[_date]] = [[parsed[0], parsed[0]]]
+    for d in parsed[1:]:
+        if d - runs[-1][1] == timedelta(days=1):
+            runs[-1][1] = d
+        else:
+            runs.append([d, d])
+    parts, last_month = [], None
+    for start, end in runs:
+        month = start.strftime("%b")
+        head = f"{month} {start.day}" if month != last_month else f"{start.day}"
+        if end == start:
+            parts.append(head)
+        elif end.month == start.month:
+            parts.append(f"{head}–{end.day}")
+        else:
+            parts.append(f"{head}–{end.strftime('%b')} {end.day}")
+        last_month = end.strftime("%b")
+    return ", ".join(parts)
+
+
 def format_events(resp: dict[str, Any], park_name: str | None = None) -> tuple[dict[str, Any], str]:
     events_raw = resp.get("data") or resp.get("events") or []
     if isinstance(events_raw, dict) and "events" in events_raw:
@@ -1298,8 +1370,12 @@ def format_events(resp: dict[str, Any], park_name: str | None = None) -> tuple[d
             recurring = False
             date_start = e.get("date") or e.get("startDate") or (all_dates[0] if all_dates else None)
             date_end = None
+        normalized_dates = [d for d in (_normalize_event_date(x) for x in (all_dates if isinstance(all_dates, list) else [])) if d]
+        if not normalized_dates and _normalize_event_date(date_start):
+            normalized_dates = [_normalize_event_date(date_start)]
         events.append({
             "id": eid,
+            "dates": normalized_dates,
             "title": e.get("title") or e.get("name"),
             "parkCode": e.get("parkCode"),
             "parkName": e.get("parkName"),
@@ -1316,6 +1392,8 @@ def format_events(resp: dict[str, Any], park_name: str | None = None) -> tuple[d
             "registrationUrl": e.get("registrationUrl") or e.get("regresurl") or e.get("url"),
             "isFree": e.get("isfree"),
         })
+
+    events = _merge_duplicate_events(events)
 
     structured = {
         "kind": "events_list",
@@ -1367,9 +1445,9 @@ def format_events(resp: dict[str, Any], park_name: str | None = None) -> tuple[d
             line += " — time not provided"
         lines.append(line)
 
-        # Show recurrence range
-        if e.get("recurring") and e.get("dateEnd"):
-            lines.append(f"  Runs daily: {e['date']} through {e['dateEnd']}")
+        # The real dates, not "runs daily": NPS schedules have gaps (Nov 15, 16, 19–23).
+        if e.get("recurring") and len(e.get("dates") or []) > 1:
+            lines.append(f"  Dates: {_compact_dates(e['dates'])}")
 
         if e.get("description"):
             lines.append(f"  {e['description']}")
