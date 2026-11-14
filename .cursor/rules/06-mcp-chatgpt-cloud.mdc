@@ -23,8 +23,9 @@ The Python MCP server is a **thin adapter** — no duplicate business logic. All
 
 | Item | Value |
 |------|--------|
-| **Production URL** | `https://trailverse-mcp.onrender.com` |
-| **MCP endpoint** | `https://trailverse-mcp.onrender.com/mcp` |
+| **Production URL** | `https://mcp.nationalparksexplorerusa.com` |
+| **MCP endpoint** | `https://mcp.nationalparksexplorerusa.com/mcp` |
+| **Legacy URL** | `https://trailverse-mcp.onrender.com` still serves the same app (Render subdomain enabled). Existing ChatGPT/Claude connections made with it keep working; do not disable it without migrating them. |
 | **Health** | `GET /health` → `{"status":"ok","service":"trailverse-mcp"}` |
 | **Blueprint** | `mcp-server/render.yaml` |
 | **Runtime** | Python 3.12.7, Uvicorn, FastMCP |
@@ -60,7 +61,7 @@ ChatGPT App Directory          Claude Desktop / claude.ai
         └──────────────┬─────────────────┘
                        ▼
         ┌──────────────────────────────────┐
-        │  trailverse-mcp.onrender.com      │  Python FastMCP (port 8000)
+        │  mcp.nationalparksexplorerusa.com │  Python FastMCP (port 8000)
         │  • 5 tools                        │
         │  • 5 HTML widgets (mcp-app MIME)  │
         │  • In-memory conversation_store   │
@@ -143,7 +144,7 @@ Verify: `python scripts/test_local.py`, `scripts/deep_verify.py`, `scripts/verif
 
 - **File**: `next-frontend/src/app/mcp/page.jsx`
 - **SEO**: indexable; canonical `/mcp`
-- **Connector URL**: `https://trailverse-mcp.onrender.com/mcp` (constant `MCP_URL` in page)
+- **Connector URL**: `https://mcp.nationalparksexplorerusa.com/mcp` (constant `MCP_URL` in page)
 - **Content**: Same 6 tools, "Install in Claude" instructions, developer mode / custom connector steps
 - **Audience**: Claude Desktop and claude.ai MCP users
 

@@ -78,7 +78,7 @@ Filenames still say `simple` / `modelFirst` for historical reasons — those mod
 **Do not duplicate here** — full reference is in **`06-mcp-chatgpt-cloud.mdc`** (always applied).
 
 Summary:
-- **Render MCP**: `https://trailverse-mcp.onrender.com/mcp` (Python FastMCP, 5 tools, 5 widgets)
+- **Render MCP**: `https://mcp.nationalparksexplorerusa.com/mcp` (Python FastMCP, 5 tools, 5 widgets)
 - **ChatGPT**: App Directory app → same MCP server; landing `/chatgpt`
 - **Claude**: Custom MCP connector → same URL; landing `/mcp`
 - **Bypass**: `MCP_BYPASS_KEY` + `X-TrailVerse-MCP-Key` on Express (`server/src/middleware/mcpBypass.js`)

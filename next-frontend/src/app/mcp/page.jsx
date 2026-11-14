@@ -47,7 +47,7 @@ const examplePrompts = [
   'Plan a San Diego weekend with beach time and a day in Joshua Tree',
 ];
 
-const MCP_URL = 'https://trailverse-mcp.onrender.com/mcp';
+const MCP_URL = 'https://mcp.nationalparksexplorerusa.com/mcp';
 
 
 export default function MCPPage() {

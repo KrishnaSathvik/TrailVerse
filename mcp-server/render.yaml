@@ -18,7 +18,7 @@ services:
       - key: TRAILVERSE_API_BASE
         value: https://trailverse.onrender.com
       - key: MCP_SERVER_BASE
-        value: https://trailverse-mcp.onrender.com
+        value: https://mcp.nationalparksexplorerusa.com
       - key: TRAILVERSE_WEB_BASE
         value: https://www.nationalparksexplorerusa.com
       - key: PORT

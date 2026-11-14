@@ -7,7 +7,7 @@ import { GUIDES } from '@/data/guides';
 import { INTENT_LANDINGS } from '@/data/intentLandings';
 
 const BASE = 'https://www.nationalparksexplorerusa.com';
-const MCP = 'https://trailverse-mcp.onrender.com/mcp';
+const MCP = 'https://mcp.nationalparksexplorerusa.com/mcp';
 
 /**
  * @returns {string}

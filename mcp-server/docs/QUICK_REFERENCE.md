@@ -33,12 +33,12 @@ ngrok http 8000
 ## Health checks
 
 ```bash
-curl https://trailverse-mcp.onrender.com/
-curl https://trailverse-mcp.onrender.com/health
+curl https://mcp.nationalparksexplorerusa.com/
+curl https://mcp.nationalparksexplorerusa.com/health
 
 # MCP inspector against production
 npx @modelcontextprotocol/inspector@latest \
-  --server-url https://trailverse-mcp.onrender.com/mcp \
+  --server-url https://mcp.nationalparksexplorerusa.com/mcp \
   --transport http
 ```
 
@@ -46,7 +46,7 @@ npx @modelcontextprotocol/inspector@latest \
 
 1. Settings → Apps & Connectors → Advanced → Developer Mode ON
 2. Settings → Connectors → Create
-3. URL: `https://trailverse-mcp.onrender.com/mcp`
+3. URL: `https://mcp.nationalparksexplorerusa.com/mcp`
 4. After any code change: Connectors → TrailVerse → **Refresh**
 
 ## Test prompts

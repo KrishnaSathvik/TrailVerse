@@ -137,7 +137,7 @@ PARK_BROWSER_POC = os.getenv("MCP_PARK_BROWSER_POC", "false").lower() in ("1", "
 PARK_WIDGET_KEYS = {"park-list", "park-details"}
 
 # Public base URL for icon references in MCP server metadata.
-# In production this is https://trailverse-mcp.onrender.com (MCP_SERVER_BASE);
+# In production this is https://mcp.nationalparksexplorerusa.com (MCP_SERVER_BASE);
 # locally it falls back to http://localhost:PORT.
 _BASE_URL = os.getenv(
     "MCP_SERVER_BASE",

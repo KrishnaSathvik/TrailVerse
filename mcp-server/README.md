@@ -47,7 +47,7 @@ ChatGPT user
      │ MCP protocol over HTTPS
      ▼
 ┌─────────────────────────────┐
-│  trailverse-mcp.onrender.com │  ← this repo (Python FastMCP)
+│ mcp.nationalparksexplorerusa.com│  ← this repo (Python FastMCP)
 └──────────────┬──────────────┘
                │ HTTPS
                ▼
@@ -123,7 +123,7 @@ The MCP server registers **exactly five tools** in `server/main.py`. MCP **promp
 (`welcome`, `plan_my_trip`, etc.) are starter templates — not callable tools. If a
 client shows two TrailVerse tool families, check for a duplicate MCP connector or
 legacy ChatGPT action alongside the published app connector. Only one connector
-should point at `https://trailverse-mcp.onrender.com/mcp`.
+should point at `https://mcp.nationalparksexplorerusa.com/mcp`.
 
 ## Project structure
 
@@ -282,7 +282,7 @@ After any code change, click **Refresh** on the connector in ChatGPT settings.
 3. Render reads `render.yaml` and provisions the service automatically
 4. First build takes ~2 minutes; subsequent deploys are auto on `git push`
 
-Your MCP server will be at `https://trailverse-mcp.onrender.com/mcp`.
+Your MCP server will be at `https://mcp.nationalparksexplorerusa.com/mcp`.
 
 ### Option B — Manual web service
 
@@ -296,16 +296,16 @@ Your MCP server will be at `https://trailverse-mcp.onrender.com/mcp`.
 ### Verify it's up
 
 ```bash
-curl https://trailverse-mcp.onrender.com/
+curl https://mcp.nationalparksexplorerusa.com/
 # → "TrailVerse MCP server is running. MCP endpoint: /mcp"
 
-curl https://trailverse-mcp.onrender.com/health
+curl https://mcp.nationalparksexplorerusa.com/health
 # → {"status":"ok","service":"trailverse-mcp"}
 ```
 
 ### Add to ChatGPT via developer mode
 
-Same as local step 7 above, but use `https://trailverse-mcp.onrender.com/mcp`
+Same as local step 7 above, but use `https://mcp.nationalparksexplorerusa.com/mcp`
 instead of the ngrok URL.
 
 ---
@@ -343,7 +343,7 @@ recognize the caller. Check:
   container), the sandbox may be blocking outbound requests to your Render
   backend. Test from your laptop or the deployed MCP server itself.
 - If the TrailVerse backend has a CORS allowlist, add the MCP server's
-  Render URL to it (`https://trailverse-mcp.onrender.com`).
+  Render URL to it (`https://mcp.nationalparksexplorerusa.com`).
 
 ### Tool returns empty structured content
 
