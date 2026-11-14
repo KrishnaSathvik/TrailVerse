@@ -166,3 +166,33 @@ def test_save_state_is_a_sentence_and_failure_stays_visible():
 def test_welcome_prompt_is_a_user_turn():
     messages = main.welcome()
     assert messages and all(m.role == "user" for m in messages)
+
+
+# ---------- events: the same ranger walk listed three times ----------
+
+def test_duplicate_program_records_merge_into_one_entry_with_real_dates():
+    walk = {"title": "Guided Walk", "parkCode": "care", "parkName": "Capitol Reef National Park",
+            "description": "Meet outside the Gifford House for a one-hour walk.",
+            "location": "Meet in front of the Gifford House", "isfree": True}
+    events = [
+        {**walk, "id": "a", "dates": ["2026-11-19", "2026-11-20", "2026-11-21", "2026-11-22", "2026-11-23"]},
+        {**walk, "id": "b", "dates": ["2026-11-15"]},
+        {**walk, "id": "c", "dates": ["2026-11-16"]},
+        {"title": "Orchard Stroll", "id": "d", "parkCode": "care", "parkName": "Capitol Reef National Park",
+         "dates": ["2026-11-20"], "location": "Johnson Orchard"},
+    ]
+    structured, text = format_events({"data": events})
+    assert text.count("**Guided Walk**") == 1
+    assert "Dates: Nov 15–16, 19–23" in text
+    assert "Runs daily" not in text
+    assert "**Orchard Stroll**" in text
+    assert structured["count"] == 2
+
+
+def test_same_title_at_different_parks_is_not_merged():
+    base = {"title": "Guided Walk", "dates": ["2026-11-15"]}
+    _, text = format_events({"data": [
+        {**base, "id": "a", "parkCode": "care", "parkName": "Capitol Reef National Park"},
+        {**base, "id": "b", "parkCode": "brca", "parkName": "Bryce Canyon National Park"},
+    ]})
+    assert text.count("**Guided Walk**") == 2
