@@ -15,7 +15,7 @@ def _normalize_query(q: str | None) -> str:
     return re.sub(r"\s+", " ", (q or "").strip().lower())
 
 
-def rerank_search_results(resp: dict[str, Any], query: str | None) -> dict[str, Any]:
+def rerank_search_results(resp: dict[str, Any], query: str | None, limit: int | None = None) -> dict[str, Any]:
     """
     Boost exact / prefix park-name matches and demote substring false positives
     (e.g. Acadian sites when searching for Acadia).
@@ -24,7 +24,8 @@ def rerank_search_results(resp: dict[str, Any], query: str | None) -> dict[str, 
         return resp
 
     data = resp.get("data", resp)
-    parks = data.get("parks") if isinstance(data, dict) else None
+    # /api/parks/search returns {"data": [...]}; older shapes nest {"parks": [...]}.
+    parks = data.get("parks") if isinstance(data, dict) else data
     if not isinstance(parks, list) or not parks:
         return resp
 
@@ -36,7 +37,9 @@ def rerank_search_results(resp: dict[str, Any], query: str | None) -> dict[str, 
     if not q_tokens:
         return resp
 
-    def score(park: dict[str, Any]) -> tuple[int, int, str]:
+    order = {id(p): i for i, p in enumerate(parks)}
+
+    def score(park: dict[str, Any]) -> tuple:
         name = _park_name(park).lower()
         name_words = [w for w in re.split(r"[^a-z0-9]+", name) if w]
         primary = q_tokens[0]
@@ -51,15 +54,22 @@ def rerank_search_results(resp: dict[str, Any], query: str | None) -> dict[str, 
             return (3, -len(name), name)
         if primary in name and not _is_false_substring_match(primary, name):
             return (4, -len(name), name)
-        return (9, -len(name), name)
+        # Trait/intent queries ("dark sky", "kayaking") match descriptions, not
+        # names. Keep the backend's relevance order, but within it put national
+        # parks before monuments, and multi-state historic trails last — they
+        # were outranking Bryce and Canyonlands for "dark sky" in Utah.
+        tier = _designation_tier(park)
+        return (9, tier, tier > 0 and _state_count(park) > 1, order[id(park)])
 
     ranked = sorted(parks, key=score)
+    if limit:
+        ranked = ranked[:limit]
     if isinstance(data, dict):
         data = {**data, "parks": ranked}
         if "data" in resp:
             return {**resp, "data": data}
         return data
-    return resp
+    return {**resp, "data": ranked}
 
 
 def _is_false_substring_match(token: str, name: str) -> bool:

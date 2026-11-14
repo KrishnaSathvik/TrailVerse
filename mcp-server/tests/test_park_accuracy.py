@@ -31,6 +31,8 @@ CATALOG: list[dict[str, Any]] = [
     {"parkCode": "deva", "fullName": "Death Valley National Park", "designation": "National Park", "states": "CA,NV"},
     {"parkCode": "dino", "fullName": "Dinosaur National Monument", "designation": "National Monument", "states": "CO,UT"},
     {"parkCode": "elis", "fullName": "Ellis Island Part of Statue of Liberty National Monument", "designation": "Part of Statue of Liberty National Monument", "states": "NJ,NY"},
+    {"parkCode": "cave", "fullName": "Carlsbad Caverns National Park", "designation": "National Park", "states": "NM"},
+    {"parkCode": "jeff", "fullName": "Gateway Arch National Park", "designation": "National Park", "states": "MO"},
     {"parkCode": "frpe", "fullName": "Frances Perkins National Monument", "designation": "National Monument", "states": "ME"},
     {"parkCode": "glac", "fullName": "Glacier National Park", "designation": "National Park", "states": "MT"},
     {"parkCode": "glba", "fullName": "Glacier Bay National Park & Preserve", "designation": "National Park & Preserve", "states": "AK"},
@@ -426,3 +428,37 @@ def test_permit_lottery_is_surfaced_from_recreation_gov_text():
     assert "lottery" in half_dome
     assert "lottery" not in wilderness
     assert "dropped timed entry" not in text
+
+
+# ---------- real NPS codes that are also English words ----------
+
+@pytest.mark.parametrize("code,expected", [("arch", "arch"), ("ARCH", "arch"), ("cave", "cave")])
+def test_real_nps_code_that_is_a_word_resolves_to_that_park(code, expected):
+    # Audit 2026-11-12: park_code="arch" resolved to Gateway Arch (jeff), so the
+    # Arches trip was planned against Missouri and the save was rejected.
+    async def search(q):
+        return (await FakeBackend().search_parks(q=q))["data"]
+
+    res = asyncio.run(resolve_park(code, search))
+    assert res.code == expected
+
+
+def test_exact_catalog_code_outranks_a_name_word_match():
+    res = rank_candidates("arch", CATALOG)
+    assert res.code == "arch"
+
+
+def test_gateway_arch_by_name_still_resolves_to_jeff():
+    async def search(q):
+        return (await FakeBackend().search_parks(q=q))["data"]
+
+    assert asyncio.run(resolve_park("Gateway Arch", search)).code == "jeff"
+
+
+def test_plan_trip_sends_official_park_name_not_the_raw_code():
+    backend = FakeBackend()
+    run_tool(main.plan_trip, park_code="arch", number_of_days=1, travel_month="December", backend=backend)
+    call = next(kwargs for name, kwargs in backend.calls if name == "plan_trip_anonymous")
+    assert call["park_code"] == "arch"
+    assert "Arches National Park" in call["message"]
+    assert "for arch" not in call["message"]

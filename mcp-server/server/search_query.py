@@ -63,3 +63,30 @@ def count_search_results(resp: dict) -> int:
     if isinstance(results, dict) and "parks" in results:
         results = results["parks"]
     return len(results) if isinstance(results, list) else 0
+
+
+# "near Chicago", "close to Denver", "within 3 hours of Atlanta", "outside Seattle".
+_PROXIMITY_RE = re.compile(
+    r"\b(?:near(?:by)?|close\s+to|around|outside(?:\s+of)?|driving\s+distance\s+(?:of|from)|"
+    r"(?:with)?in\s+(?:an?\s+|\d+\s*(?:-|to)?\s*\d*\s*)?(?:hours?|hrs?|miles?|mi|minutes?|mins?)\s+(?:of|from)|"
+    r"(?:a\s+)?(?:short\s+)?drive\s+from|(?:day|weekend)\s+trips?\s+from)\s+"
+    r"(?P<place>[a-z][a-z .'-]{1,40}?)(?=\s+(?:for|with|in|on|that|this|next|during)\b|[?.!,]|$)",
+    re.IGNORECASE,
+)
+
+
+def detect_proximity(query: str | None) -> str | None:
+    """Return the place in a distance phrase ("parks near Chicago" → "Chicago").
+
+    The catalog search is keyword-only: "near Chicago" matched Port Chicago Naval
+    Magazine in California. Callers report distance search as unsupported instead
+    of returning a misleading word match.
+    """
+    if not query:
+        return None
+    match = _PROXIMITY_RE.search(query)
+    if not match:
+        return None
+    place = re.sub(r"\s+", " ", match.group("place")).strip(" .'-")
+    place = re.sub(r"^(the|downtown)\s+", "", place, flags=re.IGNORECASE)
+    return place or None
