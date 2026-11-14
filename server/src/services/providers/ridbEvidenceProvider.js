@@ -23,7 +23,7 @@ function chooseRecArea(records, displayName) {
 function defaultRidbClient() {
   return {
     async getRecAreaFacilities({ displayName }, { signal } = {}) {
-      const apiKey = process.env.RIDB_API_KEY;
+      const apiKey = (process.env.RIDB_API_KEY || '').trim().replace(/^['"]|['"]$/g, '');
       if (!apiKey) {
         throw Object.assign(new Error('RIDB API key is not configured'), { code: 'ridb_not_configured' });
       }

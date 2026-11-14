@@ -104,7 +104,7 @@ function defaultLookup() {
     return results;
   };
 }
-function createNamedPlaceEvidenceProvider({ lookup = defaultLookup(), officialLookup = createOfficialRecordsLookup(), catalog = KNOWN_PLACES, now = () => new Date(),
+function createNamedPlaceEvidenceProvider({ lookup = defaultLookup(), officialLookup = createOfficialRecordsLookup(), officialTimeoutMs = 3000, catalog = KNOWN_PLACES, now = () => new Date(),
   onDiagnostic = detail => console.warn('[Trailie named_place]', JSON.stringify(detail)) } = {}) {
   return {
     id: 'named_place', ephemeralOnly: true,
@@ -128,8 +128,25 @@ function createNamedPlaceEvidenceProvider({ lookup = defaultLookup(), officialLo
       const known = matches.length ? matches[0][1] : null;
       let officialRows = [], officialStatus = 'not_attempted';
       if (!known && anchors.length) {
-        try { officialRows = await officialLookup(anchors,{signal}); officialStatus='fulfilled'; }
-        catch (error) { if (signal?.aborted) throw error; officialStatus='unavailable'; }
+        // Official NPS records get their own short budget. When NPS is slow they
+        // used to consume the whole provider deadline, so the request was cancelled
+        // before Google was ever queried (Arches: querySent=null, every stop unmapped).
+        const officialAbort = new AbortController();
+        const forward = () => officialAbort.abort();
+        signal?.addEventListener?.('abort', forward, { once: true });
+        let timer;
+        try {
+          officialRows = await Promise.race([
+            officialLookup(anchors, { signal: officialAbort.signal }),
+            new Promise((_, reject) => { timer = setTimeout(() => {
+              officialAbort.abort();
+              reject(Object.assign(new Error('official records timed out'), { code: 'official_records_timeout' }));
+            }, officialTimeoutMs); }),
+          ]);
+          officialStatus='fulfilled';
+        }
+        catch (error) { if (signal?.aborted) throw error; officialStatus = error?.code === 'official_records_timeout' ? 'timed_out' : 'unavailable'; }
+        finally { clearTimeout(timer); signal?.removeEventListener?.('abort', forward); }
       }
       const exactOfficial=officialRows.filter(p=>matchName(name,p,anchors).type !== 'none'
         && Number.isFinite(p.geometry?.location?.lat) && Number.isFinite(p.geometry?.location?.lng));
