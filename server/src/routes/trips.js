@@ -96,9 +96,12 @@ router.post('/:tripId/share', async (req, res) => {
     trip.shareId = require('crypto').randomUUID().slice(0, 12);
   }
 
-  // Stage 8 — the owner chooses how much to expose. Defaults to plan_only.
+  // The owner may choose how much to expose; without a choice a share shows
+  // the full conversation (normalizeShareScope's default).
   if (req.body?.scope !== undefined) {
     trip.shareScope = normalizeShareScope(req.body.scope);
+  } else if (!trip.shareScope) {
+    trip.shareScope = normalizeShareScope(undefined);
   }
   await trip.save();
 
