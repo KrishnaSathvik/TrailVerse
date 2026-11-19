@@ -1,6 +1,8 @@
 'use strict';
 
-const WEB_PROVIDER_IDS = Object.freeze(new Set(['brave', 'serper', 'tavily', 'direct_official_page']));
+const { routeWebSearchProvider } = require('./contextDev/contextDevConfig');
+
+const WEB_PROVIDER_IDS = Object.freeze(new Set(['brave', 'serper', 'tavily', 'context_dev', 'direct_official_page']));
 const WEB_ELIGIBLE_STATUSES = Object.freeze(new Set(['missing', 'unsupported', 'conflicted']));
 const WEB_PROVIDER_BY_TOPIC = Object.freeze({
   alerts_closures: 'brave',
@@ -186,7 +188,7 @@ function planWebEvidenceFallbacks({ requirements = [], structuredBundle } = {}) 
     .map((resolution) => [resolution.requirementId, resolution]));
   return requirements.flatMap((requirement) => {
     const resolution = resolutionById.get(requirement.requirementId);
-    const provider = WEB_PROVIDER_BY_TOPIC[requirement.topic];
+    const provider = routeWebSearchProvider(WEB_PROVIDER_BY_TOPIC[requirement.topic], requirement.topic);
     if (!provider) return [];
     const missingParsedRule = !bundleCarriesParsedRule(requirement, structuredBundle);
     if (!missingParsedRule && !shouldEnrichResolution(requirement, resolution)) return [];

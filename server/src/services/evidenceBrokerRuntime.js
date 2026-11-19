@@ -19,6 +19,7 @@ const { createFeeFreeDatesEvidenceProvider } = require('./providers/feeFreeDates
 const { createBraveEvidenceProvider } = require('./providers/braveEvidenceProvider');
 const { createSerperEvidenceProvider } = require('./providers/serperEvidenceProvider');
 const { createTavilyEvidenceProvider } = require('./providers/tavilyEvidenceProvider');
+const { createContextDevEvidenceProvider } = require('./providers/contextDevEvidenceProvider');
 const { createDirectOfficialPageEvidenceProvider } = require('./providers/directOfficialPageEvidenceProvider');
 const { createNamedPlaceEvidenceProvider } = require('./providers/namedPlaceEvidenceProvider');
 const { createKnownPlaceEvidenceProvider } = require('./providers/knownPlaceEvidenceProvider');
@@ -71,6 +72,8 @@ function createDefaultEvidenceProviders() {
     createBraveEvidenceProvider(),
     createSerperEvidenceProvider(),
     createTavilyEvidenceProvider(),
+    // Inert unless TRAILIE_WEB_SEARCH_PROVIDER=contextdev routes topics to it.
+    createContextDevEvidenceProvider(),
     createDirectOfficialPageEvidenceProvider(),
     createGeocodeCoordinateEvidenceProvider(),
     createNamedPlaceEvidenceProvider(),
