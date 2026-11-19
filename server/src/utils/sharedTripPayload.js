@@ -26,8 +26,17 @@ const SHARE_SCOPE = {
   FULL_CONVERSATION: 'full_conversation',
 };
 
+/**
+ * Product decision (Nov 2026): a shared chat shows the WHOLE conversation by
+ * default — the traveler's questions and Trailie's answers — as it did before
+ * Stage 8. The share UI never offered a scope picker, so the Stage 8
+ * `plan_only` default silently hid every shared chat. `plan_only` and
+ * `plan_plus_explanation` remain available as explicit owner choices.
+ */
+const DEFAULT_SHARE_SCOPE = SHARE_SCOPE.FULL_CONVERSATION;
+
 function normalizeShareScope(scope) {
-  return Object.values(SHARE_SCOPE).includes(scope) ? scope : SHARE_SCOPE.PLAN_ONLY;
+  return Object.values(SHARE_SCOPE).includes(scope) ? scope : DEFAULT_SHARE_SCOPE;
 }
 
 /**
@@ -151,6 +160,7 @@ function buildSharedTripPayload(trip, { scope, sharedBy = null } = {}) {
 
 module.exports = {
   SHARE_SCOPE,
+  DEFAULT_SHARE_SCOPE,
   normalizeShareScope,
   sanitizePlan,
   resolveSharedPlan,

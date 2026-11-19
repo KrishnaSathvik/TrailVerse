@@ -3191,7 +3191,7 @@ ${[
 
     setIsSharing(true);
     try {
-      const res = await api.post(`/trips/${currentTripId}/share`);
+      const res = await api.post(`/trips/${currentTripId}/share`, { scope: 'full_conversation' });
       const data = res.data || res;
       if (data.success || data.shareId) {
         const id = data.shareId || data.data?.shareId;

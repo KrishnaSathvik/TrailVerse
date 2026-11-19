@@ -71,8 +71,9 @@ const tripService = {
   },
 
   // Generate or fetch public share link
-  shareTrip: async (tripId) => {
-    const response = await api.post(`/trips/${tripId}/share`);
+  // Shared chats show the whole conversation (questions + Trailie's answers).
+  shareTrip: async (tripId, { scope = 'full_conversation' } = {}) => {
+    const response = await api.post(`/trips/${tripId}/share`, { scope });
     return response.data;
   },
 };

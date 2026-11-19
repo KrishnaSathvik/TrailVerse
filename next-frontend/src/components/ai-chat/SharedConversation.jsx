@@ -47,6 +47,9 @@ export default function SharedConversation({ conversation, sharedBy, canonicalPl
                 ...msg,
                 parkImages: filterParkChatImages(msg.parkImages || []),
               },
+              // Shared messages arrive without their presentation metadata; the
+              // reply that owns the trip's plan renders as the itinerary.
+              presentationKind: msg.hasItinerary && !msg.presentation ? 'itinerary' : null,
             })}
             hideActions
             onFollowup={openFollowupInTrailie}

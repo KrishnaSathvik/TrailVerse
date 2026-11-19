@@ -27,9 +27,9 @@ const trip = () => ({
 });
 
 describe('normalizeShareScope', () => {
-  test('defaults to plan_only for missing/invalid values', () => {
-    expect(normalizeShareScope(undefined)).toBe(SHARE_SCOPE.PLAN_ONLY);
-    expect(normalizeShareScope('nonsense')).toBe(SHARE_SCOPE.PLAN_ONLY);
+  test('defaults to the full conversation for missing/invalid values', () => {
+    expect(normalizeShareScope(undefined)).toBe(SHARE_SCOPE.FULL_CONVERSATION);
+    expect(normalizeShareScope('nonsense')).toBe(SHARE_SCOPE.FULL_CONVERSATION);
   });
   test('accepts the three known scopes', () => {
     expect(normalizeShareScope('plan_only')).toBe(SHARE_SCOPE.PLAN_ONLY);
@@ -38,7 +38,7 @@ describe('normalizeShareScope', () => {
   });
 });
 
-describe('buildSharedTripPayload — plan_only (default)', () => {
+describe('buildSharedTripPayload — plan_only (explicit owner choice)', () => {
   const out = buildSharedTripPayload(trip(), { scope: SHARE_SCOPE.PLAN_ONLY });
 
   test('never exposes any user chat messages', () => {
@@ -122,5 +122,14 @@ describe('buildSharedTripPayload — plan fallback', () => {
     };
     expect(buildSharedTripPayload(t).plan.days[0].id).toBe('day-1');
     expect(buildSharedTripPayload(t).plan.days[0].title).toBeUndefined();
+  });
+});
+
+describe('buildSharedTripPayload — no scope given (default)', () => {
+  test('shows the whole chat: the traveler\'s questions and Trailie\'s answers', () => {
+    const out = buildSharedTripPayload(trip());
+    expect(out.scope).toBe(SHARE_SCOPE.FULL_CONVERSATION);
+    expect(out.conversation.map((m) => m.role)).toEqual(['user', 'assistant', 'user', 'assistant']);
+    expect(out.conversation[0]).toEqual({ role: 'user', content: 'We live in Austin, budget is $1200, plan Zion.' });
   });
 });

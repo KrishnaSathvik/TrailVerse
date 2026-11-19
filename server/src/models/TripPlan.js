@@ -27,12 +27,14 @@ const tripPlanSchema = new mongoose.Schema({
     unique: true,
     sparse: true // allows null values
   },
-  // Stage 8 — how much of the trip a public share link exposes. Defaults to the
-  // privacy-safe 'plan_only'; broader scopes are an explicit owner opt-in.
+  // How much of the trip a public share link exposes. Shared chats show the
+  // whole conversation by default (see DEFAULT_SHARE_SCOPE in
+  // utils/sharedTripPayload.js); 'plan_only' / 'plan_plus_explanation' are
+  // explicit owner choices.
   shareScope: {
     type: String,
     enum: ['plan_only', 'plan_plus_explanation', 'full_conversation'],
-    default: 'plan_only'
+    default: 'full_conversation'
   },
   title: {
     type: String,
