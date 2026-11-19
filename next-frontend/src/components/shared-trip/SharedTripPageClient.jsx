@@ -145,11 +145,18 @@ export default function SharedTripPageClient({ trip, shareId }) {
     [tripTitle, trip.parkName, trip.parkCode, featuredPark, shareId, trip.formData, trip.plan]
   );
   const canExportPdf = days.some((day) => (day.stops || []).length > 0);
+  const scheduleLine = meta.schedule?.length ? meta.schedule.join(' · ') : null;
+  const hasSharedContent =
+    days.length > 0 ||
+    highlights.length > 0 ||
+    packingList.length > 0 ||
+    permits.length > 0 ||
+    conversation?.length > 0;
 
   const metaLine = [
     `Shared by ${sharedByLabel}`,
     meta.sharedOn?.replace(/^Shared\s+/i, '') || null,
-    meta.details || null,
+    meta.details?.length ? meta.details.join(' · ') : null,
   ]
     .filter(Boolean)
     .join(' · ');
@@ -228,9 +235,9 @@ export default function SharedTripPageClient({ trip, shareId }) {
                   <p className="mt-2 text-sm leading-relaxed break-words" style={{ color: 'var(--text-secondary)' }}>
                     {metaLine}
                   </p>
-                  {meta.schedule ? (
+                  {scheduleLine ? (
                     <p className="mt-1 text-sm break-words" style={{ color: 'var(--text-secondary)' }}>
-                      {meta.schedule}
+                      {scheduleLine}
                     </p>
                   ) : null}
                 </div>
@@ -254,6 +261,22 @@ export default function SharedTripPageClient({ trip, shareId }) {
         </section>
 
         <div className="public-shell min-w-0 py-8 sm:py-10">
+          {!hasSharedContent ? (
+            <section
+              className="mb-10 rounded-2xl border p-6 text-center sm:p-8"
+              style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
+              data-testid="shared-trip-empty"
+            >
+              <h2 className="text-lg font-semibold sm:text-xl" style={{ color: 'var(--text-primary)' }}>
+                No itinerary in this plan yet
+              </h2>
+              <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                {sharedByLabel} shared this plan before Trailie finished a day-by-day itinerary. Ask them to
+                share it again once the itinerary is ready — or start your own below.
+              </p>
+            </section>
+          ) : null}
+
           {days.length > 0 && !conversation?.length ? (
             <section className="mb-10">
               <SectionHeading>Day-by-day itinerary</SectionHeading>

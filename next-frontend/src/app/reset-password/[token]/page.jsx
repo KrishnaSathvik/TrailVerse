@@ -5,6 +5,7 @@ import Link from 'next/link';
 import authService from '@/services/authService';
 import { useToast } from '@/context/ToastContext';
 import Button from '@/components/common/Button';
+import AuthShell from '@/components/auth/AuthShell';
 import { Lock, Eye, EyeOff, CheckCircle, AlertCircle } from '@components/icons';
 import { logEvent } from '@/utils/analytics';
 
@@ -94,61 +95,10 @@ const ResetPasswordPage = ({ params }) => {
   const passwordStrength = getPasswordStrength(formData.password);
 
   return (
-    <div className="auth-shell public-shell min-h-screen flex" style={{ backgroundColor: 'var(--bg-primary)' }}>
-      {/* Left Side - Logo & Branding */}
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-center items-center p-12" style={{ backgroundColor: 'var(--bg-secondary)' }}>
-        <Link href="/" className="flex items-center gap-3 mb-12 group">
-          <img
-            src="/logo.png"
-            alt="TrailVerse Logo"
-            className="h-16 w-16 rounded-xl object-contain transition-transform group-hover:scale-105"
-          />
-          <span className="text-3xl font-bold tracking-tighter" style={{ color: 'var(--text-primary)' }}>
-            TrailVerse
-          </span>
-        </Link>
-
-        <div className="text-center max-w-md">
-          <h1 className="text-5xl lg:text-6xl font-light tracking-tighter leading-none mb-6" style={{ color: 'var(--text-primary)' }}>
-            Create a new password
-          </h1>
-          <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
-            Choose a strong password to secure your TrailVerse account.
-          </p>
-        </div>
-      </div>
-
-      {/* Right Side - Form */}
-      <div className="flex-1 min-w-0 flex items-center justify-center py-8 lg:p-8" style={{ backgroundColor: 'var(--bg-primary)' }}>
-        <div className="public-form">
-          {/* Mobile Logo */}
-          <Link href="/" className="lg:hidden flex items-center gap-2 mb-8">
-            <img
-              src="/logo.png"
-              alt="TrailVerse Logo"
-              className="h-10 w-10 rounded-xl object-contain"
-            />
-            <span className="text-xl font-bold tracking-tighter" style={{ color: 'var(--text-primary)' }}>
-              TrailVerse
-            </span>
-          </Link>
-
-          {/* Header */}
-          <div className="mb-8">
-            <div
-              className="w-14 h-14 rounded-xl flex items-center justify-center mb-4"
-              style={{ backgroundColor: 'var(--surface-hover)' }}
-            >
-              <Lock className="h-7 w-7" style={{ color: 'var(--accent-green)' }} />
-            </div>
-            <h2 className="text-4xl font-semibold tracking-tight mb-2" style={{ color: 'var(--text-primary)' }}>
-              Reset your password
-            </h2>
-            <p style={{ color: 'var(--text-secondary)' }}>
-              Enter your new password below. Make sure it&apos;s strong and secure.
-            </p>
-          </div>
-
+    <AuthShell
+      desktopTitle="Create a new password"
+      desktopDescription="Choose a strong password to secure your TrailVerse account."
+    >
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* New Password */}
@@ -283,7 +233,7 @@ const ResetPasswordPage = ({ params }) => {
               type="submit"
               disabled={loading}
               loading={loading}
-              variant="secondary"
+              variant="primary"
               size="lg"
               className="w-full"
             >
@@ -292,15 +242,13 @@ const ResetPasswordPage = ({ params }) => {
           </form>
 
           {/* Footer */}
-          <p className="text-center text-xs mt-6" style={{ color: 'var(--text-tertiary)' }}>
+          <p className="text-center text-sm mt-6" style={{ color: 'var(--text-secondary)' }}>
             Remember your password?{' '}
-            <Link href="/login" className="hover:opacity-80 transition" style={{ color: 'var(--text-secondary)' }}>
+            <Link href="/login" className="font-medium hover:opacity-80 transition" style={{ color: 'var(--accent-green)' }}>
               Sign in
             </Link>
           </p>
-        </div>
-      </div>
-    </div>
+    </AuthShell>
   );
 };
 

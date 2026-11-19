@@ -88,3 +88,39 @@ describe('buildSharedTripPayload — full_conversation (explicit opt-in)', () =>
     });
   });
 });
+
+describe('buildSharedTripPayload — plan fallback', () => {
+  const canonical = { type: 'itinerary', days: [{ id: 'day-1', title: 'Arrive', stops: [] }] };
+
+  test('uses the latest assistant canonicalPlan when trip.plan has no days', () => {
+    const t = {
+      ...trip(),
+      plan: null,
+      conversation: [
+        { role: 'user', content: 'plan zion', canonicalPlan: { days: [{ id: 'evil' }] } },
+        { role: 'assistant', content: 'Here you go.', canonicalPlan: canonical },
+      ],
+    };
+    const out = buildSharedTripPayload(t);
+    expect(out.plan.days).toHaveLength(1);
+    expect(out.plan.days[0].id).toBe('day-1');
+  });
+
+  test('never takes a plan from a user message', () => {
+    const t = {
+      ...trip(),
+      plan: null,
+      conversation: [{ role: 'user', content: 'x', canonicalPlan: { days: [{ id: 'evil' }] } }],
+    };
+    expect(buildSharedTripPayload(t).plan).toBeNull();
+  });
+
+  test('prefers trip.plan when it has days', () => {
+    const t = {
+      ...trip(),
+      conversation: [{ role: 'assistant', content: 'old', canonicalPlan: canonical }],
+    };
+    expect(buildSharedTripPayload(t).plan.days[0].id).toBe('day-1');
+    expect(buildSharedTripPayload(t).plan.days[0].title).toBeUndefined();
+  });
+});

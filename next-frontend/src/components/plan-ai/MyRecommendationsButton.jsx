@@ -111,7 +111,7 @@ export default function MyRecommendationsButton({ onClick }) {
     <>
       <div ref={rootRef} className="relative inline-flex shrink-0">
         <div
-          className="inline-flex h-8 items-stretch overflow-hidden rounded-full sm:h-10 sm:rounded-xl"
+          className="inline-flex h-[var(--public-control-height,44px)] items-stretch overflow-hidden rounded-lg sm:rounded-xl"
           style={{
             backgroundColor: 'var(--button-filled-bg)',
             border: '1px solid var(--border)',
@@ -121,8 +121,8 @@ export default function MyRecommendationsButton({ onClick }) {
           <button
             type="button"
             onClick={onClick}
-            className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap px-2.5 text-xs font-semibold transition sm:gap-2 sm:px-4 sm:text-sm"
-            style={{ color: 'var(--text-primary)' }}
+            className="inline-flex h-full items-center justify-center gap-1.5 whitespace-nowrap px-3 text-xs font-semibold leading-none transition sm:gap-2 sm:px-4 sm:text-sm"
+            style={{ color: 'var(--text-primary)', minHeight: 0 }}
           >
             <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             <span className="hidden sm:inline">My Recommendations</span>
@@ -134,8 +134,10 @@ export default function MyRecommendationsButton({ onClick }) {
             aria-label="What are My Recommendations?"
             aria-expanded={infoOpen}
             aria-controls={infoId}
-            className="inline-flex w-8 shrink-0 items-center justify-center border-l transition hover:opacity-80 sm:w-9"
+            className="inline-flex h-full w-10 shrink-0 items-center justify-center border-l transition hover:opacity-80 sm:w-11"
             style={{
+              minHeight: 0,
+              minWidth: 0,
               borderColor: 'var(--border)',
               color: 'var(--text-secondary)',
             }}
