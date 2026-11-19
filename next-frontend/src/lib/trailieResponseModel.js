@@ -321,6 +321,16 @@ export function toRestoredTrailieResponseModel(args = {}) {
   return toLiveTrailieResponseModel(args);
 }
 
+/**
+ * Public share payloads strip messages to `{ role, content }`, so no assistant
+ * message carries the plan's identity. Requiring an identity match there would
+ * attach the shared plan to nothing; the latest assistant turn owns it instead
+ * (the canonical trip plan is the latest accepted one).
+ */
+function conversationCarriesIdentity(assistants) {
+  return assistants.some(({ message }) => message?.responseId || message?.itineraryHash);
+}
+
 export function attachCanonicalPlanToConversation(conversation = [], plan = null) {
   const hydrated = withTripRefinements(conversation).map((message) => {
     if (message?.role !== 'assistant') return message;
@@ -356,7 +366,7 @@ export function attachCanonicalPlanToConversation(conversation = [], plan = null
     if (plan.responseRevision != null && message.responseRevision != null
       && plan.responseRevision !== message.responseRevision) return false;
     return true;
-  }) || (hasIdentity ? null : assistants[assistants.length - 1]);
+  }) || (hasIdentity && conversationCarriesIdentity(assistants) ? null : assistants[assistants.length - 1]);
   if (!owner) return hydrated;
 
   return hydrated.map((message, index) => index === owner.index ? {
