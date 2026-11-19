@@ -93,7 +93,7 @@ describe('WP6 structured-first web fallback policy', () => {
   });
 
   test('web provider IDs are explicit and cannot absorb structured providers', () => {
-    expect([...WEB_PROVIDER_IDS].sort()).toEqual(['brave', 'direct_official_page', 'serper', 'tavily']);
+    expect([...WEB_PROVIDER_IDS].sort()).toEqual(['brave', 'context_dev', 'direct_official_page', 'serper', 'tavily']);
   });
 
   test('every policy topic maps to a provider that mechanically supports it', () => {
