@@ -67,6 +67,11 @@ const observationSchema = new mongoose.Schema({
   },
   httpEtag: { type: String, default: null },
   httpLastModified: { type: String, default: null },
+  // Set when the source page is known to have changed since this observation
+  // (Context.dev page monitor). An observation invalidated at/after its own
+  // observedAt is expired regardless of age; the next refresh rewrites
+  // `observation` wholesale, which clears it.
+  invalidatedAt: { type: Date, default: null },
 }, strictChild);
 
 const qualitySchema = new mongoose.Schema({

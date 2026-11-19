@@ -18,6 +18,7 @@ const {
 } = require('./trailieStoredPresentation');
 
 const { projectPublicPlan } = require('./planProjection');
+const { latestCanonicalPlanFromMessages } = require('./guestConversationPlan');
 
 const SHARE_SCOPE = {
   PLAN_ONLY: 'plan_only',
@@ -39,6 +40,20 @@ function sanitizePlan(plan) {
   if (!plan || typeof plan !== 'object') return plan || null;
   if (Array.isArray(plan)) return [...plan];
   return projectPublicPlan(plan);
+}
+
+/**
+ * The plan a share should publish.
+ *
+ * `trip.plan` is the authoritative trip-level plan. Some trips never had it
+ * written (older chats, or a turn whose plan was persisted only on the
+ * assistant message), so a `plan_only` share rendered an empty page: no days
+ * and — by design — no conversation. Fall back to the latest canonical plan a
+ * server-persisted ASSISTANT message carries; user content can never supply it.
+ */
+function resolveSharedPlan(trip) {
+  if (trip?.plan?.days?.length) return trip.plan;
+  return latestCanonicalPlanFromMessages(trip?.conversation) || trip?.plan || null;
 }
 
 /** Public messages carry only role + content — no provider/model/reviewMeta/feedback. */
@@ -110,15 +125,16 @@ function deriveNotesStatus(conversation = [], plan = null) {
  */
 function buildSharedTripPayload(trip, { scope, sharedBy = null } = {}) {
   const resolvedScope = normalizeShareScope(scope);
+  const plan = resolveSharedPlan(trip);
 
   const payload = {
     title: trip.title,
     parkName: trip.parkName,
-    plan: sanitizePlan(trip.plan),
-    conversation: selectConversation(trip.conversation, resolvedScope, trip.plan),
+    plan: sanitizePlan(plan),
+    conversation: selectConversation(trip.conversation, resolvedScope, plan),
     // Stage 14.5 — coarse, public-safe. Tells a recipient that an itinerary
     // without notes is intentional, not broken.
-    notesStatus: deriveNotesStatus(trip.conversation, trip.plan),
+    notesStatus: deriveNotesStatus(trip.conversation, plan),
     createdAt: trip.createdAt,
     scope: resolvedScope,
     sharedBy,
@@ -137,6 +153,7 @@ module.exports = {
   SHARE_SCOPE,
   normalizeShareScope,
   sanitizePlan,
+  resolveSharedPlan,
   deriveNotesStatus,
   buildSharedTripPayload,
 };

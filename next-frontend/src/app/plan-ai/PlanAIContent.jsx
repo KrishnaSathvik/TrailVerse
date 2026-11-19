@@ -154,7 +154,7 @@ const PlanAIContent = ({ tripId }) => {
         type="button"
         onClick={handleStartNewChat}
         title="Start a new chat"
-        className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:h-9 sm:gap-2 sm:px-3 sm:text-sm"
+        className="inline-flex h-[var(--public-control-height,44px)] shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:gap-2 sm:rounded-xl sm:text-sm"
         style={{
           backgroundColor: 'transparent',
           border: '1px solid var(--border)',

@@ -20,6 +20,10 @@ const { resolveParkIdentity, parkIdentityKeys } = require('../utils/parkDestinat
 const { modelEvidenceValue } = require('../utils/modelEvidenceView');
 const { RESOURCE_KINDS, normalized: resourceNameKey, resourceUrl, validResourceRequest } = require('../utils/travelResourceLinks');
 const { hashPayload } = require('../utils/canonicalResponse');
+const { routeWebSearchProvider } = require('./contextDev/contextDevConfig');
+
+// Discovery (search) providers: their rows are followed to the official page.
+const SEARCH_PROVIDERS = new Set(['brave', 'serper', 'tavily', 'context_dev']);
 const text = { type: 'string', maxLength: 2000 };
 const READ_TOOL = { name: 'read_travel', description: 'Get answer-ready travel facts and grounded places. Named places are explicit identity-resolution requests, independent of search documents. Ask once for the traveler problem. The backend resolves sources, coordinates and dependent routes. Returned unresolved facts are unknown, not negative findings. Use existing fact topics only when narrowing the question; omit them for planning context.',
   input_schema: { type: 'object', additionalProperties: false, required: ['destination', 'question'], properties: {
@@ -238,6 +242,7 @@ function createSimpleTravelTools({ broker, now = () => new Date(), destinationRe
     // unavailability does not trigger an autonomous alternate search strategy.
     let provider = providers[0];
     if (!s.entity.entityId.startsWith('nps:park:')) provider = s.entity.entityId.startsWith('place:known:') && providers.includes('known_place') ? 'known_place' : providers.find(p => !['nps', 'ridb', 'known_place'].includes(p));
+    provider = routeWebSearchProvider(provider, topic);
     if (!provider) { s.unresolved.push({ topic, status: 'unsupported' }); return; }
     let entity = s.entity;
     if (['weather', 'astronomy_compute'].includes(provider)) {
@@ -246,13 +251,13 @@ function createSimpleTravelTools({ broker, now = () => new Date(), destinationRe
       entity = { entityId: position.evidenceId, displayName: s.entity.displayName };
     }
     if (provider === 'direct_official_page' && !entity.sourceUrl) {
-      provider = providers.find(p => ['brave', 'serper', 'tavily'].includes(p));
+      provider = routeWebSearchProvider(providers.find(p => SEARCH_PROVIDERS.has(p)), topic);
       if (!provider) { s.unresolved.push({topic, status: 'unresolved', reason: 'No official source is established for this place.'}); return; }
     }
     const rows = await read(s, provider, topic, entity, context, provider === 'direct_official_page' ? {webScope: {sourceUrl: entity.sourceUrl}} : {});
     // Source discovery and reading the discovered official page are one dependency,
     // not another search strategy. Search snippets never become verified access.
-    if (['brave', 'serper', 'tavily'].includes(provider)) await Promise.all(rows.slice(0, 3).map(row => {
+    if (SEARCH_PROVIDERS.has(provider)) await Promise.all(rows.slice(0, 3).map(row => {
       const url = row.source?.url || row.claim?.normalizedValue?.url;
       return officialFollowUrl(url) ? read(s, 'direct_official_page', topic, entity, context, {webScope: {sourceUrl: url}}) : null;
     }));
@@ -362,7 +367,7 @@ function createSimpleTravelTools({ broker, now = () => new Date(), destinationRe
     if (s.entity?.entityId?.startsWith('nps:park:')) parks.set(s.entity.entityId, { entityId: s.entity.entityId, displayName: s.entity.displayName });
     for (const a of s.entity?.destinationAnchors || []) if (a.sourceId?.startsWith('nps:park:') && !parks.has(a.sourceId)) parks.set(a.sourceId, { entityId: a.sourceId, displayName: a.name });
     await Promise.all([...parks.values()].slice(0, 3).map(async park => {
-      const rows = await read(s, 'brave', 'transit', park, context);
+      const rows = await read(s, routeWebSearchProvider('brave', 'transit'), 'transit', park, context);
       await Promise.all(rows.slice(0, 2).map(row => {
         const url = row.source?.url || row.claim?.normalizedValue?.url;
         return officialFollowUrl(url) ? read(s, 'direct_official_page', 'transit', park, context, { webScope: { sourceUrl: url } }) : null;

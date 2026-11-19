@@ -5,6 +5,8 @@ const { classifyWebError, defaultStageRaw, hash, officialFollowUrl, officialHost
 const { verifyWebDestinationRelevance } = require('../webDestinationRelevance');
 const { officialPageOperationalFacts } = require('../../utils/operationalFactExtraction');
 const { officialPageParkRules } = require('../../utils/parkWideAccess');
+const { scrapePage } = require('../contextDev/contextDevClient');
+const { officialPageReaderUsesContextDev } = require('../contextDev/contextDevConfig');
 
 const OFFICIAL_DOMAINS = Object.freeze(new Set([
   'nps.gov', 'www.nps.gov', 'weather.gov', 'www.weather.gov',
@@ -16,7 +18,49 @@ function officialUrl(value, relationship = null) {
   return officialFollowUrl(value, relationship);
 }
 
-function defaultClient() { return { async fetchPage(url, { signal } = {}) {
+/**
+ * Context.dev reads the page in a real browser and returns main-content
+ * Markdown (PDFs included), so a rule far down a long page is no longer lost
+ * to nav boilerplate + the 8000-char cut. Glacier's directions page (Nov 2026)
+ * states its 21 ft Going-to-the-Sun limit at char ~13,400 of the regex-stripped
+ * text — past the cut — but at ~3,800 of the main-content Markdown.
+ */
+const CONTEXT_DEV_TEXT_LIMIT = 40000;
+
+function contextDevClient() { return { async fetchPage(url, { signal } = {}) {
+  const page = await scrapePage(url, { signal, timeoutMs: 7000 });
+  return {
+    url: page.url,
+    title: page.title,
+    text: String(page.text).slice(0, CONTEXT_DEV_TEXT_LIMIT),
+    status: page.status,
+    reader: 'context_dev',
+    creditsUsed: page.creditsUsed,
+  };
+} }; }
+
+/**
+ * Prefer Context.dev when enabled; fall back to the axios reader on ANY
+ * Context.dev failure (outage, timeout, no credits, unreadable page) so the
+ * flag can never make an official page unreachable. The test-mode live
+ * provider tripwire is the one error that must propagate, not fall back.
+ */
+function readerWithFallback(primary, fallback) { return { async fetchPage(url, options = {}) {
+  try {
+    return await primary.fetchPage(url, options);
+  } catch (error) {
+    if (error?.code === 'live_provider_forbidden_in_test' || options.signal?.aborted) throw error;
+    return fallback.fetchPage(url, options);
+  }
+} }; }
+
+function defaultClient() {
+  return officialPageReaderUsesContextDev()
+    ? readerWithFallback(contextDevClient(), axiosClient())
+    : axiosClient();
+}
+
+function axiosClient() { return { async fetchPage(url, { signal } = {}) {
   recordExternalProviderHttpRequest('direct_official_page'); const axios = require('axios');
   const response = await axios.get(url, { timeout: 7000, signal, maxContentLength: 512000, responseType: 'text' });
   const finalUrl = response.request?.res?.responseUrl || url;
@@ -27,7 +71,7 @@ function defaultClient() { return { async fetchPage(url, { signal } = {}) {
   // vehicle limit at ~char 4050). Stored claim text is separately capped.
   const text = html.replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ')
     .replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 8000);
-  return { url: finalUrl, title, text, status: response.status };
+  return { url: finalUrl, title, text, status: response.status, reader: 'axios' };
 } }; }
 
 function createDirectOfficialPageEvidenceProvider({ officialPageClient = null, stageRaw = defaultStageRaw, now = () => new Date() } = {}) {
@@ -54,7 +98,7 @@ function createDirectOfficialPageEvidenceProvider({ officialPageClient = null, s
     async fetch(request, { signal } = {}) {
       const raw = await client().fetchPage(request.parameters.sourceUrl, { signal });
       const finalUrl = officialUrl(raw?.url, request.parameters.officialRelationship); if (!finalUrl) throw Object.assign(new Error('Official page redirected outside allowlist'), { code: 'official_page_redirect_rejected' });
-      const staged = await stageRaw({ provider: 'direct_official_page', operation: 'fetch', sourceUrl: finalUrl.toString(), payload: { title: raw.title, text: raw.text }, httpStatus: raw.status, now: now() });
+      const staged = await stageRaw({ provider: 'direct_official_page', operation: 'fetch', sourceUrl: finalUrl.toString(), payload: { title: raw.title, text: raw.text, ...(raw.reader === 'context_dev' ? { reader: 'context_dev' } : {}) }, httpStatus: raw.status, now: now() });
       return { raw: { ...raw, url: finalUrl.toString(), _rawPayloadHash: staged?.rawPayloadHash || null }, metadata: { fetchedAt: now().toISOString() }, completeness: { isComplete: false, topics: [], emptyMeans: 'unknown' }, providerAttempts: 1 };
     },
     normalize(raw, request, metadata) {
@@ -107,7 +151,7 @@ function createDirectOfficialPageEvidenceProvider({ officialPageClient = null, s
         source: { provider: 'direct_official_page', sourceClass, sourceId: raw.url, url: raw.url, title: raw.title || null, publishedAt: null, sourceUpdatedAt: null },
         observedAt: metadata.fetchedAt,
         quality: { authorityClass: sourceClass, scopeMatch: relevance.scopeMatch, relationshipConfidence: relevance.relationshipConfidence, conflictStatus: 'none' },
-        provenance: { extractionMethod: 'direct_official_page', extractorVersion: 'web-evidence-v1', rawPayloadHash: raw._rawPayloadHash || null },
+        provenance: { extractionMethod: raw.reader === 'context_dev' ? 'direct_official_page_context_dev' : 'direct_official_page', extractorVersion: 'web-evidence-v1', rawPayloadHash: raw._rawPayloadHash || null },
         retention: { class: 'public_stable_1y', licenseClass: 'government_public', storeClaimText: true, deleteAfter: null },
       }];
     },
@@ -118,4 +162,4 @@ function createDirectOfficialPageEvidenceProvider({ officialPageClient = null, s
   };
 }
 
-module.exports = { OFFICIAL_DOMAINS, createDirectOfficialPageEvidenceProvider };
+module.exports = { OFFICIAL_DOMAINS, CONTEXT_DEV_TEXT_LIMIT, createDirectOfficialPageEvidenceProvider, readerWithFallback };

@@ -58,6 +58,9 @@ function freshness(requirement, candidate, now) {
   const observedAt = validDate(candidate.observation?.observedAt || candidate.observation?.fetchedAt);
   if (!observedAt) return { usable: false, status: 'expired', ageMs: null };
   const ageMs = Math.max(0, now.getTime() - observedAt.getTime());
+  // The source page changed after this was observed: not fresh, not stale-safe.
+  const invalidatedAt = validDate(candidate.observation?.invalidatedAt);
+  if (invalidatedAt && invalidatedAt >= observedAt) return { usable: false, status: 'expired', ageMs };
   const freshMs = Math.max(0, Number(requirement.maxAgeSeconds) || 0) * 1000;
   const staleMs = Math.max(0, Number(requirement.maxStaleSeconds) || 0) * 1000;
   if (ageMs <= freshMs) return { usable: true, status: 'fresh', ageMs };

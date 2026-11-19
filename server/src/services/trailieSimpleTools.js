@@ -9,7 +9,7 @@ const { orderEvidenceForRead } = require('../utils/evidenceReadRelevance');
 const { modelEvidenceRow } = require('../utils/modelEvidenceView');
 
 const PROVIDERS = ['nps', 'ridb', 'weather', 'google_maps', 'astronomy_compute', 'fee_free_calendar',
-  'known_place', 'named_place', 'brave', 'serper', 'tavily', 'direct_official_page', 'geocode_coordinate'];
+  'known_place', 'named_place', 'brave', 'serper', 'tavily', 'context_dev', 'direct_official_page', 'geocode_coordinate'];
 const TOPICS = ['destination_identity', 'overview', 'activities', 'alerts_closures', 'roads',
   'trail_conditions', 'wildfire_smoke', 'weather_current', 'weather_forecast', 'climate_normals',
   'driving_time', 'astronomy', 'permits_reservations', 'campgrounds', 'fees', 'hours', 'rules',

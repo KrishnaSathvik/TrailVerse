@@ -137,6 +137,8 @@ app.use(cors({
 
 // Beehiiv webhooks need the raw body for Svix signature verification.
 app.use('/api/webhooks/beehiiv', express.raw({ type: 'application/json' }), require('./routes/beehiivWebhooks'));
+// Context.dev monitor webhooks — raw body for X-Context-Signature verification.
+app.use('/api/webhooks/context-dev', express.raw({ type: 'application/json', limit: '1mb' }), require('./routes/contextDevWebhooks'));
 
 // Body parser with increased limits for blog content (MUST come before compression)
 app.use(express.json({ limit: '10mb' })); // Increased from default 100kb to 10mb
